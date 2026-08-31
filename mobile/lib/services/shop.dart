@@ -29,6 +29,14 @@ class Shop extends ChangeNotifier {
   Map<String, dynamic>? user;
   bool get loggedIn => user != null;
 
+  /// Whether the signed-in account is shop staff.
+  ///
+  /// Only used to decide what the Account tab is willing to show. It is
+  /// not a permission: the database decides what anyone may actually read
+  /// or write, through is_admin() inside its policies, and it would go on
+  /// refusing a customer even if this were forced to true.
+  bool isAdmin = false;
+
   // ---- basket and wishlist ----
   List<CartItem> cart = [];
   double cartTotal = 0;
@@ -212,6 +220,8 @@ class Shop extends ChangeNotifier {
       }
     }
 
+    isAdmin = await _readIsAdmin();
+
     notifyListeners();
 
     if (loggedIn) {
@@ -222,6 +232,25 @@ class Shop extends ChangeNotifier {
       cartTotal = 0;
       wishlist = [];
       notifyListeners();
+    }
+  }
+
+  /// Asks the database whether this account is staff.
+  ///
+  /// is_admin() is the same function the Row Level Security policies call,
+  /// so there is one answer to this question rather than the app's opinion
+  /// and the database's. It is granted to anon as well as authenticated
+  /// and simply returns false when nobody is signed in.
+  Future<bool> _readIsAdmin() async {
+    if (Api.db.auth.currentSession == null) return false;
+    try {
+      final result = await Api.db.rpc('is_admin');
+      return result == true;
+    } catch (e) {
+      // Treated as "not staff": the cautious answer, since the only thing
+      // this unlocks is showing more about how the shop is built.
+      debugPrint('Checking staff status: $e');
+      return false;
     }
   }
 
@@ -294,6 +323,7 @@ class Shop extends ChangeNotifier {
   Future<void> logout() async {
     await Api.db.auth.signOut();
     user = null;
+    isAdmin = false;
     cart = [];
     cartTotal = 0;
     wishlist = [];

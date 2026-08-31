@@ -68,8 +68,16 @@ class AccountScreen extends StatelessWidget {
                 () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => ProfileEditScreen(shop: shop)))),
           ],
-          _tile(context, Icons.cloud_done_outlined, 'Connection',
-              'Supabase — nothing to set up', () => _connectionDialog(context)),
+          // Staff only. It names the service the shop is built on and
+          // shows its address, which is nobody's business but ours -- a
+          // customer has no use for it and a stranger should not be told
+          // what to go looking at. Hiding it is not what keeps the data
+          // safe; Row Level Security does that, and the address is in the
+          // app bundle either way. This just stops the shop volunteering
+          // it on a screen every customer opens.
+          if (shop.isAdmin)
+            _tile(context, Icons.cloud_done_outlined, 'Connection',
+                'Supabase — nothing to set up', () => _connectionDialog(context)),
           if (user != null)
             _tile(context, Icons.logout, 'Sign out', '', () async {
               await shop.logout();

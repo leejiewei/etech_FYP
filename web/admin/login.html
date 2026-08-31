@@ -65,6 +65,15 @@ sb.auth.getSession().then(({ data }) => {
   if (data.session) window.location.href = "index.html";
 });
 
+// Arrived from the shop's login, which recognised a staff account and
+// sent them here. Fill the email in so only the password is left.
+const handedOver = new URLSearchParams(location.search).get("staff");
+if (handedOver) {
+  document.getElementById("username").value = handedOver;
+  showError("That is a staff account — please sign in here.");
+  document.getElementById("password").focus();
+}
+
 document.getElementById("login-form").onsubmit = async (event) => {
   event.preventDefault();
 
@@ -90,11 +99,29 @@ document.getElementById("login-form").onsubmit = async (event) => {
   // Signing in proves who you are. It does not prove you are staff —
   // a customer's account would get this far. The admins table decides,
   // and so does every policy behind every page.
-  const { data: staff } = await sb.from("admins").select("admin_id").maybeSingle();
+  // is_admin() rather than a read of the admins table: it answers the
+  // one question asked, and cannot break when the shop hires a second
+  // member of staff. It is the same function the policies call.
+  const { data: staff } = await sb.rpc("is_admin");
   if (!staff) {
+    // A customer at the staff door. Their password was right and their
+    // session is live, so signing them out to show a refusal would be
+    // throwing away a good login to punish them for a wrong turn. They
+    // are sent to the shop still signed in.
+    //
+    // This gives nothing away that they did not already know: they only
+    // reach here by knowing their own password, and the answer is the
+    // same one their own account would tell them. Every admin page
+    // behind this one is guarded by requireAdmin() and by the policies,
+    // neither of which is softened by this.
+    // Their password was right; this is simply not their door. The
+    // session opened here is signed out because it belongs to the admin
+    // storage key and cannot follow them to the shop, and leaving it
+    // would mean a customer holding a live session in the staff area.
     await sb.auth.signOut();
     button.disabled = false;
-    showError("That account is not a staff account.");
+    showError("That is a customer account — taking you to the shop's login.");
+    setTimeout(() => { window.location.href = "../login.html"; }, 1500);
     return;
   }
 

@@ -52,6 +52,15 @@
 
       // The server checks the password, so this waits for its answer.
       loginUser(email, password).then((errorMessage) => {
+        // Staff at the shop's door: right password, wrong door. Send
+        // them to the staff one with their email already filled in, so
+        // the only thing left to type is the password. It cannot be
+        // skipped entirely -- the admin pages hold their own separate
+        // session, which is the point of them being separate.
+        if (errorMessage === "staff") {
+          window.location.href = "admin/login.html?staff=" + encodeURIComponent(email);
+          return;
+        }
         if (errorMessage) {
           document.getElementById("login-error").textContent = errorMessage;
           return;

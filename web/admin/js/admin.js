@@ -182,17 +182,39 @@ async function requireAdmin() {
   const { data } = await sb.auth.getSession();
   if (!data.session) { window.location.href = "login.html"; return null; }
 
-  const { data: staff, error } = await sb
-    .from("admins").select("admin_id,username,name").maybeSingle();
+  // This used to read the admins table. That worked only by accident and
+  // stopped the day the shop had two members of staff:
+  //
+  //   * the policy is "staff read staff", so the table returns every
+  //     member of staff, and maybeSingle() fails on more than one row;
+  //   * narrowing it with .eq("auth_user_id", ...) fails too, because the
+  //     grant is column-level -- SELECT (admin_id, username, name,
+  //     created_at) -- and filtering on a column needs SELECT on that
+  //     column. auth_user_id is not in the list, so Postgres answers
+  //     "permission denied for table admins".
+  //
+  // is_admin() has neither problem. It is SECURITY DEFINER, it answers
+  // the one question being asked, and it is the very function every
+  // policy behind every admin page calls -- so this gate and those
+  // policies can never disagree.
+  const { data: isStaff, error } = await sb.rpc("is_admin");
 
-  if (error || !staff) {
+  if (error || isStaff !== true) {
     // A valid login that is not staff. Signing out avoids leaving the
     // browser stuck in a redirect loop on the login page.
     await sb.auth.signOut();
     window.location.href = "login.html";
     return null;
   }
-  return staff;
+
+  // The name for the page header. It is on the session already, put there
+  // when the account was made, so there is no second round trip for it.
+  const account = data.session.user;
+  return {
+    name: (account.user_metadata && account.user_metadata.name) ||
+          account.email.split("@")[0],
+    email: account.email,
+  };
 }
 
 // Every admin page is one call to this: check the login, draw the

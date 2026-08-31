@@ -155,8 +155,23 @@ function loginUser(email, password) {
       console.error("Sign-in:", error);
       return "Incorrect email or password.";
     }
-    return loadSession().then((user) =>
-      user ? "" : "That account cannot sign in to the shop.");
+    // A staff account has no row in customers, so loadSession() finds
+    // nothing and the old code called that a failure -- which left the
+    // owner signing into their own shop and being told they could not.
+    // The sign-in itself was fine; it is the wrong door, not a refusal.
+    return loadSession().then((user) => {
+      if (user) return "";
+      return isStaffAccount().then((staff) => {
+        if (!staff) return "That account cannot sign in to the shop.";
+        // Staff, at the customers' door. The admin pages keep their
+        // session under a different storage key on purpose -- so that
+        // signing in as staff in one tab does not sign a customer out in
+        // another -- which means this session cannot be carried over
+        // there. It is released rather than left sitting in the shop's
+        // storage belonging to somebody with no shop account.
+        return sb.auth.signOut().then(() => "staff", () => "staff");
+      });
+    });
   });
 }
 
@@ -205,4 +220,17 @@ function askToLogIn(why) {
     sessionStorage.setItem("returnTo", window.location.pathname.split("/").pop());
     window.location.href = "login.html";
   }
+}
+
+// Whether the account now signed in is shop staff.
+//
+// is_admin() is the same function every Row Level Security policy calls,
+// so there is one answer to this rather than the page's opinion and the
+// database's. It returns false for a customer and for nobody signed in.
+// It is asked after signing in, never before: it is a question about who
+// you are, not a way of finding out who works here.
+function isStaffAccount() {
+  return sb.rpc("is_admin")
+    .then(({ data }) => data === true)
+    .catch(() => false);
 }
