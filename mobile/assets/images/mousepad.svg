@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+<path d="M18 52 L182 52 L166 116 L34 116 Z" fill="#eef0f3" stroke="#2f3640" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M30 62 L170 62" stroke="#2f3640" stroke-width="2" opacity="0.35"/>
+<path d="M112 76 C124 76 130 86 130 100 C130 110 124 112 116 112 C106 112 100 106 100 94 C100 82 104 76 112 76 Z" fill="#c8ccd4" stroke="#2f3640" stroke-width="2.5"/>
+<line x1="112" y1="77" x2="112" y2="94" stroke="#2f3640" stroke-width="2"/>
+<text x="62" y="98" font-family="Arial" font-size="15" font-weight="bold" fill="#d62839">XL</text>
+</svg>

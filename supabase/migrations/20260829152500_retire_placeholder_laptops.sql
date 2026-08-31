@@ -1,0 +1,39 @@
+-- Remove the five placeholder laptops that predate the RigWorks record of
+-- 12 August 2026.
+--
+-- APPLIED to the remote project on 29 August 2026, by hand rather than
+-- through `db push`, so the remote's migration history has no row for this
+-- version. Register it with
+--     supabase migration repair --status applied 20260829152500
+-- once the project is linked. Until then `db push` will offer to run it
+-- again, which is harmless: re-running it deletes nothing.
+--
+-- The record is the catalogue for this category now, and its 37 rows are
+-- Asus, Lenovo and HP only. Each of the five below either has a properly
+-- SKU'd replacement in that record, or no counterpart in it at all:
+--
+--   201  ASUS TUF Gaming A15   RM3999  -> replaced by 220, FA506N-CGHN777WS
+--   202  Lenovo LOQ 15         RM3599  -> replaced by 237-242, six real SKUs
+--   203  Dell Inspiron 14      RM2199  -> no Dell laptop in the record
+--   204  HP Pavilion 15        RM2599  -> record's HP line is Laptop 14/15
+--                                         and OmniBook; Pavilion is not it
+--   205  Acer Aspire Lite 14   RM1799  -> no Acer laptop in the record
+--
+-- This also brings the category into line with the record's own stated
+-- laptop price range of RM2499 - RM7899: the Acer and the Dell sat below
+-- that floor.
+--
+-- Knock-on effects, all by the schema's own foreign keys:
+--   product_attributes  15 rows, ON DELETE CASCADE
+--   events              27 rows, ON DELETE CASCADE
+--   order_items          1 row,  ON DELETE SET NULL -- the line keeps its
+--                                product_name and unit_price, so the
+--                                customer's receipt is unchanged
+--
+-- The Dell brand row is left in place even though it now has no products.
+-- It costs nothing, and dropping it would be a separate decision about
+-- whether the shop still carries Dell at all.
+--
+-- Re-runnable: a second run deletes nothing.
+
+DELETE FROM products WHERE product_id IN (201, 202, 203, 204, 205);

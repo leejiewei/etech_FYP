@@ -1,0 +1,168 @@
+import 'package:flutter/material.dart';
+import '../services/shop.dart';
+import '../theme.dart';
+
+/// Sign in, or create an account. One screen with a toggle, since the two
+/// forms are nearly identical.
+class LoginScreen extends StatefulWidget {
+  final Shop shop;
+  final bool startOnRegister;
+  const LoginScreen({super.key, required this.shop, this.startOnRegister = false});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  late bool _registering = widget.startOnRegister;
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    for (final c in [_name, _email, _password, _confirm]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
+
+    String? error;
+    if (_registering) {
+      if (_password.text != _confirm.text) {
+        setState(() {
+          _error = 'Passwords do not match.';
+          _busy = false;
+        });
+        return;
+      }
+      error = await widget.shop.register(
+          _name.text.trim(), _email.text.trim(), _password.text);
+    } else {
+      error = await widget.shop.login(_email.text.trim(), _password.text);
+    }
+
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        _error = error;
+        _busy = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(_registering ? 'Create Account' : 'Sign In')),
+      body: ListView(
+        padding: const EdgeInsets.all(22),
+        children: [
+          const SizedBox(height: 10),
+          const Center(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                    text: 'e',
+                    style: TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.ink)),
+                TextSpan(
+                    text: 'Tech',
+                    style: TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.red)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 26),
+          if (_registering)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Full name'),
+              ),
+            ),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            decoration: const InputDecoration(labelText: 'Email'),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _password,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Password'),
+          ),
+          if (_registering) ...[
+            const SizedBox(height: 14),
+            TextField(
+              controller: _confirm,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Confirm password'),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: const Color(0xFFFDE8E8),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Text(_error!,
+                  style: const TextStyle(color: AppTheme.red, fontSize: 13)),
+            ),
+          ],
+          const SizedBox(height: 22),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _busy ? null : _submit,
+              child: _busy
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text(_registering ? 'Create account' : 'Sign in'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: () => setState(() {
+                _registering = !_registering;
+                _error = null;
+              }),
+              child: Text(_registering
+                  ? 'Already have an account? Sign in'
+                  : 'New here? Create an account'),
+            ),
+          ),
+          if (_registering)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'This is a student project — please do not use a password you '
+                'use anywhere else.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

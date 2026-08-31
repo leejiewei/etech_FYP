@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import '../models/product.dart';
+import '../services/shop.dart';
+import '../theme.dart';
+import '../screens/product_detail.dart';
+import 'product_image.dart';
+
+/// One product in a grid or list.
+class ProductCard extends StatelessWidget {
+  final Product product;
+  final Shop shop;
+  const ProductCard({super.key, required this.product, required this.shop});
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = shop.inWishlist(product.id);
+
+    return InkWell(
+      onTap: () {
+        shop.trackView(product.id);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: product, shop: shop),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: const Border(top: BorderSide(color: AppTheme.red, width: 3)),
+          boxShadow: const [
+            BoxShadow(color: Color(0x14000000), blurRadius: 5, offset: Offset(0, 2))
+          ],
+        ),
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Center(
+                    child: ProductImage(
+                        url: product.imageUrl, isSvg: product.isSvg, height: 88)),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: InkWell(
+                    onTap: () async {
+                      final error = await shop.toggleWishlist(product.id);
+                      if (error != null && context.mounted) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(error)));
+                      }
+                    },
+                    child: Icon(
+                      saved ? Icons.favorite : Icons.favorite_border,
+                      size: 20,
+                      color: saved ? AppTheme.red : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              product.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, height: 1.25),
+            ),
+            const SizedBox(height: 3),
+            Text(product.categoryPath,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            const Spacer(),
+            const SizedBox(height: 6),
+            StockPill(stock: product.stock, label: product.stockLabel),
+            const SizedBox(height: 6),
+            Text(money(product.price),
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.redDark)),
+          ],
+        ),
+      ),
+    );
+  }
+}

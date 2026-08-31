@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login - eTech</title>
+  <link rel="stylesheet" href="assets/admin.css" />
+</head>
+<body>
+
+<div class="login-page">
+  <h1>eTech Admin</h1>
+  <p class="sub">Staff sign-in</p>
+
+  <div class="error-box" id="login-error" style="display:none;"></div>
+
+  <form id="login-form">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required autofocus autocomplete="username" />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password" />
+    </div>
+    <button type="submit" class="btn" id="login-button">Sign in</button>
+  </form>
+</div>
+
+<script src="../js/vendor/supabase.js"></script>
+<script src="../js/config.js"></script>
+<script src="js/admin.js"></script>
+<script>
+// ============================================================
+// Staff sign-in.
+//
+// The old login.php counted failed attempts in a login_attempts table
+// and locked a username out for fifteen minutes after five tries. That
+// table is no longer written to: Supabase Auth rate-limits sign-in
+// attempts itself, at the edge, before a request reaches the database
+// at all — which is a better place to do it than in a page that has
+// already opened a database connection in order to find out.
+//
+// Staff still type a username, because that is what they have always
+// typed and what the admins table records. Supabase Auth is
+// email-based, so a bare username is turned into the address the
+// account was created with. Typing the full address works too.
+// ============================================================
+
+const STAFF_EMAIL_DOMAIN = "@etech.local";
+
+function staffEmail(typed) {
+  const value = typed.trim().toLowerCase();
+  return value.includes("@") ? value : value + STAFF_EMAIL_DOMAIN;
+}
+
+function showError(message) {
+  const box = document.getElementById("login-error");
+  box.textContent = message;
+  box.style.display = "block";
+}
+
+// Already signed in? Go straight through.
+sb.auth.getSession().then(({ data }) => {
+  if (data.session) window.location.href = "index.html";
+});
+
+document.getElementById("login-form").onsubmit = async (event) => {
+  event.preventDefault();
+
+  const button = document.getElementById("login-button");
+  button.disabled = true;
+  document.getElementById("login-error").style.display = "none";
+
+  const email = staffEmail(document.getElementById("username").value);
+  const password = document.getElementById("password").value;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    button.disabled = false;
+    // One message whether the username is unknown or the password is
+    // wrong, so this page cannot be used to find out who works here.
+    showError(error.status === 429
+      ? "Too many attempts. Please wait a few minutes and try again."
+      : "Incorrect username or password.");
+    return;
+  }
+
+  // Signing in proves who you are. It does not prove you are staff —
+  // a customer's account would get this far. The admins table decides,
+  // and so does every policy behind every page.
+  const { data: staff } = await sb.from("admins").select("admin_id").maybeSingle();
+  if (!staff) {
+    await sb.auth.signOut();
+    button.disabled = false;
+    showError("That account is not a staff account.");
+    return;
+  }
+
+  window.location.href = "index.html";
+};
+</script>
+
+</body>
+</html>

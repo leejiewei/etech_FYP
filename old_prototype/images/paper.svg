@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+<path d="M56 24 L134 24 L134 126 L56 126 Z" fill="#eef0f3" stroke="#2f3640" stroke-width="3.5"/>
+<path d="M64 16 L142 16 L142 118" fill="none" stroke="#2f3640" stroke-width="3" opacity="0.55"/>
+<path d="M72 10 L150 10 L150 110" fill="none" stroke="#2f3640" stroke-width="3" opacity="0.3"/>
+<g stroke="#2f3640" stroke-width="2.5" opacity="0.55" stroke-linecap="round">
+  <line x1="70" y1="48" x2="120" y2="48"/>
+  <line x1="70" y1="62" x2="120" y2="62"/>
+  <line x1="70" y1="76" x2="106" y2="76"/>
+</g>
+<rect x="66" y="92" width="58" height="22" rx="3" fill="#d62839" opacity="0.15" stroke="#d62839" stroke-width="2.5"/>
+<text x="95" y="107" font-family="Arial" font-size="12" font-weight="bold" fill="#d62839" text-anchor="middle">A4</text>
+</svg>

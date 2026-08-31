@@ -1,0 +1,33 @@
+# ============================================================
+# Apache rules for the eTech website.
+#
+# Apache reads this file automatically. It applies to this folder
+# and everything inside it.
+# ============================================================
+
+# Don't let anyone browse a folder as a file list. Without this, a
+# visitor going to /images/ would get a listing of every file there.
+Options -Indexes
+
+# Refuse to serve file types that are part of the project but are
+# nobody else's business - database scripts, notes, logs, backups.
+# The sql folder has been moved out of the website entirely, but this
+# is a second layer in case a stray file is ever uploaded here.
+<FilesMatch "\.(sql|md|log|bak|old|ini|sh)$">
+    Require all denied
+</FilesMatch>
+
+# Send everyone to https:// once the site is on a real domain.
+#
+# The conditions below skip this on your own PC, so XAMPP still works
+# over plain http at localhost. On the live server there is no
+# switch to remember to flip - it just starts working.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
+    RewriteCond %{HTTP_HOST} !^10\.0\.2\.2
+    RewriteCond %{HTTP_HOST} !^192\.168\.
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=302,L]
+</IfModule>

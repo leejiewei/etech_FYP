@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shop - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <h2>All Products</h2>
+    <div id="active-filter" style="text-align:center; margin-bottom: 16px; display:none;"></div>
+    <div class="filter-bar" id="category-buttons"></div>
+    <div class="attr-filters" id="attr-filters"></div>
+    <div style="max-width: 300px; margin: 0 auto 12px auto;">
+      <input type="text" id="shop-search" class="attr-select" style="width: 100%;"
+        placeholder="Search products or brands..." oninput="handleSearchInput(this.value)" />
+    </div>
+    <div style="max-width: 300px; margin: 0 auto 24px auto;">
+      <select id="sort-select" class="attr-select" style="width: 100%;" onchange="handleSortChange(this.value)">
+        <option value="default">Sort by: Default</option>
+        <option value="brand">Brand (A-Z)</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+      </select>
+    </div>
+    <p id="no-results">No products match your filters.</p>
+    <div class="product-grid" id="product-grid"></div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <!-- Supabase client, then where the project is, then the connection. -->
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

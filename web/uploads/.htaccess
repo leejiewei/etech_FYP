@@ -1,0 +1,15 @@
+# ============================================================
+# This folder holds product photos uploaded through the admin panel.
+# Pictures only - nothing in here should ever be RUN.
+#
+# The upload code already checks a file is a real image and re-saves
+# it as a JPEG, which strips anything hidden inside. This is the
+# second lock on the same door: even if a .php file somehow landed
+# here, Apache would refuse to serve it rather than execute it.
+# ============================================================
+
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar|pl|py|cgi|sh|asp|aspx)$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes

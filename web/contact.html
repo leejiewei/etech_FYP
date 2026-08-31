@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contact - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <h2>Contact Us</h2>
+    <p style="text-align:center; color:#555; margin-bottom: 30px;">
+      Email: support@techhub-demo.com &nbsp;|&nbsp; Phone: 012-345 6789 &nbsp;|&nbsp; Or use the WhatsApp button in the corner.
+    </p>
+
+    <div class="form-page">
+      <h3>Send us an Enquiry</h3>
+      <form id="enquiry-form" onsubmit="submitEnquiry(event)">
+        <label for="enquiry-name">Name</label>
+        <input type="text" id="enquiry-name" required />
+
+        <label for="enquiry-email">Email</label>
+        <input type="email" id="enquiry-email" required />
+
+        <label for="enquiry-message">Message</label>
+        <textarea id="enquiry-message" rows="4" required></textarea>
+
+        <button type="submit">Send Enquiry</button>
+      </form>
+
+      <div id="enquiry-confirmation" style="display:none; text-align:center;">
+        <h3>✅ Thanks!</h3>
+        <p>Your enquiry has been recorded (this is a demo — no email is actually sent).</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <!-- Supabase client, then where the project is, then the connection. -->
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/faq.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

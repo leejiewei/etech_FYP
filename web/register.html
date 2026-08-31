@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <div class="form-page">
+      <h2>Create an Account</h2>
+      <form id="register-form">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" required />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" required minlength="6" />
+
+        <label for="confirm">Confirm Password</label>
+        <input type="password" id="confirm" required minlength="6" />
+
+        <div class="form-error" id="register-error"></div>
+
+        <button type="submit">Register</button>
+      </form>
+      <p class="form-note">
+        Already have an account? <a href="login.html">Login here</a><br />
+        Note: this is a student demo project, please don't use a real password.
+      </p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <!-- Supabase client, then where the project is, then the connection. -->
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    document.getElementById("register-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirm = document.getElementById("confirm").value;
+      const errorEl = document.getElementById("register-error");
+
+      if (password !== confirm) {
+        errorEl.textContent = "Passwords do not match.";
+        return;
+      }
+
+      registerUser(name, email, password).then((errorMessage) => {
+        if (errorMessage) {
+          errorEl.textContent = errorMessage;
+          return;
+        }
+        window.location.href = "index.html";
+      });
+    });
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

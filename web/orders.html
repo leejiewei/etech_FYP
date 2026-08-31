@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Order History - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <h2>Order History</h2>
+    <div id="orders-list" style="max-width: 700px; margin: 0 auto;"></div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <!-- Supabase client, then where the project is, then the connection. -->
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    onAppReady(() => {
+      if (!isLoggedIn()) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const list = document.getElementById("orders-list");
+      list.innerHTML = "<p style='text-align:center; color:#777;'>Loading your orders...</p>";
+
+      // Straight from the database, with each order's lines joined on.
+      // There is no "and only mine" filter here and there does not need
+      // to be one: the policy on orders returns the signed-in
+      // customer's own rows and nothing else, so asking for all of them
+      // is asking for all of theirs.
+      sb.from("orders")
+        .select("order_id,order_date,status,subtotal,discount,total,coupon_code," +
+                "shipping_name,shipping_phone,shipping_address," +
+                "order_items(product_id,product_name,unit_price,quantity,line_total)")
+        .order("order_date", { ascending: false })
+        .then(({ data: orders, error }) => {
+        if (error) {
+          console.error("Loading orders:", error);
+          list.innerHTML = `<p style="text-align:center; color:#c0392b;">Could not load your orders.</p>`;
+          return;
+        }
+        if (orders.length === 0) {
+          list.innerHTML = `<p style="text-align:center; color:#777;">No orders yet. <a href="shop.html">Start shopping</a></p>`;
+          return;
+        }
+
+        // Colour the status so the current stage stands out.
+        const statusColour = {
+          Pending: "#b8860b", Processing: "#2c5d8f",
+          Shipped: "#6a3fb5", Delivered: "#1e8e3e", Cancelled: "#c0392b",
+        };
+
+        list.innerHTML = orders.map((order) => `
+          <div class="prebuilt-card" style="margin-bottom: 16px;">
+            <h3>Order #${order.order_id}</h3>
+            <p class="product-category">${new Date(order.order_date).toLocaleString()}</p>
+            <p style="font-weight:bold; color:${statusColour[order.status] || "#555"};">
+              ${order.status}
+            </p>
+            <ul class="prebuilt-specs">
+              ${order.order_items.map((item) =>
+                `<li>${item.quantity} x ${item.product_name} - RM ${Number(item.line_total).toFixed(2)}</li>`
+              ).join("")}
+            </ul>
+            ${Number(order.discount) > 0
+              ? `<p class="product-category">Coupon ${order.coupon_code}: -RM ${Number(order.discount).toFixed(2)}</p>`
+              : ""}
+            <p class="prebuilt-price">Total: RM ${Number(order.total).toFixed(2)}</p>
+            <p class="product-category">Shipping to: ${order.shipping_address}</p>
+          </div>
+        `).join("");
+      });
+    });
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

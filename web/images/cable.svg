@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+<path d="M56 44 L56 30 L84 30 L84 44 L92 44 L92 76 L48 76 L48 44 Z" fill="#eef0f3" stroke="#2f3640" stroke-width="3.5" stroke-linejoin="round"/>
+<g stroke="#2f3640" stroke-width="2.5">
+  <line x1="56" y1="50" x2="56" y2="62"/>
+  <line x1="63" y1="50" x2="63" y2="62"/>
+  <line x1="70" y1="50" x2="70" y2="62"/>
+  <line x1="77" y1="50" x2="77" y2="62"/>
+  <line x1="84" y1="50" x2="84" y2="62"/>
+</g>
+<path d="M70 76 Q70 108 106 108 Q142 108 142 84" fill="none" stroke="#d62839" stroke-width="7" stroke-linecap="round"/>
+<path d="M128 84 L128 70 L156 70 L156 84 L164 84 L164 116 L120 116 L120 84 Z" fill="#eef0f3" stroke="#2f3640" stroke-width="3.5" stroke-linejoin="round"/>
+<g stroke="#2f3640" stroke-width="2.5">
+  <line x1="128" y1="90" x2="128" y2="102"/>
+  <line x1="135" y1="90" x2="135" y2="102"/>
+  <line x1="142" y1="90" x2="142" y2="102"/>
+  <line x1="149" y1="90" x2="149" y2="102"/>
+  <line x1="156" y1="90" x2="156" y2="102"/>
+</g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+<path d="M20 96 Q60 56 100 96 Q140 136 180 96" fill="none" stroke="#2f3640" stroke-width="9" stroke-linecap="round"/>
+<g stroke="#d62839" stroke-width="5" stroke-linecap="round">
+  <path d="M20 96 Q40 76 60 84"/>
+</g>
+<g stroke="#e8a33d" stroke-width="5" stroke-linecap="round"><path d="M62 83 Q80 62 100 96"/></g>
+<g stroke="#3fa34d" stroke-width="5" stroke-linecap="round"><path d="M101 97 Q120 130 140 118"/></g>
+<g stroke="#2c5d8f" stroke-width="5" stroke-linecap="round"><path d="M142 117 Q162 108 180 96"/></g>
+<g fill="#eef0f3" stroke="#2f3640" stroke-width="2.5">
+  <circle cx="40" cy="82" r="6"/><circle cx="82" cy="72" r="6"/>
+  <circle cx="120" cy="122" r="6"/><circle cx="162" cy="104" r="6"/>
+</g>
+<rect x="76" y="18" width="48" height="20" rx="4" fill="#c8ccd4" stroke="#2f3640" stroke-width="3"/>
+<text x="100" y="33" font-family="Arial" font-size="11" font-weight="bold" fill="#2f3640" text-anchor="middle">5V</text>
+</svg>

@@ -1,0 +1,38 @@
+name: etech_mobile
+description: eTech Computer Accessories - customer mobile app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Talks to Supabase directly — the catalogue, the account, the basket
+  # and the orders. Replaces the http package, which was only ever here to
+  # call the shop's PHP API, and shared_preferences, which was only ever
+  # here to remember the PHPSESSID cookie and the server address. This
+  # package keeps the session itself.
+  supabase_flutter: ^2.8.0
+
+  # Draws the product illustrations, which are SVG files bundled in assets/
+  flutter_svg: ^2.0.16
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # The drawn illustrations, copied from web/images. They used to be
+  # fetched from the website over HTTP, which meant a product picture
+  # depended on a web server being reachable. Bundling them is 110KB and
+  # removes that dependency entirely.
+  assets:
+    - assets/images/

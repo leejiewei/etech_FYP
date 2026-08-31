@@ -1,0 +1,198 @@
+import 'package:flutter/material.dart';
+import '../models/product.dart';
+import '../services/shop.dart';
+import '../theme.dart';
+import '../widgets/product_image.dart';
+
+class ProductDetailScreen extends StatelessWidget {
+  final Product product;
+  final Shop shop;
+  const ProductDetailScreen({super.key, required this.product, required this.shop});
+
+  /// Turns a spec key into something readable, matching the website.
+  static const Map<String, String> _labels = {
+    'socket': 'Socket', 'sockets': 'Socket Support', 'ramGen': 'RAM Type',
+    'screenSize': 'Screen Size', 'storageSize': 'Storage', 'ram': 'Memory',
+    'wattage': 'Wattage', 'power': 'Power Draw (W)', 'length': 'Card Length (mm)',
+    'tdp': 'Cooling Needed (W)', 'coolerRating': 'Cooler Capacity (W)',
+    'formFactor': 'Board Size', 'supportedFormFactors': 'Fits Board Sizes',
+    'maxGpuLength': 'Max Card Length (mm)', 'printerType': 'Printer Type',
+    'wifi': 'WiFi', 'resolution': 'Resolution', 'refreshRate': 'Refresh Rate',
+    'panel': 'Panel Type', 'colour': 'Colour', 'fansIncluded': 'Fans Included',
+    'acceptsAtxPsu': 'Takes ATX Power Supply', 'chipset': 'Chipset', 'chip': 'Chip',
+    'vram': 'Video Memory', 'cores': 'Cores', 'threads': 'Threads',
+    'igpu': 'Built-in Graphics', 'coolerIncluded': 'Cooler Included',
+    'incompatibleSockets': 'Known Not To Fit', 'capacity': 'Capacity',
+    'speed': 'Speed', 'cl': 'CAS Latency', 'kit': 'Kit', 'driveType': 'Drive Type',
+    'connection': 'Interface', 'driveFormFactor': 'Form Factor',
+    'pcieGen': 'PCIe Generation', 'heatsink': 'Heatsink', 'driveClass': 'Drive Class',
+    'rpm': 'Spin Speed', 'cache': 'Cache', 'rating': '80+ Rating',
+    'modularity': 'Cabling', 'connector12VHPWR': '12VHPWR Connector',
+    'coolerType': 'Cooling Type', 'radiator': 'Radiator Size', 'lcd': 'LCD Screen',
+    'lighting': 'Lighting', 'wifiStd': 'WiFi Standard', 'speedRating': 'Speed Rating',
+    'bands': 'Bands', 'fanSize': 'Fan Size', 'pack': 'Pack Size',
+    'bladeDirection': 'Blade Direction', 'connector': 'Connector',
+    'productType': 'Type', 'armType': 'Arm Type', 'vesa': 'VESA Mount',
+    'paperSize': 'Paper Size', 'weight': 'Paper Weight', 'backConnector': 'Back-connector Board',
+    'supportsBackConnector': 'Back-connector Ready',
+    // Complete systems: laptops, towers, all-in-ones and prebuilts. These
+    // arrived with the RigWorks record of 12 August 2026 and must stay in
+    // step with attrLabel() in web/js/products.js -- the two maps describe
+    // the same database, and a key missing here shows the customer the raw
+    // column name where the website shows a proper label.
+    'sku': 'SKU', 'cpu': 'Processor', 'gpu': 'Graphics',
+    'motherboard': 'Motherboard', 'ssd': 'SSD', 'psu': 'Power Supply',
+    'cooler': 'Cooler', 'chassis': 'Chassis', 'touch': 'Touchscreen',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: shop,
+      builder: (context, _) {
+        final saved = shop.inWishlist(product.id);
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(product.brand),
+            actions: [
+              IconButton(
+                icon: Icon(saved ? Icons.favorite : Icons.favorite_border),
+                onPressed: () async {
+                  final error = await shop.toggleWishlist(product.id);
+                  if (error != null && context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(error)));
+                  }
+                },
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.only(bottom: 100),
+            children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: ProductImage(
+                      url: product.imageUrl, isSvg: product.isSvg, height: 180),
+                ),
+              ),
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(product.name,
+                        style: const TextStyle(
+                            fontSize: 19, fontWeight: FontWeight.bold, height: 1.3)),
+                    const SizedBox(height: 6),
+                    Text(product.categoryPath,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Text(money(product.price),
+                          style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.redDark)),
+                      const SizedBox(width: 12),
+                      StockPill(stock: product.stock, label: product.stockLabel),
+                    ]),
+                  ],
+                ),
+              ),
+              if (product.description.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _panel('About this product',
+                    Text(product.description,
+                        style: const TextStyle(fontSize: 14, height: 1.5))),
+              ],
+              if (product.attrs.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _panel('Specifications', _specTable()),
+              ],
+              const SizedBox(height: 20),
+            ],
+          ),
+          bottomSheet: Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: AppTheme.line)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: Text(product.inStock ? 'Add to Cart' : 'Out of Stock'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          product.inStock ? AppTheme.red : Colors.grey.shade400),
+                  onPressed: product.inStock
+                      ? () async {
+                          final error = await shop.addToCart(product.id);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(error ?? '${product.name} added to cart'),
+                            duration: const Duration(seconds: 2),
+                          ));
+                        }
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _panel(String title, Widget child) => Container(
+        width: double.infinity,
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      );
+
+  Widget _specTable() {
+    final rows = product.attrs.entries.toList();
+    return Column(
+      children: rows.map((entry) {
+        final label = _labels[entry.key] ?? entry.key;
+        final value = entry.value is List
+            ? (entry.value as List).join(', ')
+            : '${entry.value}';
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 145,
+                child: Text(label,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              ),
+              Expanded(
+                child: Text(value,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
