@@ -580,6 +580,7 @@ class Shop extends ChangeNotifier {
     Api.db.from('events').insert({
       'customer_id': _customerId, // null = browsing signed out
       'anon_id': _anonId, // ...but still the same phone
+      'source': 'app',
       'product_id': productId,
       'event_type': 'view',
     }).catchError((e) => debugPrint('Recording a view: $e'));
@@ -589,6 +590,7 @@ class Shop extends ChangeNotifier {
     Api.db.from('chatbot_logs').insert({
       'customer_id': _customerId,
       'anon_id': _anonId,
+      'source': 'app',
       'question': question,
       'answer': answer,
       'was_build_request': wasBuildRequest ? 1 : 0,
@@ -619,6 +621,7 @@ class Shop extends ChangeNotifier {
     Api.db.from('search_logs').insert({
       'customer_id': _customerId,
       'anon_id': _anonId,
+      'source': 'app',
       'query': text,
       'result_count': resultCount,
     }).catchError((e) => debugPrint('Recording a search: $e'));

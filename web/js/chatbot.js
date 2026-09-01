@@ -163,7 +163,7 @@ function askGemini(message) {
 function recommendationCard(product) {
   const outOfStock = product.stock === "out";
   return `
-    <div class="chat-rec" onclick="trackProductClick(${product.id})">
+    <div class="chat-rec" onclick="openProductModal(${product.id})">
       ${productImageTag(product, "chat-rec-img")}
       <div class="chat-rec-body">
         <span class="chat-rec-name">${product.name}</span>
@@ -253,6 +253,7 @@ function logChat(message, reply, wasBuildRequest) {
   sb.from("chatbot_logs").insert({
     customer_id:       user ? user.id : null,
     anon_id:           typeof getAnonId === "function" ? getAnonId() : null,
+    source:            "web",
     question:          message,
     answer:            stripFormatting(reply),
     was_build_request: wasBuildRequest ? 1 : 0,

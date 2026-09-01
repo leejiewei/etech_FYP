@@ -118,6 +118,7 @@ function logEvent(type, productId) {
     sb.from("events").insert({
       customer_id: user ? user.id : null,   // null = browsing signed out
       anon_id: getAnonId(),                 // ...but still the same browser
+      source: "web",
       product_id: productId,
       event_type: "view",
     }).then(({ error }) => {
@@ -189,6 +190,7 @@ function trackSearch(query, resultCount) {
     sb.from("search_logs").insert({
       customer_id: user ? user.id : null,
       anon_id: getAnonId(),
+      source: "web",
       query: text,
       result_count: resultCount,
     }).then(({ error }) => {

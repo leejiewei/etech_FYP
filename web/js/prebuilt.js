@@ -139,7 +139,7 @@ function renderPrebuilts() {
   grid.querySelectorAll(".prebuilt-card").forEach((card) => {
     const id = Number(card.id.replace("prebuilt-", ""));
     card.querySelector(".product-img-wrap").addEventListener("click", () => {
-      if (typeof trackProductClick === "function") trackProductClick(id);
+      openProductModal(id);
     });
   });
 }
