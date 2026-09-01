@@ -3,6 +3,7 @@ import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/product_card.dart';
 import 'deals.dart';
+import 'prebuilt.dart';
 import 'chat.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -17,22 +18,53 @@ class HomeScreen extends StatelessWidget {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text.rich(TextSpan(children: [
-              TextSpan(text: 'e', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text.rich(
               TextSpan(
-                  text: 'Tech',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.red)),
-            ])),
-            Text('COMPUTER ACCESSORIES',
-                style: TextStyle(fontSize: 9, letterSpacing: 1.5, color: Colors.white70)),
+                children: [
+                  TextSpan(
+                    text: 'e',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: 'Tech',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              'COMPUTER ACCESSORIES',
+              style: TextStyle(
+                fontSize: 9,
+                letterSpacing: 1.5,
+                color: Colors.white70,
+              ),
+            ),
           ],
         ),
         actions: [
+          // The bottom bar already carries five destinations, which is as
+          // many as a NavigationBar holds comfortably. Prebuilt sits
+          // beside Deals instead -- one tap from home, the same place the
+          // website keeps it.
+          IconButton(
+            tooltip: 'Prebuilt PCs',
+            icon: const Icon(Icons.desktop_windows_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PrebuiltScreen(shop: shop)),
+            ),
+          ),
           IconButton(
             tooltip: 'Deals',
             icon: const Icon(Icons.local_offer_outlined),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => DealsScreen(shop: shop))),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => DealsScreen(shop: shop)),
+            ),
           ),
         ],
       ),
@@ -40,104 +72,124 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: AppTheme.redDark,
         tooltip: 'Ask the hardware consultant',
         onPressed: () => Navigator.push(
-            context, MaterialPageRoute(builder: (_) => ChatScreen(shop: shop))),
+          context,
+          MaterialPageRoute(builder: (_) => ChatScreen(shop: shop)),
+        ),
         child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
       ),
       body: shop.loadingProducts && shop.products.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : shop.loadError != null
-              ? _error(context)
-              : RefreshIndicator(
-                  onRefresh: () => shop.start(),
-                  child: ListView(
-                    padding: const EdgeInsets.only(bottom: 90),
-                    children: [
-                      _hero(context),
-                      if (shop.deals.isNotEmpty) _dealStrip(context),
-                      _section(context, 'Featured', shop.products.take(6).toList()),
-                      _section(context, 'Popular picks',
-                          shop.products.where((p) => p.stock == 'in').skip(20).take(6).toList()),
-                      const SizedBox(height: 20),
-                    ],
+          ? _error(context)
+          : RefreshIndicator(
+              onRefresh: () => shop.start(),
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 90),
+                children: [
+                  _hero(context),
+                  if (shop.deals.isNotEmpty) _dealStrip(context),
+                  _section(context, 'Featured', shop.products.take(6).toList()),
+                  _section(
+                    context,
+                    'Popular picks',
+                    shop.products
+                        .where((p) => p.stock == 'in')
+                        .skip(20)
+                        .take(6)
+                        .toList(),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _error(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 46, color: AppTheme.red),
-              const SizedBox(height: 14),
-              Text(shop.loadError!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14)),
-              const SizedBox(height: 18),
-              ElevatedButton(
-                  onPressed: () => shop.start(), child: const Text('Try again')),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.cloud_off, size: 46, color: AppTheme.red),
+          const SizedBox(height: 14),
+          Text(
+            shop.loadError!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14),
           ),
-        ),
-      );
+          const SizedBox(height: 18),
+          ElevatedButton(
+            onPressed: () => shop.start(),
+            child: const Text('Try again'),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _hero(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(22, 30, 22, 30),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppTheme.redDark, AppTheme.redDarker],
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(22, 30, 22, 30),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppTheme.redDark, AppTheme.redDarker],
+      ),
+      border: Border(bottom: BorderSide(color: AppTheme.red, width: 4)),
+    ),
+    child: Column(
+      children: [
+        const Text(
+          'Build Your Dream PC',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          border: Border(bottom: BorderSide(color: AppTheme.red, width: 4)),
         ),
-        child: Column(
-          children: [
-            const Text('Build Your Dream PC',
-                style: TextStyle(
-                    color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              'Quality computer parts, laptops and gaming gear at student-friendly prices.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onBrowse, child: const Text('Shop Now')),
-          ],
+        const SizedBox(height: 8),
+        const Text(
+          'Quality computer parts, laptops and gaming gear at student-friendly prices.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white70, fontSize: 13),
         ),
-      );
+        const SizedBox(height: 16),
+        ElevatedButton(onPressed: onBrowse, child: const Text('Shop Now')),
+      ],
+    ),
+  );
 
   Widget _dealStrip(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF4DD),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFF0D9A8)),
+    margin: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF4DD),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFF0D9A8)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.local_offer, color: AppTheme.amber),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            '${shop.deals.length} promotions running — up to '
+            '${shop.deals.map((d) => d.discountPercent).reduce((a, b) => a > b ? a : b).round()}% off',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
         ),
-        child: Row(
-          children: [
-            const Icon(Icons.local_offer, color: AppTheme.amber),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '${shop.deals.length} promotions running — up to '
-                '${shop.deals.map((d) => d.discountPercent).reduce((a, b) => a > b ? a : b).round()}% off',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => DealsScreen(shop: shop))),
-              child: const Text('View'),
-            ),
-          ],
+        TextButton(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DealsScreen(shop: shop)),
+          ),
+          child: const Text('View'),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _section(BuildContext context, String title, List products) {
     if (products.isEmpty) return const SizedBox.shrink();
@@ -146,8 +198,10 @@ class HomeScreen extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
-          child: Text(title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          ),
         ),
         SizedBox(
           height: 250,

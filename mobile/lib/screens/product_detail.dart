@@ -45,6 +45,14 @@ class ProductDetailScreen extends StatelessWidget {
     'cooler': 'Cooler', 'chassis': 'Chassis', 'touch': 'Touchscreen',
   };
 
+  /// The readable name for a spec key, for any screen that shows specs.
+  ///
+  /// Public so the prebuilt screen can use this map rather than carry a
+  /// second copy. There are already two -- this one and attrLabel() in
+  /// web/js/products.js -- and they must be kept in step by hand; a third
+  /// would be one more place for a label to drift.
+  static String specLabel(String key) => _labels[key] ?? key;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
