@@ -118,8 +118,27 @@ function registerUser(name, email, password) {
       if (!data.session) {
         return "Account created. Check your email to confirm the address, then log in.";
       }
-      return loadSession().then(() => "");
+      return loadSession().then(claimEarlierActivity).then(() => "");
     });
+}
+
+// ------------------------------------------------------------
+// Whatever this browser did before it had an account.
+//
+// Someone browses, decides to buy, and only then signs up. Their
+// browsing was filed under the browser's anon_id and belongs to nobody;
+// this hands it to them, so the purchase has the visits that led to it
+// attached rather than arriving out of nowhere.
+//
+// Waited on rather than fired and forgotten: both callers redirect
+// immediately afterwards, and a request still in flight when the page
+// navigates away is cancelled. It is one round trip. A failure is
+// swallowed — losing the join is a worse dataset, not a failed login,
+// and the customer must not be shown an error about it.
+// ------------------------------------------------------------
+function claimEarlierActivity(user) {
+  if (!user || typeof claimAnonActivity !== "function") return Promise.resolve(user);
+  return claimAnonActivity().then(() => user, () => user);
 }
 
 function registerError(error) {
@@ -159,7 +178,7 @@ function loginUser(email, password) {
     // nothing and the old code called that a failure -- which left the
     // owner signing into their own shop and being told they could not.
     // The sign-in itself was fine; it is the wrong door, not a refusal.
-    return loadSession().then((user) => {
+    return loadSession().then(claimEarlierActivity).then((user) => {
       if (user) return "";
       return isStaffAccount().then((staff) => {
         if (!staff) return "That account cannot sign in to the shop.";

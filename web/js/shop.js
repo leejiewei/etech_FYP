@@ -142,6 +142,14 @@ function renderProductGrid() {
 
   const filtered = sortProducts(products.filter(matchesFilters));
 
+  // This is the one place that knows both what was searched for and how
+  // many products came back, so the search is recorded from here rather
+  // than from the input handler. trackSearch decides whether this
+  // particular call is worth a row — most are not.
+  if (currentSearch.trim() !== "" && typeof trackSearch === "function") {
+    trackSearch(currentSearch, filtered.length);
+  }
+
   grid.innerHTML = "";
   noResults.style.display = filtered.length === 0 ? "block" : "none";
 

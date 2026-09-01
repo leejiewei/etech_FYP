@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
@@ -57,9 +60,64 @@ class Shop extends ChangeNotifier {
   // Start-up
   // ------------------------------------------------------------
   Future<void> start() async {
+    await _loadAnonId();
     await loadProducts();
     await refreshSession();
     await loadDeals();
+  }
+
+  // ------------------------------------------------------------
+  // The id of this phone, as distinct from the person holding it
+  //
+  // customer_id answers "who is this?" and is null for anyone not signed
+  // in, which leaves an anonymous visitor's rows as a heap of unrelated
+  // facts — two views a minute apart from this phone cannot be told from
+  // two views by two strangers. _anonId answers the weaker question "was
+  // this the same phone?", which is all that is needed to group a visit
+  // into a session and, once they sign up, to hand them what they did
+  // before they had an account.
+  //
+  // Made once and kept. It is not a login and proves nothing: the
+  // database does not check it, and it identifies an install rather than
+  // a person. Reinstalling starts a new one, which is correct — that is
+  // a new anonymous visitor as far as anything here can tell.
+  //
+  // Read once at start-up and held, so that tracking a view stays a
+  // fire-and-forget call with no await in front of it.
+  // ------------------------------------------------------------
+  static const String _anonIdKey = 'etech_anon_id';
+  String? _anonId;
+
+  Future<void> _loadAnonId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var id = prefs.getString(_anonIdKey);
+      if (id == null) {
+        id = _newUuidV4();
+        await prefs.setString(_anonIdKey, id);
+      }
+      _anonId = id;
+    } catch (e) {
+      // Storage unavailable. Tracking must never stop the app starting,
+      // so this install is simply untrackable while signed out.
+      debugPrint('Anon id: $e');
+      _anonId = null;
+    }
+  }
+
+  /// A version 4 UUID, which is the type the anon_id column holds.
+  ///
+  /// Written out rather than pulled in: the uuid package would be a new
+  /// dependency for sixteen random bytes, and Random.secure() is the same
+  /// source of randomness it would use.
+  static String _newUuidV4() {
+    final rnd = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
   // ------------------------------------------------------------
@@ -276,6 +334,7 @@ class Shop extends ChangeNotifier {
     }
 
     await refreshSession();
+    await _claimAnonActivity();
     return loggedIn ? null : 'That account cannot sign in to the shop.';
   }
 
@@ -317,6 +376,7 @@ class Shop extends ChangeNotifier {
     }
 
     await refreshSession();
+    await _claimAnonActivity();
     return null;
   }
 
@@ -519,6 +579,7 @@ class Shop extends ChangeNotifier {
     // Fire and forget; a failure here must never interrupt shopping.
     Api.db.from('events').insert({
       'customer_id': _customerId, // null = browsing signed out
+      'anon_id': _anonId, // ...but still the same phone
       'product_id': productId,
       'event_type': 'view',
     }).catchError((e) => debugPrint('Recording a view: $e'));
@@ -527,10 +588,63 @@ class Shop extends ChangeNotifier {
   void logChat(String question, String answer, bool wasBuildRequest) {
     Api.db.from('chatbot_logs').insert({
       'customer_id': _customerId,
+      'anon_id': _anonId,
       'question': question,
       'answer': answer,
       'was_build_request': wasBuildRequest ? 1 : 0,
     }).catchError((e) => debugPrint('Logging the conversation: $e'));
+  }
+
+  /// What was typed into the search box, and how many products came back.
+  ///
+  /// A typed search says more about what somebody wants than a handful of
+  /// taps does, and it is the only signal here that can describe a thing
+  /// the shop does not sell — which is why the count is recorded too. A
+  /// search returning nothing is the most useful row in the table.
+  ///
+  /// The screen filters as you type, so the naive thing would write "r",
+  /// "rt", "rtx" and call the first two searches that found nothing. The
+  /// screen waits until the typing stops before calling this; this end
+  /// drops anything too short to be a question and anything identical to
+  /// what it just wrote, so that tapping a category chip afterwards does
+  /// not log the same search twice.
+  String _lastLoggedSearch = '';
+
+  void trackSearch(String query, int resultCount) {
+    final text = query.trim();
+    if (text.length < 3) return;
+    if (text.toLowerCase() == _lastLoggedSearch) return;
+    _lastLoggedSearch = text.toLowerCase();
+
+    Api.db.from('search_logs').insert({
+      'customer_id': _customerId,
+      'anon_id': _anonId,
+      'query': text,
+      'result_count': resultCount,
+    }).catchError((e) => debugPrint('Recording a search: $e'));
+  }
+
+  /// Hands this phone's signed-out activity to the account that just
+  /// signed in.
+  ///
+  /// Someone browses, decides to buy, and only then makes an account.
+  /// Until this runs, their browsing is filed under _anonId and belongs
+  /// to nobody, so the purchase arrives with nothing leading up to it —
+  /// which is exactly the shape a recommender is trying to learn.
+  ///
+  /// The database function does the work, and can only ever hand rows
+  /// belonging to nobody to whoever is calling; it cannot be made to take
+  /// somebody else's. Awaited rather than fired and forgotten so that it
+  /// finishes before the login screen pops, but a failure is swallowed:
+  /// losing the join is a worse dataset, not a failed sign-in.
+  Future<void> _claimAnonActivity() async {
+    final id = _anonId;
+    if (id == null || !loggedIn) return;
+    try {
+      await Api.db.rpc('claim_anon_activity', params: {'p_anon_id': id});
+    } catch (e) {
+      debugPrint('Claiming earlier activity: $e');
+    }
   }
 
   /// Ask the AI hardware consultant.

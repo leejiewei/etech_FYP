@@ -252,6 +252,7 @@ function logChat(message, reply, wasBuildRequest) {
   const user = getCurrentUser();
   sb.from("chatbot_logs").insert({
     customer_id:       user ? user.id : null,
+    anon_id:           typeof getAnonId === "function" ? getAnonId() : null,
     question:          message,
     answer:            stripFormatting(reply),
     was_build_request: wasBuildRequest ? 1 : 0,
