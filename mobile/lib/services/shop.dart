@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
+import '../models/prebuilt.dart';
 import 'api.dart';
 
 /// Everything the app knows about the shop, in one place.
@@ -27,6 +28,14 @@ class Shop extends ChangeNotifier {
   List<Product> products = [];
   bool loadingProducts = false;
   String? loadError;
+
+  // ---- the shop's own builds ----
+  //
+  // Keyed by the machine's product id. Both are empty for every product
+  // that is not one of the shop's DIY builds, and the helpers below are
+  // written so that an empty map means "nothing to say", never "no".
+  Map<int, PrebuiltAvailability> availability = {};
+  Map<int, List<PrebuiltUpgrade>> upgrades = {};
 
   // ---- who is signed in ----
   Map<String, dynamic>? user;
@@ -153,9 +162,22 @@ class Shop extends ChangeNotifier {
         Api.selectAll(() => Api.db
             .from('product_attributes')
             .select('product_id,attr_key,attr_value')),
+        // The shop's own builds. Fetched with the catalogue rather than
+        // when the Prebuilt tab opens, because the stock badge has to be
+        // right everywhere a machine appears -- search results, the Shop
+        // grid, its own product page -- not only on the one screen.
+        Api.selectAll(() => Api.db.from('prebuilt_availability').select(
+            'prebuilt_id,linked,pending,not_stocked,derived_status,blocking_parts')),
+        Api.selectAll(() => Api.db
+            .from('prebuilt_upgrades')
+            .select('upgrade_id,prebuilt_id,slot,label,price_delta,kind')
+            .eq('is_active', 1)
+            .order('prebuilt_id')
+            .order('sort_order')),
       ]);
 
       products = _shapeCatalogue(results[0], results[1], results[2], results[3]);
+      _shapePrebuilts(results[4], results[5]);
       loadError = null;
     } catch (e) {
       loadError = Api.message(e, 'Could not load the catalogue.');
@@ -231,6 +253,65 @@ class Shop extends ChangeNotifier {
       );
     }).toList();
   }
+
+  // ------------------------------------------------------------
+  // The shop's own builds
+  //
+  // A Gaming or Office machine is assembled here from parts the shop
+  // also sells separately, so "can this be sold?" is a question about
+  // those parts. The database answers it in prebuilt_availability; this
+  // just files the answers by machine.
+  // ------------------------------------------------------------
+  void _shapePrebuilts(
+    List<Map<String, dynamic>> availabilityRows,
+    List<Map<String, dynamic>> upgradeRows,
+  ) {
+    availability = {
+      for (final row in availabilityRows)
+        row['prebuilt_id'] as int: PrebuiltAvailability.fromRow(row),
+    };
+
+    final byMachine = <int, List<PrebuiltUpgrade>>{};
+    for (final row in upgradeRows) {
+      final upgrade = PrebuiltUpgrade.fromRow(row);
+      (byMachine[upgrade.prebuiltId] ??= []).add(upgrade);
+    }
+    upgrades = byMachine;
+  }
+
+  /// The stock status to show for a product.
+  ///
+  /// For anything that is not one of the shop's builds, and for a build
+  /// whose bill of materials is not finished, this is the product's own
+  /// status and nothing has changed. For a build that is fully described,
+  /// the parts decide: one of them out and the machine is out.
+  ///
+  /// Every screen should ask this rather than reading product.stock, so
+  /// that a machine cannot read "In Stock" in the Shop grid and "Out of
+  /// Stock" on the Prebuilt tab.
+  String stockOf(Product p) =>
+      availability[p.id]?.statusOr(p.stock) ?? p.stock;
+
+  bool inStock(Product p) => stockOf(p) != 'out';
+
+  String stockLabelOf(Product p) {
+    switch (stockOf(p)) {
+      case 'in':
+        return 'In Stock';
+      case 'low':
+        return 'Low Stock';
+      default:
+        return 'Out of Stock';
+    }
+  }
+
+  /// Which parts are holding a machine back, when that is why it is out.
+  /// Null whenever there is nothing useful to say.
+  String? blockedBy(Product p) => availability[p.id]?.blockedBy;
+
+  /// The upgrade options offered on a machine, in the shop's own order.
+  List<PrebuiltUpgrade> upgradesFor(int productId) =>
+      upgrades[productId] ?? const [];
 
   // ------------------------------------------------------------
   // Promotions
@@ -426,13 +507,39 @@ class Shop extends ChangeNotifier {
   Future<void> loadCart() async {
     if (!loggedIn) return;
     try {
-      final rows = await Api.db
-          .from('cart_items')
-          .select('product_id,quantity,'
-              'products(name,price,icon,img_slug,image_path,stock_status)')
-          .order('added_at');
+      // Two requests rather than one nested select. cart_item_upgrades
+      // hangs off cart_items by a two-column key, which PostgREST will
+      // not walk without being told which constraint to use; asking for
+      // the rows plainly and matching them up here is the version that
+      // keeps working when the schema is next touched.
+      final results = await Future.wait([
+        Api.db
+            .from('cart_items')
+            .select('product_id,quantity,'
+                'products(name,price,icon,img_slug,image_path,stock_status)')
+            .order('added_at'),
+        Api.db.from('cart_item_upgrades').select(
+            'product_id,prebuilt_upgrades(upgrade_id,prebuilt_id,slot,label,price_delta,kind)'),
+      ]);
 
-      cart = rows.map<CartItem>((r) => CartItem.fromRow(r)).toList();
+      final chosen = <int, List<PrebuiltUpgrade>>{};
+      for (final row in results[1]) {
+        final upgrade = row['prebuilt_upgrades'];
+        if (upgrade == null) continue;
+        (chosen[row['product_id'] as int] ??= []).add(
+          PrebuiltUpgrade.fromRow(Map<String, dynamic>.from(upgrade as Map)),
+        );
+      }
+      for (final list in chosen.values) {
+        list.sort((a, b) => a.slot.compareTo(b.slot));
+      }
+
+      cart = results[0]
+          .map<CartItem>((r) => CartItem.fromRow(
+                r,
+                upgrades: chosen[r['product_id'] as int] ?? const [],
+              ))
+          .toList();
       cartTotal = cart.fold(0, (sum, item) => sum + item.lineTotal);
       notifyListeners();
     } catch (e) {
@@ -446,15 +553,62 @@ class Shop extends ChangeNotifier {
   /// could write those separately it could write the second without the
   /// first, and the score the admin dashboard is built on would mean
   /// nothing. cart_add() does both or neither, and re-checks the stock.
-  Future<String?> addToCart(int productId) async {
+  /// [upgradeIds] are the options ticked on a prebuilt card. They are
+  /// written after the line exists, because cart_item_upgrades is keyed
+  /// on the line and cannot be written before there is one. Adding the
+  /// same machine again replaces its upgrades with the newer choice
+  /// rather than merging the two, which is what a customer changing
+  /// their mind on the card expects to happen.
+  Future<String?> addToCart(
+    int productId, {
+    List<int> upgradeIds = const [],
+  }) async {
     if (!loggedIn) return 'Please sign in first.';
     try {
       await Api.db.rpc('cart_add', params: {'p_product_id': productId});
     } catch (e) {
       return Api.message(e, 'Could not add that.');
     }
+
+    if (upgradeIds.isNotEmpty) {
+      final customerId = user?['customer_id'];
+      try {
+        await Api.db
+            .from('cart_item_upgrades')
+            .delete()
+            .eq('product_id', productId);
+        await Api.db.from('cart_item_upgrades').insert([
+          for (final id in upgradeIds)
+            {
+              'customer_id': customerId,
+              'product_id': productId,
+              'upgrade_id': id,
+            },
+        ]);
+      } catch (e) {
+        // The machine is in the basket either way; say so plainly rather
+        // than leaving the customer thinking nothing happened.
+        await loadCart();
+        return Api.message(e, 'Added, but the upgrades could not be saved.');
+      }
+    }
+
     await loadCart();
     return null;
+  }
+
+  /// Drop one upgrade from a basket line, from the cart screen.
+  Future<void> removeUpgrade(int productId, int upgradeId) async {
+    try {
+      await Api.db
+          .from('cart_item_upgrades')
+          .delete()
+          .eq('product_id', productId)
+          .eq('upgrade_id', upgradeId);
+    } catch (e) {
+      debugPrint('Removing an upgrade: $e');
+    }
+    await loadCart();
   }
 
   Future<void> setQty(int productId, int qty) async {

@@ -78,7 +78,13 @@ class ProductCard extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             const Spacer(),
             const SizedBox(height: 6),
-            StockPill(stock: product.stock, label: product.stockLabel),
+            // shop.stockOf, not product.stock: one of the shop's own
+            // builds is only available when its parts are, and it has to
+            // read the same here as on the Prebuilt tab.
+            StockPill(
+              stock: shop.stockOf(product),
+              label: shop.stockLabelOf(product),
+            ),
             const SizedBox(height: 6),
             Text(money(product.price),
                 style: const TextStyle(

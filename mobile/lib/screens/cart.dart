@@ -52,6 +52,46 @@ class CartScreen extends StatelessWidget {
                                 Text(money(item.price),
                                     style: TextStyle(
                                         fontSize: 12, color: Colors.grey.shade600)),
+                                // Upgrades chosen on the prebuilt card.
+                                // Listed on the line they belong to,
+                                // priced, and removable here -- this is
+                                // where the customer confirms them, so
+                                // this is where changing their mind has
+                                // to be possible.
+                                if (item.upgrades.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  ...item.upgrades.map(
+                                    (u) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.add,
+                                              size: 12, color: AppTheme.redDark),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              '${u.label}  +${money(u.priceDelta)}',
+                                              style: TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: Colors.grey.shade800),
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () => shop.removeUpgrade(
+                                                item.id, u.id),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.all(3),
+                                              child: Icon(Icons.close,
+                                                  size: 13,
+                                                  color: Colors.grey.shade500),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [

@@ -113,6 +113,7 @@ function keepQuery(extra) {
 const ADMIN_MENU = [
   ["dashboard",  "index.html",        "Dashboard"],
   ["products",   "products.html",     "Products"],
+  ["prebuilts",  "prebuilts.html",    "Prebuilt Parts"],
   ["coupons",    "coupons.html",      "Promotions"],
   ["orders",     "orders.html",       "Orders"],
   ["chatlogs",   "chatlogs.html",     "Chatbot Logs"],

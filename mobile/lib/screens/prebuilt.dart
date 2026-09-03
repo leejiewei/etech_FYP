@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/prebuilt.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
@@ -67,6 +68,14 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
   ];
 
   String _filter = 'All';
+
+  /// The upgrades ticked on each machine's card, by machine id. Held on
+  /// the screen rather than in the basket, because nothing has been
+  /// bought yet -- they travel to the basket with the Add button, and
+  /// the cart screen is where they become real.
+  final Map<int, Set<int>> _chosen = {};
+
+  Set<int> _chosenFor(int id) => _chosen.putIfAbsent(id, () => <int>{});
 
   /// Which range a machine belongs to, or null if it belongs to none --
   /// in which case this screen does not show it.
@@ -187,8 +196,25 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
   );
 
   Widget _machineCard(Product p) {
-    final outOfStock = p.stock == 'out';
-    final upgrades = _upgradeNote(p);
+    // Not p.stock. For the shop's own builds this is the answer the
+    // parts give -- one component out and the machine is out -- and for
+    // everything else it is p.stock unchanged. See Shop.stockOf.
+    final stock = widget.shop.stockOf(p);
+    final outOfStock = stock == 'out';
+    final blockedBy = widget.shop.blockedBy(p);
+    final options = widget.shop.upgradesFor(p.id);
+    // An upgrade changes the machine itself; an accessory is sold beside
+    // it at a with-purchase price. Same tick box, different fact, so
+    // they get separate headings rather than one mixed list.
+    final upgradeOptions = options.where((u) => !u.isAccessory).toList();
+    final accessoryOptions = options.where((u) => u.isAccessory).toList();
+    final chosen = _chosenFor(p.id);
+    final extra = options
+        .where((u) => chosen.contains(u.id))
+        .fold<double>(0, (sum, u) => sum + u.priceDelta);
+    // Only fall back to the prose when there is nothing better. A machine
+    // with real options should not show the sentence they came from.
+    final upgrades = options.isEmpty ? _upgradeNote(p) : null;
     final specs = _orderedSpecs(p);
 
     return Container(
@@ -256,7 +282,16 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
-          StockPill(stock: p.stock, label: p.stockLabel),
+          StockPill(stock: stock, label: widget.shop.stockLabelOf(p)),
+          // Saying which part is missing is the difference between a
+          // customer giving up and a customer asking when it is back.
+          if (blockedBy != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Waiting on: $blockedBy',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
+          ],
           if (specs.isNotEmpty) ...[
             const SizedBox(height: 10),
             ...specs.map(
@@ -312,17 +347,51 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
               ),
             ),
           ],
+          if (upgradeOptions.isNotEmpty)
+            _optionBlock(
+              title: 'Add on at build time',
+              hint: 'Ticked here, confirmed in your cart.',
+              options: upgradeOptions,
+              all: options,
+              chosen: chosen,
+              enabled: !outOfStock,
+            ),
+          if (accessoryOptions.isNotEmpty)
+            _optionBlock(
+              title: 'Buy with this machine',
+              hint: 'Shop prices for buying alongside a PC.',
+              options: accessoryOptions,
+              all: options,
+              chosen: chosen,
+              enabled: !outOfStock,
+            ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: Text(
-                  money(p.price),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.redDark,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      money(p.price + extra),
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.redDark,
+                      ),
+                    ),
+                    // The base price stays visible next to the new one,
+                    // so nobody has to work out what the ticks did.
+                    if (extra > 0)
+                      Text(
+                        '${money(p.price)} + ${money(extra)} upgrades',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               ElevatedButton(
@@ -336,11 +405,89 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
     );
   }
 
-  Future<void> _add(Product p) async {
-    final error = await widget.shop.addToCart(p.id);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error ?? '${p.name} added to your cart.')),
+  /// One tickable list. [options] is what this block shows; [all] is
+  /// every option on the machine, because the one-swap-per-slot rule has
+  /// to see across both blocks -- a cooler upgrade and a cooler
+  /// accessory would still be two coolers.
+  Widget _optionBlock({
+    required String title,
+    required String hint,
+    required List<PrebuiltUpgrade> options,
+    required List<PrebuiltUpgrade> all,
+    required Set<int> chosen,
+    required bool enabled,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F8FA),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFE8EAED)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              hint,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+            ...options.map((u) {
+              return CheckboxListTile(
+                value: chosen.contains(u.id),
+                onChanged: !enabled
+                    ? null
+                    : (on) => setState(() {
+                        if (on == true) {
+                          // One swap per slot: a machine has one graphics
+                          // card, so ticking a second graphics upgrade
+                          // replaces the first rather than charging for
+                          // both. The two peripheral sets are
+                          // alternatives for the same reason.
+                          chosen.removeWhere((id) =>
+                              all.any((o) => o.id == id && o.slot == u.slot));
+                          chosen.add(u.id);
+                        } else {
+                          chosen.remove(u.id);
+                        }
+                      }),
+                title: Text(u.label, style: const TextStyle(fontSize: 12.5)),
+                subtitle: Text(
+                  '+${money(u.priceDelta)}  ·  '
+                  '${ProductDetailScreen.specLabel(u.slot)}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.redDark,
+              );
+            }),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _add(Product p) async {
+    final picked = _chosenFor(p.id).toList();
+    final error = await widget.shop.addToCart(p.id, upgradeIds: picked);
+    if (!mounted) return;
+
+    final added = picked.isEmpty
+        ? '${p.name} added to your cart.'
+        : '${p.name} added with ${picked.length} '
+              '${picked.length == 1 ? 'upgrade' : 'upgrades'}.';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error ?? added)));
   }
 }

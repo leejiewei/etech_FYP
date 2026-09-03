@@ -904,6 +904,89 @@ footer {
   margin: 10px 0;
 }
 
+/* ---------- Prebuilt upgrades, and why a machine is unavailable ---------- */
+
+/* Which part is holding a machine back. The difference between a
+   customer giving up and a customer asking when it is back. */
+.prebuilt-waiting {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #777;
+}
+
+.addon-list .addon-hint {
+  margin: 2px 0 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* One tickable upgrade: name on the left, what it adds on the right. */
+.addon-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+  border-top: 1px solid #eee;
+}
+
+.addon-option span {
+  flex: 1;
+}
+
+.addon-option em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--red-dark);
+  white-space: nowrap;
+}
+
+.addon-option.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The base price, kept visible beside the new one so nobody has to work
+   out what the ticks did. */
+.prebuilt-price-basis {
+  margin: -6px 0 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* The same upgrades once they are in the basket, under the line they
+   belong to. */
+.cart-upgrades {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 12px;
+  color: #555;
+}
+
+.cart-upgrades li {
+  padding: 1px 0;
+}
+
+.cart-upgrades em {
+  font-style: normal;
+  color: var(--red-dark);
+}
+
+.upgrade-drop {
+  border: none;
+  background: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.upgrade-drop:hover {
+  color: var(--red-dark);
+}
+
 /* ---------- Deals page ---------- */
 .countdown-banner {
   background-color: var(--red-dark);

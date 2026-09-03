@@ -43,6 +43,11 @@ class ProductDetailScreen extends StatelessWidget {
     'sku': 'SKU', 'cpu': 'Processor', 'gpu': 'Graphics',
     'motherboard': 'Motherboard', 'ssd': 'SSD', 'psu': 'Power Supply',
     'cooler': 'Cooler', 'chassis': 'Chassis', 'touch': 'Touchscreen',
+    // Not specs any product carries -- the slots a prebuilt upgrade or
+    // accessory sits in when it adds something rather than replacing a
+    // part. Kept in step with attrLabel() in web/js/products.js.
+    'extras': 'Extras', 'monitor': 'Monitor',
+    'peripherals': 'Keyboard & Mouse', 'audio': 'Audio',
   };
 
   /// The readable name for a spec key, for any screen that shows specs.
@@ -106,7 +111,10 @@ class ProductDetailScreen extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: AppTheme.redDark)),
                       const SizedBox(width: 12),
-                      StockPill(stock: product.stock, label: product.stockLabel),
+                      StockPill(
+                        stock: shop.stockOf(product),
+                        label: shop.stockLabelOf(product),
+                      ),
                     ]),
                   ],
                 ),
@@ -136,11 +144,12 @@ class ProductDetailScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: Text(product.inStock ? 'Add to Cart' : 'Out of Stock'),
+                  label: Text(
+                      shop.inStock(product) ? 'Add to Cart' : 'Out of Stock'),
                   style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          product.inStock ? AppTheme.red : Colors.grey.shade400),
-                  onPressed: product.inStock
+                          shop.inStock(product) ? AppTheme.red : Colors.grey.shade400),
+                  onPressed: shop.inStock(product)
                       ? () async {
                           final error = await shop.addToCart(product.id);
                           if (!context.mounted) return;

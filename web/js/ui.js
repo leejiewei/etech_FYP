@@ -16,10 +16,14 @@ function buildProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
 
-  const stockClass = "stock-" + product.stock; // stock-in / stock-low / stock-out
+  // stockOf, not product.stock: one of the shop's own builds is only
+  // available when its parts are, and it must read the same here as it
+  // does on the Prebuilt page. For everything else this is product.stock.
+  const stock = stockOf(product);
+  const stockClass = "stock-" + stock; // stock-in / stock-low / stock-out
   const heartFilled = typeof isInWishlist === "function" && isInWishlist(product.id);
   const comparing = typeof isInCompare === "function" && isInCompare(product.id);
-  const outOfStock = product.stock === "out";
+  const outOfStock = stock === "out";
 
   card.innerHTML = `
     <button class="wishlist-btn ${heartFilled ? "active" : ""}" onclick="toggleWishlist(${product.id})" title="Add to wishlist">
@@ -30,7 +34,7 @@ function buildProductCard(product) {
     </div>
     <h3>${product.name}</h3>
     <p class="product-category">${product.category}${product.subcategory ? " · " + product.subcategory : ""}</p>
-    <p class="stock-badge ${stockClass}">${stockLabel(product.stock)}</p>
+    <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
     <p class="product-price">RM ${product.price.toFixed(2)}</p>
     <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
       ${outOfStock ? "Out of Stock" : "Add to Cart"}
@@ -126,7 +130,8 @@ function buildProductModalShell() {
 }
 
 function productModalContent(product) {
-  const outOfStock = product.stock === "out";
+  const stock = stockOf(product);
+  const outOfStock = stock === "out";
   const saved = typeof isInWishlist === "function" && isInWishlist(product.id);
 
   // The same specs the compare table shows, through the same label
@@ -152,7 +157,7 @@ function productModalContent(product) {
         <p class="product-modal-meta">${product.brand} · ${product.category}${
           product.subcategory ? " · " + product.subcategory : ""
         }</p>
-        <p class="stock-badge stock-${product.stock}">${stockLabel(product.stock)}</p>
+        <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
         <p class="product-modal-price">RM ${product.price.toFixed(2)}</p>
         ${product.description
           ? `<p class="product-modal-desc">${product.description}</p>`

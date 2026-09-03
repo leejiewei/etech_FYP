@@ -24,19 +24,50 @@ let cartTotal = 0;
 // api/cart.php was running; PostgREST spells the join as a nested
 // select.
 function fetchCart() {
-  return sb.from("cart_items")
-    .select("product_id,quantity,products(name,price,icon,img_slug,image_path,stock_status)")
-    .order("added_at")
-    .then(({ data, error }) => {
-      if (error) { console.error("Reading the basket:", error); return; }
-      applyCart(data);
-    });
+  // Two requests rather than one nested select. cart_item_upgrades hangs
+  // off cart_items by a two-column key, which PostgREST will not walk
+  // without being told which constraint to use; asking for the rows
+  // plainly and matching them up here keeps working when the schema is
+  // next touched.
+  return Promise.all([
+    sb.from("cart_items")
+      .select("product_id,quantity,products(name,price,icon,img_slug,image_path,stock_status)")
+      .order("added_at"),
+    sb.from("cart_item_upgrades")
+      .select("product_id,prebuilt_upgrades(upgrade_id,slot,label,price_delta,kind)"),
+  ]).then(([lines, upgrades]) => {
+    if (lines.error) { console.error("Reading the basket:", lines.error); return; }
+    if (upgrades.error) console.error("Reading basket upgrades:", upgrades.error);
+    applyCart(lines.data, upgrades.data || []);
+  });
 }
 
 // Turns basket rows into what the page draws, and refreshes it.
-function applyCart(rows) {
+function applyCart(rows, upgradeRows) {
+  const chosen = {};
+  (upgradeRows || []).forEach((row) => {
+    if (!row.prebuilt_upgrades) return;
+    (chosen[row.product_id] ||= []).push({
+      id: row.prebuilt_upgrades.upgrade_id,
+      slot: row.prebuilt_upgrades.slot,
+      label: row.prebuilt_upgrades.label,
+      priceDelta: Number(row.prebuilt_upgrades.price_delta),
+      kind: row.prebuilt_upgrades.kind || "upgrade",
+    });
+  });
+  Object.values(chosen).forEach((list) =>
+    list.sort((a, b) => a.slot.localeCompare(b.slot)));
+
   cartItems = rows.map((row) => {
     const product = row.products;
+    const upgrades = chosen[row.product_id] || [];
+    // Each machine carries its own upgrades, so two of them cost two
+    // upgrade fees -- the same way two of anything costs twice. This is
+    // the same arithmetic place_order does on the other side; if the two
+    // ever disagree the database wins, because it is the one charging.
+    const perUnit = Number(product.price) +
+      upgrades.reduce((sum, u) => sum + u.priceDelta, 0);
+
     return {
       id:        row.product_id,
       name:      product.name,
@@ -46,7 +77,8 @@ function applyCart(rows) {
       img:       product.img_slug,
       imagePath: product.image_path,
       stock:     product.stock_status,
-      lineTotal: Number(product.price) * row.quantity,
+      upgrades:  upgrades,
+      lineTotal: perUnit * row.quantity,
     };
   });
 
@@ -78,23 +110,79 @@ function getCart() {
 // It also re-checks the stock. The test below is only there to save a
 // round trip on the obvious case; the database makes up its own mind.
 // ------------------------------------------------------------
-function addToCart(productId) {
+// [upgradeIds] are the options ticked on a prebuilt card. They are
+// written after the line exists, because cart_item_upgrades is keyed on
+// the line and there is nothing to key to before then. Adding the same
+// machine again replaces its upgrades with the newer choice rather than
+// merging the two, which is what a customer changing their mind on the
+// card expects.
+//
+// Only the ids travel. What each one costs is read from
+// prebuilt_upgrades by place_order, on the server -- a browser that
+// could name its own price is not a shop, which is the same reason
+// adding goes through cart_add rather than an insert.
+function addToCart(productId, upgradeIds) {
   if (!isLoggedIn()) {
     askToLogIn("You need an account to add things to your cart.");
     return;
   }
   const product = getProductById(productId);
-  if (product && product.stock === "out") {
+  // stockOf, not product.stock: for one of the shop's own builds this is
+  // the answer its parts give.
+  if (product && stockOf(product) === "out") {
     alert("Sorry, " + product.name + " is out of stock.");
     return;
   }
 
+  const picked = upgradeIds || [];
+
   sb.rpc("cart_add", { p_product_id: productId }).then(({ error }) => {
     if (error) { alert(dbMessage(error, "Could not add that to your cart.")); return; }
-    fetchCart().then(() => {
-      if (product) alert(product.name + " added to cart!");
-    });
+    if (!picked.length) {
+      fetchCart().then(() => {
+        if (product) alert(product.name + " added to cart!");
+      });
+      return;
+    }
+
+    saveUpgrades(productId, picked)
+      .then((upgradeError) => fetchCart().then(() => {
+        if (upgradeError) {
+          alert("Added, but the upgrades could not be saved: " +
+                dbMessage(upgradeError, "please try again from your cart."));
+        } else if (product) {
+          alert(product.name + " added with " + picked.length +
+                (picked.length === 1 ? " upgrade!" : " upgrades!"));
+        }
+      }));
   });
+}
+
+function saveUpgrades(productId, upgradeIds) {
+  // shapeCustomer() in auth.js renames customer_id to id; the policy on
+  // cart_item_upgrades checks this against current_customer_id() anyway,
+  // so a wrong value here is refused rather than written.
+  const customerId = getCurrentUser().id;
+  return sb.from("cart_item_upgrades").delete().eq("product_id", productId)
+    .then(() => sb.from("cart_item_upgrades").insert(
+      upgradeIds.map((id) => ({
+        customer_id: customerId,
+        product_id: productId,
+        upgrade_id: id,
+      }))))
+    .then(({ error }) => error || null)
+    .catch((error) => error);
+}
+
+// Drop one upgrade from a basket line, from the cart page.
+function removeUpgrade(productId, upgradeId) {
+  sb.from("cart_item_upgrades").delete()
+    .eq("product_id", productId)
+    .eq("upgrade_id", upgradeId)
+    .then(({ error }) => {
+      if (error) { alert(dbMessage(error, "Could not remove that upgrade.")); return; }
+      fetchCart();
+    });
 }
 
 function removeFromCart(productId) {
@@ -175,6 +263,15 @@ function drawCartTable() {
         <img class="cart-img" src="${firstSrc}" alt="${item.name}"
           onerror="this.onerror=null; this.src='${fallbackSrc}';" />
         <span>${item.name}</span>
+        ${item.upgrades && item.upgrades.length ? `
+        <ul class="cart-upgrades">
+          ${item.upgrades.map((u) => `
+            <li>+ ${u.label} <em>RM ${u.priceDelta.toFixed(2)}</em>
+                <button type="button" class="upgrade-drop"
+                        title="Remove this upgrade"
+                        onclick="removeUpgrade(${item.id}, ${u.id})">&times;</button>
+            </li>`).join("")}
+        </ul>` : ""}
       </td>
       <td>RM ${item.price.toFixed(2)}</td>
       <td>

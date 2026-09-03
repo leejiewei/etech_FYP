@@ -22,6 +22,12 @@
 let products = [];          // filled in by loadProducts()
 let productsLoaded = false;
 
+// The shop's own builds, keyed by the machine's product id. Both stay
+// empty for every product that is not one, and the helpers below are
+// written so an empty map means "nothing to say", never "no".
+let prebuiltAvailability = {};
+let prebuiltUpgrades = {};
+
 // Slot order used by the PC Builder page.
 const builderSlots = ["CPU", "Cooler", "Motherboard", "RAM", "GPU", "Storage", "PSU", "Case"];
 
@@ -86,9 +92,22 @@ function loadProducts() {
     selectAllRows(() => sb.from("brands").select("brand_id,name")),
     selectAllRows(() => sb.from("categories").select("category_id,name,parent_id")),
     selectAllRows(() => sb.from("product_attributes").select("product_id,attr_key,attr_value")),
+    // The shop's own builds. Fetched with the catalogue rather than when
+    // the Prebuilt page opens, because a machine's stock badge has to
+    // read the same everywhere it appears -- search, the shop grid, the
+    // product modal -- not only on the one page.
+    selectAllRows(() => sb.from("prebuilt_availability")
+      .select("prebuilt_id,linked,pending,not_stocked,derived_status,blocking_parts")),
+    selectAllRows(() => sb.from("prebuilt_upgrades")
+      .select("upgrade_id,prebuilt_id,slot,label,price_delta,kind")
+      .eq("is_active", 1)
+      .order("prebuilt_id")
+      .order("sort_order")),
   ])
-    .then(([productRows, brandRows, categoryRows, attributeRows]) => {
+    .then(([productRows, brandRows, categoryRows, attributeRows,
+            availabilityRows, upgradeRows]) => {
       products = shapeCatalogue(productRows, brandRows, categoryRows, attributeRows);
+      shapePrebuilts(availabilityRows, upgradeRows);
     })
     .catch((error) => {
       console.error("Loading the catalogue failed:", error);
@@ -180,6 +199,86 @@ function stockLabel(stock) {
   return "Out of Stock";
 }
 
+// ------------------------------------------------------------
+// The shop's own builds
+//
+// A Gaming or Office machine is assembled here from parts the shop also
+// sells separately, so "can this be sold?" is a question about those
+// parts rather than about the machine's own row. The database works it
+// out in prebuilt_availability; this files the answers by machine and
+// hands them out.
+//
+// The mobile app carries the same three helpers in Shop (stockOf,
+// blockedBy, upgradesFor). The two have to agree, because they are
+// describing one shop.
+// ------------------------------------------------------------
+function shapePrebuilts(availabilityRows, upgradeRows) {
+  prebuiltAvailability = {};
+  availabilityRows.forEach((row) => {
+    prebuiltAvailability[row.prebuilt_id] = row;
+  });
+
+  prebuiltUpgrades = {};
+  upgradeRows.forEach((row) => {
+    (prebuiltUpgrades[row.prebuilt_id] ||= []).push({
+      id: row.upgrade_id,
+      slot: row.slot,
+      label: row.label,
+      priceDelta: Number(row.price_delta),
+      kind: row.kind || "upgrade",
+    });
+  });
+}
+
+// True once every slot of a machine has been answered, so its derived
+// status can be trusted on its own.
+function prebuiltIsDescribed(productId) {
+  const row = prebuiltAvailability[productId];
+  return Boolean(row) && Number(row.pending) === 0 && row.derived_status;
+}
+
+// The stock status to show for a product.
+//
+// For anything that is not one of the shop's builds, and for a build
+// whose bill of materials is unfinished, this is the product's own
+// status and nothing has changed. For a build that is fully described,
+// the parts decide: one of them out and the machine is out.
+//
+// Every page should ask this rather than reading product.stock, so a
+// machine cannot read "In Stock" in the shop grid and "Out of Stock" on
+// the Prebuilt page.
+function stockOf(product) {
+  if (!product) return "in";
+  return prebuiltIsDescribed(product.id)
+    ? prebuiltAvailability[product.id].derived_status
+    : product.stock;
+}
+
+// Which parts are holding a machine back, when that is why it is out.
+// Null whenever there is nothing useful to say.
+function blockedBy(productId) {
+  const row = prebuiltAvailability[productId];
+  if (!prebuiltIsDescribed(productId)) return null;
+  if (row.derived_status !== "out" || !row.blocking_parts) return null;
+  return row.blocking_parts;
+}
+
+// Everything tickable on a machine, in the shop's own order.
+function upgradesFor(productId) {
+  return prebuiltUpgrades[productId] || [];
+}
+
+// An upgrade changes the machine itself; an accessory is sold beside it
+// at a with-purchase price. Same tick box, different fact, so the card
+// lists them under separate headings.
+function machineUpgrades(productId) {
+  return upgradesFor(productId).filter((u) => u.kind !== "accessory");
+}
+
+function machineAccessories(productId) {
+  return upgradesFor(productId).filter((u) => u.kind === "accessory");
+}
+
 // Turns an attrs key into something readable, e.g. "screenSize" -> "Screen Size".
 // Used by the shop filters and the compare table.
 function attrLabel(key) {
@@ -266,6 +365,13 @@ function attrLabel(key) {
     cooler: "Cooler",
     chassis: "Chassis",
     touch: "Touchscreen",
+    // Not specs any product carries -- the slots a prebuilt upgrade or
+    // accessory sits in when it adds something rather than replacing a
+    // part. Kept in step with _labels in mobile/lib/screens/product_detail.dart.
+    extras: "Extras",
+    monitor: "Monitor",
+    peripherals: "Keyboard & Mouse",
+    audio: "Audio",
   };
   return labels[key] || key;
 }
