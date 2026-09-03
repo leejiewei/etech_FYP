@@ -6,7 +6,7 @@ import 'screens/home.dart';
 import 'screens/shop_screen.dart';
 import 'screens/builder.dart';
 import 'screens/cart.dart';
-import 'screens/account.dart';
+import 'screens/prebuilt.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,7 +65,7 @@ class _MainShellState extends State<MainShell> {
           ShopScreen(shop: widget.shop),
           BuilderScreen(shop: widget.shop),
           CartScreen(shop: widget.shop),
-          AccountScreen(shop: widget.shop),
+          PrebuiltScreen(shop: widget.shop),
         ];
 
         return Scaffold(
@@ -98,9 +98,9 @@ class _MainShellState extends State<MainShell> {
                 label: 'Cart',
               ),
               const NavigationDestination(
-                  icon: Icon(Icons.person_outline),
-                  selectedIcon: Icon(Icons.person, color: AppTheme.red),
-                  label: 'Account'),
+                  icon: Icon(Icons.desktop_windows_outlined),
+                  selectedIcon: Icon(Icons.desktop_windows, color: AppTheme.red),
+                  label: 'Prebuilt'),
             ],
           ),
         );

@@ -3,7 +3,7 @@ import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/product_card.dart';
 import 'deals.dart';
-import 'prebuilt.dart';
+import 'account.dart';
 import 'chat.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -46,16 +46,16 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          // The bottom bar already carries five destinations, which is as
-          // many as a NavigationBar holds comfortably. Prebuilt sits
-          // beside Deals instead -- one tap from home, the same place the
-          // website keeps it.
+          // Prebuilt PCs holds a bottom-bar destination now that it is
+          // four shop-facing ranges. Account trades places with it: it is
+          // opened once in a while, not browsed, so it sits up here
+          // beside Deals.
           IconButton(
-            tooltip: 'Prebuilt PCs',
-            icon: const Icon(Icons.desktop_windows_outlined),
+            tooltip: 'Account',
+            icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => PrebuiltScreen(shop: shop)),
+              MaterialPageRoute(builder: (_) => AccountScreen(shop: shop)),
             ),
           ),
           IconButton(
