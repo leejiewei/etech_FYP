@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/product_image.dart';
+import 'compare.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -68,6 +69,46 @@ class ProductDetailScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(product.brand),
             actions: [
+              // The website ticks a Compare box on the product card in
+              // the grid. A phone card has no room for a second control
+              // beside the heart, so the shortlist is built from here
+              // instead -- one tap deeper, but on the screen where
+              // someone is actually weighing a product up.
+              IconButton(
+                tooltip: shop.inCompare(product.id)
+                    ? 'Remove from compare'
+                    : 'Add to compare',
+                icon: Icon(
+                  shop.inCompare(product.id)
+                      ? Icons.compare_arrows
+                      : Icons.compare_arrows_outlined,
+                ),
+                onPressed: () {
+                  final refused = shop.toggleCompare(product.id);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(refused ??
+                          (shop.inCompare(product.id)
+                              ? 'Added to compare (${shop.compare.length}'
+                                  ' of ${Shop.maxCompare}).'
+                              : 'Removed from compare.')),
+                      duration: const Duration(seconds: 2),
+                      action: shop.compare.length > 1
+                          ? SnackBarAction(
+                              label: 'Compare',
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CompareScreen(shop: shop),
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              ),
               IconButton(
                 icon: Icon(saved ? Icons.favorite : Icons.favorite_border),
                 onPressed: () async {

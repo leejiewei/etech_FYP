@@ -4,6 +4,7 @@ import '../services/shop.dart';
 import '../theme.dart';
 import 'login.dart';
 import 'orders.dart';
+import 'compare.dart';
 import 'wishlist.dart';
 import 'profile_edit.dart';
 
@@ -68,6 +69,22 @@ class AccountScreen extends StatelessWidget {
                 () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => ProfileEditScreen(shop: shop)))),
           ],
+          // Below the account's own things, and outside the signed-in
+          // block on purpose: a comparison lives on this phone rather
+          // than in the database, so it works before anyone has an
+          // account -- which is exactly when someone is still deciding
+          // what to buy.
+          _tile(
+            context,
+            Icons.compare_arrows,
+            'Compare',
+            shop.compare.isEmpty
+                ? 'Line up to ${Shop.maxCompare} products side by side'
+                : '${shop.compare.length} of ${Shop.maxCompare} shortlisted',
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => CompareScreen(shop: shop))),
+          ),
+
           // Staff only. It names the service the shop is built on and
           // shows its address, which is nobody's business but ours -- a
           // customer has no use for it and a stranger should not be told

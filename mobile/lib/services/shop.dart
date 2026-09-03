@@ -54,6 +54,17 @@ class Shop extends ChangeNotifier {
   double cartTotal = 0;
   List<int> wishlist = [];
 
+  // ---- the compare shortlist ----
+  //
+  // Deliberately not a table. A wishlist is a decision the customer wants
+  // kept -- it follows them between devices and the shop can learn from
+  // it. A comparison is scratch paper: three products held side by side
+  // for the two minutes it takes to choose one. Writing that to the
+  // database would put noise in the very rows Objective 1's recommender
+  // reads. The website keeps it in localStorage for the same reason;
+  // this is the phone's equivalent.
+  List<int> compare = [];
+
   // ---- promotions ----
   List<Deal> deals = [];
 
@@ -70,6 +81,7 @@ class Shop extends ChangeNotifier {
   // ------------------------------------------------------------
   Future<void> start() async {
     await _loadAnonId();
+    await _loadCompare();
     await loadProducts();
     await refreshSession();
     await loadDeals();
@@ -652,6 +664,76 @@ class Shop extends ChangeNotifier {
   }
 
   bool inWishlist(int productId) => wishlist.contains(productId);
+
+  // ------------------------------------------------------------
+  // The compare shortlist
+  //
+  // Three at a time, the same ceiling the website uses -- four columns
+  // of specifications do not fit on a phone, and the point of comparing
+  // is to narrow down rather than to list everything.
+  // ------------------------------------------------------------
+  static const int maxCompare = 3;
+  static const String _compareKey = 'etech_compare';
+
+  Future<void> _loadCompare() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      compare = (prefs.getStringList(_compareKey) ?? [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toList();
+    } catch (e) {
+      // Same rule as the anon id: storage trouble must never stop the
+      // app starting. The shortlist just does not survive a restart.
+      debugPrint('Reading the compare list: $e');
+      compare = [];
+    }
+  }
+
+  Future<void> _saveCompare() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _compareKey,
+        compare.map((id) => '$id').toList(),
+      );
+    } catch (e) {
+      debugPrint('Saving the compare list: $e');
+    }
+  }
+
+  bool inCompare(int productId) => compare.contains(productId);
+
+  /// Adds or removes a product. Returns a message when it could not be
+  /// added, so the screen can say why rather than appearing to ignore
+  /// the tap.
+  String? toggleCompare(int productId) {
+    if (compare.contains(productId)) {
+      compare.remove(productId);
+    } else {
+      if (compare.length >= maxCompare) {
+        return 'You can compare $maxCompare products at a time. '
+            'Remove one first.';
+      }
+      compare.add(productId);
+    }
+    _saveCompare();
+    notifyListeners();
+    return null;
+  }
+
+  void clearCompare() {
+    compare.clear();
+    _saveCompare();
+    notifyListeners();
+  }
+
+  /// The shortlisted products, skipping any id whose product has since
+  /// left the catalogue.
+  List<Product> get compareProducts => compare
+      .map((id) => products.where((p) => p.id == id).firstOrNull)
+      .whereType<Product>()
+      .toList();
 
   /// Like adding to the basket, this goes through a database function:
   /// adding records an activity and removing does not, and the app should
