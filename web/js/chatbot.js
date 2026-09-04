@@ -28,15 +28,18 @@ function answerQuestion(message) {
       const cpus = products.filter((p) => p.subcategory === "CPU" && p.attrs.socket === socketLabel);
       const boards = products.filter((p) => p.subcategory === "Motherboard" && p.attrs.socket === socketLabel);
       const ramGen = boards[0] ? boards[0].attrs.ramGen : "?";
-      return `${socketLabel} boards use ${ramGen} memory. CPUs available: ${cpus.map((c) => c.name).join(", ") || "none in stock"}. ` +
-        `Motherboards available: ${boards.map((b) => b.name).join(", ") || "none in stock"}.`;
+      // These land in a chat bubble through innerHTML, and every name in
+      // them comes out of the catalogue -- see js/escape.js.
+      return `${escapeHtml(socketLabel)} boards use ${escapeHtml(ramGen)} memory. ` +
+        `CPUs available: ${escapeHtml(cpus.map((c) => c.name).join(", ")) || "none in stock"}. ` +
+        `Motherboards available: ${escapeHtml(boards.map((b) => b.name).join(", ")) || "none in stock"}.`;
     }
   }
 
   if (text.includes("ddr4") || text.includes("ddr5")) {
     const ramGen = text.includes("ddr5") ? "DDR5" : "DDR4";
     const ramSticks = products.filter((p) => p.subcategory === "RAM" && p.attrs.ramGen === ramGen);
-    return `${ramGen} RAM kits we carry: ${ramSticks.map((r) => r.name).join(", ") || "none right now"}.`;
+    return `${escapeHtml(ramGen)} RAM kits we carry: ${escapeHtml(ramSticks.map((r) => r.name).join(", ")) || "none right now"}.`;
   }
 
   if (text.includes("psu") || text.includes("power supply") || text.includes("wattage")) {
@@ -166,8 +169,8 @@ function recommendationCard(product) {
     <div class="chat-rec" onclick="openProductModal(${product.id})">
       ${productImageTag(product, "chat-rec-img")}
       <div class="chat-rec-body">
-        <span class="chat-rec-name">${product.name}</span>
-        <span class="chat-rec-meta">${product.subcategory || product.category} ·
+        <span class="chat-rec-name">${escapeHtml(product.name)}</span>
+        <span class="chat-rec-meta">${escapeHtml(product.subcategory || product.category)} ·
           <span class="stock-${product.stock}">${stockLabel(product.stock)}</span></span>
         <span class="chat-rec-price">RM ${product.price.toFixed(2)}</span>
       </div>
@@ -233,11 +236,9 @@ function sendChatMessage() {
   });
 }
 
-function escapeHtml(text) {
-  const holder = document.createElement("div");
-  holder.textContent = String(text == null ? "" : text);
-  return holder.innerHTML;
-}
+// escapeHtml used to be defined here, as a local copy. It now lives in
+// js/escape.js so the shop front has one answer to "how does text get
+// into the page" rather than one per file. Same behaviour.
 
 function logChat(message, reply, wasBuildRequest) {
 

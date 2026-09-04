@@ -158,20 +158,20 @@ function renderBuilder() {
     // placeholder drawing while the slot is still empty).
     const picked = selectedProduct(slot);
     const slotImg = picked
-      ? `<img class="slot-img" src="${productImage(picked)}" alt="${picked.name}"
-           onerror="this.onerror=null; this.src='${productImageFallback(picked)}';" />`
-      : `<img class="slot-img" style="opacity:0.3" src="images/${slotImageName(slot)}.svg" alt="${slot}" />`;
+      ? `<img class="slot-img" src="${safeUrl(productImage(picked))}" alt="${escapeHtml(picked.name)}"
+           onerror="this.onerror=null; this.src='${safeUrl(productImageFallback(picked))}';" />`
+      : `<img class="slot-img" style="opacity:0.3" src="images/${encodeURIComponent(slotImageName(slot))}.svg" alt="${escapeHtml(slot)}" />`;
 
     const row = document.createElement("div");
     row.className = "builder-slot";
     row.innerHTML = `
       ${slotImg}
-      <span class="slot-name">${slot}</span>
-      <select onchange="handleSlotChange('${slot}', this.value)">
-        <option value="">-- Choose ${slot} --</option>
+      <span class="slot-name">${escapeHtml(slot)}</span>
+      <select onchange="handleSlotChange('${escapeHtml(slot)}', this.value)">
+        <option value="">-- Choose ${escapeHtml(slot)} --</option>
         ${options.map((p) => `
           <option value="${p.id}" ${chosen === p.id ? "selected" : ""} ${p.stock === "out" ? "disabled" : ""}>
-            ${p.name} - RM ${p.price.toFixed(2)} ${p.stock === "out" ? "(Out of stock)" : p.stock === "low" ? "(Low stock)" : ""}
+            ${escapeHtml(p.name)} - RM ${p.price.toFixed(2)} ${p.stock === "out" ? "(Out of stock)" : p.stock === "low" ? "(Low stock)" : ""}
           </option>
         `).join("")}
       </select>
@@ -374,8 +374,8 @@ function renderBuildSummary() {
 
     const group = (list, cls, mark, title) => {
       if (list.length === 0) return "";
-      return (title ? `<p class="compat-group-title">${title}</p>` : "") +
-        list.map((m) => `<p class="compat-message ${cls}">${mark} ${m.text}</p>`).join("");
+      return (title ? `<p class="compat-group-title">${escapeHtml(title)}</p>` : "") +
+        list.map((m) => `<p class="compat-message ${cls}">${mark} ${escapeHtml(m.text)}</p>`).join("");
     };
 
     messagesEl.innerHTML = header +

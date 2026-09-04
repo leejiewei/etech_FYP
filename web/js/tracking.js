@@ -7,10 +7,26 @@
 //     score = (views x 1) + (cart adds x 3) + (purchases x 5)
 //
 // Cart adds and purchases are recorded inside the database, by the
-// functions that do the adding and the buying, so they cannot be faked
-// from the browser. Views are the one kind this file sends, because a
-// view is not a database write of its own — it is somebody clicking a
-// card.
+// functions that do the adding and the buying. Views are the one kind
+// this file sends, because a view is not a database write of its own —
+// it is somebody clicking a card.
+//
+// This used to say that cart adds and purchases "cannot be faked from
+// the browser", which was half right and worth correcting. They cannot
+// be faked *through* cart_add() or place_order(), which check the caller
+// and do the work themselves. But until
+// 20260905090000_protect_behaviour_capture.sql the events table itself
+// would accept anything: the INSERT policy only checked customer_id, so
+// anyone holding the publishable key — which ships in js/config.js by
+// design — could post event_type: "purchase" straight into the table,
+// for any product, dated to any moment. Since the velocity score weights
+// a purchase five times a view, and since this table *is* the Objective
+// 1 dataset, that was worth closing.
+//
+// The policy now permits event_type = 'view' from a client and nothing
+// else, and created_at is no longer a column any client may set. The
+// other three kinds still arrive, from the SECURITY DEFINER functions,
+// which are not subject to the policy at all.
 //
 // A copy of the recent activity is also kept in this browser, purely so
 // the home page can suggest things without another round trip.

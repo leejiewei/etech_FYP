@@ -70,20 +70,20 @@ function renderComparePage() {
   let html = '<table class="compare-table"><thead><tr><th></th>';
   list.forEach((p) => {
     html += `<th>
-      <img class="compare-img" src="${productImage(p)}" alt="${p.name}"
-        onerror="this.onerror=null; this.src='${productImageFallback(p)}';" />
-      <div>${p.name}</div>
+      <img class="compare-img" src="${safeUrl(productImage(p))}" alt="${escapeHtml(p.name)}"
+        onerror="this.onerror=null; this.src='${safeUrl(productImageFallback(p))}';" />
+      <div>${escapeHtml(p.name)}</div>
       <button class="remove-btn" onclick="toggleCompare(${p.id}); renderComparePage();">Remove</button>
     </th>`;
   });
   html += "</tr></thead><tbody>";
 
-  html += "<tr><td>Brand</td>" + list.map((p) => `<td>${p.brand}</td>`).join("") + "</tr>";
+  html += "<tr><td>Brand</td>" + list.map((p) => `<td>${escapeHtml(p.brand)}</td>`).join("") + "</tr>";
   html += "<tr><td>Price</td>" + list.map((p) => `<td>RM ${p.price.toFixed(2)}</td>`).join("") + "</tr>";
   html += "<tr><td>Stock</td>" + list.map((p) => `<td>${stockLabel(p.stock)}</td>`).join("") + "</tr>";
 
   attrKeys.forEach((key) => {
-    html += `<tr><td>${attrLabel(key)}</td>` + list.map((p) => `<td>${(p.attrs && p.attrs[key]) || "-"}</td>`).join("") + "</tr>";
+    html += `<tr><td>${escapeHtml(attrLabel(key))}</td>` + list.map((p) => `<td>${escapeHtml((p.attrs && p.attrs[key]) || "-")}</td>`).join("") + "</tr>";
   });
 
   html += "</tbody></table>";

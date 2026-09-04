@@ -109,7 +109,7 @@ function prebuiltSpecList(product) {
 
   return ordered.map((key) => {
     const value = Array.isArray(attrs[key]) ? attrs[key].join(", ") : attrs[key];
-    return `<li><span class="spec-key">${attrLabel(key)}:</span> ${value}</li>`;
+    return `<li><span class="spec-key">${escapeHtml(attrLabel(key))}:</span> ${escapeHtml(value)}</li>`;
   }).join("");
 }
 
@@ -189,11 +189,11 @@ function prebuiltCard(p) {
       <div class="product-img-wrap">
         ${productImageTag(p, "product-img")}
       </div>
-      <span class="prebuilt-usecase">${prebuiltGroup(p)}</span>
-      <h3>${p.name}</h3>
+      <span class="prebuilt-usecase">${escapeHtml(prebuiltGroup(p))}</span>
+      <h3>${escapeHtml(p.name)}</h3>
       <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
       ${waiting
-        ? `<p class="prebuilt-waiting">Waiting on: ${waiting}</p>`
+        ? `<p class="prebuilt-waiting">Waiting on: ${escapeHtml(waiting)}</p>`
         : ""}
       <ul class="prebuilt-specs">
         ${prebuiltSpecList(p)}
@@ -207,7 +207,7 @@ function prebuiltCard(p) {
       ${note ? `
       <div class="addon-list">
         <strong>Available upgrades:</strong>
-        <p class="prebuilt-upgrades">${note}</p>
+        <p class="prebuilt-upgrades">${escapeHtml(note)}</p>
       </div>` : ""}
       <p class="prebuilt-price">RM ${(p.price + extra).toFixed(2)}</p>
       ${extra > 0
@@ -230,15 +230,15 @@ function optionBlock(product, options, chosen, outOfStock, title, hint) {
 
   return `
     <div class="addon-list">
-      <strong>${title}</strong>
-      <p class="addon-hint">${hint}</p>
+      <strong>${escapeHtml(title)}</strong>
+      <p class="addon-hint">${escapeHtml(hint)}</p>
       ${options.map((u) => `
         <label class="addon-option${outOfStock ? " disabled" : ""}">
           <input type="checkbox" value="${u.id}" data-machine="${product.id}"
-                 data-slot="${u.slot}"
+                 data-slot="${escapeHtml(u.slot)}"
                  ${chosen.has(u.id) ? "checked" : ""}
                  ${outOfStock ? "disabled" : ""} />
-          <span>${u.label}</span>
+          <span>${escapeHtml(u.label)}</span>
           <em>+RM ${u.priceDelta.toFixed(2)}</em>
         </label>`).join("")}
     </div>`;

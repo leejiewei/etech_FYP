@@ -8,8 +8,11 @@
 // Setting this.onerror = null first stops it looping forever if the
 // illustration is missing too.
 function productImageTag(product, cssClass) {
-  return `<img class="${cssClass}" src="${productImage(product)}" alt="${product.name}"
-    onerror="this.onerror=null; this.src='${productImageFallback(product)}';" />`;
+  // The two URLs go through safeUrl and the name through escapeHtml.
+  // image_path is typed into the admin panel, so it is a value from the
+  // database sitting in a src attribute -- see js/escape.js.
+  return `<img class="${cssClass}" src="${safeUrl(productImage(product))}" alt="${escapeHtml(product.name)}"
+    onerror="this.onerror=null; this.src='${safeUrl(productImageFallback(product))}';" />`;
 }
 
 function buildProductCard(product) {
@@ -32,8 +35,8 @@ function buildProductCard(product) {
     <div class="product-img-wrap">
       ${productImageTag(product, "product-img")}
     </div>
-    <h3>${product.name}</h3>
-    <p class="product-category">${product.category}${product.subcategory ? " · " + product.subcategory : ""}</p>
+    <h3>${escapeHtml(product.name)}</h3>
+    <p class="product-category">${escapeHtml(product.category)}${product.subcategory ? " · " + escapeHtml(product.subcategory) : ""}</p>
     <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
     <p class="product-price">RM ${product.price.toFixed(2)}</p>
     <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
@@ -139,14 +142,14 @@ function productModalContent(product) {
   const specKeys = Object.keys(product.attrs || {});
   const specRows = specKeys.map((key) => {
     const value = product.attrs[key];
-    return `<tr><th>${attrLabel(key)}</th><td>${
-      Array.isArray(value) ? value.join(", ") : value
+    return `<tr><th>${escapeHtml(attrLabel(key))}</th><td>${
+      escapeHtml(Array.isArray(value) ? value.join(", ") : value)
     }</td></tr>`;
   }).join("");
 
   return `
     <div class="product-modal-head">
-      <h2>${product.name}</h2>
+      <h2>${escapeHtml(product.name)}</h2>
       <button class="product-modal-close" title="Close" aria-label="Close">&times;</button>
     </div>
     <div class="product-modal-body">
@@ -154,13 +157,13 @@ function productModalContent(product) {
         ${productImageTag(product, "")}
       </div>
       <div class="product-modal-facts">
-        <p class="product-modal-meta">${product.brand} · ${product.category}${
-          product.subcategory ? " · " + product.subcategory : ""
+        <p class="product-modal-meta">${escapeHtml(product.brand)} · ${escapeHtml(product.category)}${
+          product.subcategory ? " · " + escapeHtml(product.subcategory) : ""
         }</p>
         <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
         <p class="product-modal-price">RM ${product.price.toFixed(2)}</p>
         ${product.description
-          ? `<p class="product-modal-desc">${product.description}</p>`
+          ? `<p class="product-modal-desc">${escapeHtml(product.description)}</p>`
           : ""}
         ${specRows
           ? `<table class="product-modal-specs">${specRows}</table>`

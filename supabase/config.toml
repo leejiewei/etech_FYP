@@ -179,7 +179,16 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+#
+# SECURITY. Raised from 6, which is the documented floor rather than a
+# recommendation. Applies when a password is set, so nobody's existing
+# login stops working. password_requirements is deliberately left empty:
+# a composition rule ("one capital, one digit") buys very little against
+# an offline attack and reliably pushes people towards Password1!, and
+# the beta needs testers to get through the sign-up form. Length plus the
+# leaked-password check (HaveIBeenPwned, enabled in the Dashboard) is the
+# better pair.
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -196,6 +205,12 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
+#
+# Left at 2 deliberately: it is the right ceiling while the built-in
+# testing mailer is in use, because that is all it will deliver anyway.
+# Raise it in step with custom SMTP -- 30 is a sensible beta figure --
+# and not before, or sign-ups will appear to work and the emails will
+# quietly not arrive. See enable_confirmations above.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
@@ -223,15 +238,61 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+#
+# SECURITY (email verification). Turned on. Three things it buys:
+#
+#   * An address that signs up is an address somebody can actually read,
+#     so an account cannot be opened in a stranger's name and orders
+#     cannot be placed under an address its owner never sees.
+#   * It closes the last of the account-enumeration hole in item 5 of
+#     docs/SECURITY.md. web/js/auth.js stopped *saying* whether an
+#     address was already registered, but Supabase Auth's own HTTP
+#     response still differed for a known address while this was off.
+#     With confirmation on, both answers look the same.
+#   * Password reset stops being reachable for an unverified address.
+#
+# THIS NEEDS CUSTOM SMTP AND WILL BREAK THE BETA WITHOUT IT.
+#
+# Supabase's built-in mail service is documented as "for testing", at a
+# best-effort two emails per hour. The beta test for Objective 1 needs
+# real people signing up over a few days; at two an hour the third tester
+# in any given hour never receives their link and simply cannot register.
+#
+# So before this is switched on for the hosted project, set custom SMTP:
+#   Dashboard -> Project Settings -> Authentication -> SMTP Settings
+# Free tiers that are enough for a beta: Resend (3,000/month),
+# Brevo (300/day), SendGrid (100/day). Then raise
+# auth.rate_limit.email_sent below, which is the per-hour ceiling and is
+# still set to 2.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
-secure_password_change = false
+#
+# SECURITY (password change). Turned on so that an unlocked, already
+# signed-in browser is not enough to take an account over: the old
+# password has to be produced before a new one is accepted. web/js/auth.js
+# checks the same thing on the near side, where it can say something
+# useful when it fails, and then revokes every other session --
+# signOut({ scope: "others" }) -- because changing a password does not
+# invalidate sessions on its own.
+secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+#
+# SECURITY (password-reset rate limit). One second is no limit at all: a
+# script pointed at an address could fill a stranger's inbox and, because
+# each new link invalidates the last, keep the real owner from ever using
+# one. Sixty seconds per address, on top of the project-wide
+# auth.rate_limit.email_sent ceiling below, which is the per-hour cap.
+max_frequency = "60s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+#
+# SECURITY (link lifetime). An hour is a long time for a link that resets
+# a password to sit in an inbox, a mail log or a forwarded message.
+# Fifteen minutes is long enough to walk to the machine and short enough
+# that a leaked mailbox is mostly stale. Anyone who takes longer asks for
+# another one.
+otp_expiry = 900
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]
@@ -279,6 +340,23 @@ max_frequency = "5s"
 # [auth.hook.before_user_created]
 # enabled = true
 # uri = "pg-functions://postgres/auth/before-user-created-hook"
+
+# SECURITY (account lockout). Runs inside Auth on every password check,
+# which is the only place on this stack where a lockout cannot be walked
+# round by calling the Auth endpoint directly instead of using our login
+# page. Five failures in fifteen minutes locks the account for fifteen.
+# The function is created by
+# supabase/migrations/20260904140000_security_hardening.sql; read the
+# comment at the top of section 2 there for why it is a hook.
+#
+# On the hosted project this is switched on in the Dashboard instead:
+#   Authentication -> Hooks -> Password Verification Attempt -> Postgres
+#   -> public.hook_password_verification_attempt
+# Until it is enabled the function exists but never runs, and sign-in
+# behaves exactly as it does today.
+[auth.hook.password_verification_attempt]
+enabled = true
+uri = "pg-functions://postgres/public/hook_password_verification_attempt"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]

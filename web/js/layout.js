@@ -15,7 +15,7 @@ function injectHeader() {
 
   const accountMenu = user
     ? `<div class="account-menu">
-         <span>Hi, ${user.name.split(" ")[0]}</span>
+         <span>Hi, ${escapeHtml(user.name.split(" ")[0])}</span>
          <div class="account-dropdown">
            <a href="profile.html">Profile</a>
            <a href="orders.html">Order History</a>
@@ -88,8 +88,8 @@ function buildBrandsMenu() {
       <div class="mega-grid">
         ${brands.map((brand) => `
           <a class="mega-item" href="shop.html?brand=${encodeURIComponent(brand)}">
-            <span class="mega-logo">${brand}</span>
-            <span class="mega-label">${brand.toUpperCase()}</span>
+            <span class="mega-logo">${escapeHtml(brand)}</span>
+            <span class="mega-label">${escapeHtml(brand.toUpperCase())}</span>
           </a>
         `).join("")}
       </div>
@@ -135,14 +135,14 @@ function buildCategoriesMenu() {
       <div class="mega-grid">
         ${mainCategories.map((c) => `
           <a class="mega-item" href="shop.html?category=${encodeURIComponent(c.name)}">
-            <span class="mega-icon">${c.icon}</span>
-            <span class="mega-label">${c.name.toUpperCase()}</span>
+            <span class="mega-icon">${escapeHtml(c.icon)}</span>
+            <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
           </a>
         `).join("")}
         ${subCategories.map((c) => `
           <a class="mega-item" href="shop.html?subcategory=${encodeURIComponent(c.name)}">
-            <span class="mega-icon">${c.icon}</span>
-            <span class="mega-label">${c.name.toUpperCase()}</span>
+            <span class="mega-icon">${escapeHtml(c.icon)}</span>
+            <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
           </a>
         `).join("")}
       </div>
@@ -182,10 +182,61 @@ function injectFooter() {
         <a href="info.html">Information</a>
         <a href="service.html">Service</a>
         <a href="contact.html">Contact</a>
+        <a href="privacy.html">Privacy</a>
       </div>
       <p>&copy; 2026 eTech Computer Accessories.</p>
     </footer>
   `;
+}
+
+// ------------------------------------------------------------
+// Telling people the site is recording what they do.
+//
+// The shop records every product opened, every search typed and every
+// chatbot question, and does so whether or not anyone is signed in --
+// that record is the subject of the project, not a side effect of it.
+// Collecting it from real testers without telling them is the kind of
+// thing that is noticed at the wrong end of a project, and under the
+// PDPA notice is owed at the point of collection rather than in a page
+// nobody was pointed at.
+//
+// So this is shown once, on the first page anyone lands on, and
+// dismissed for good afterwards. It is a notice and not a wall: the shop
+// is usable behind it, because a banner that blocks the page teaches
+// people to click it away without reading, which is worse than useless
+// for consent.
+//
+// The acknowledgement is kept in this browser only. It is not a database
+// record of consent -- if the project later needs to evidence consent per
+// participant, that belongs with the account, not here.
+// ------------------------------------------------------------
+const PRIVACY_NOTICE_KEY = "etech_privacy_ack";
+
+function injectPrivacyNotice() {
+  try {
+    if (localStorage.getItem(PRIVACY_NOTICE_KEY)) return;
+  } catch (e) {
+    // Storage blocked. Showing it every visit is the safe way round.
+  }
+
+  const bar = document.createElement("div");
+  bar.className = "privacy-notice";
+  bar.innerHTML = `
+    <p>
+      This is a student project, and it records which products you open, what
+      you search for and what you ask the chatbot &mdash; that record is what
+      the project studies. Checkout is simulated and no card is charged.
+      <a href="privacy.html">Read the privacy notice</a>.
+    </p>
+    <button type="button" class="privacy-notice-ok">I understand</button>
+  `;
+
+  bar.querySelector(".privacy-notice-ok").addEventListener("click", () => {
+    try { localStorage.setItem(PRIVACY_NOTICE_KEY, "1"); } catch (e) { /* fine */ }
+    bar.remove();
+  });
+
+  document.body.appendChild(bar);
 }
 
 // Our WhatsApp number. wa.me needs the international format with no
@@ -242,7 +293,7 @@ function maybeShowDealToast() {
 
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.innerHTML = `🎉 ${deal.discountPercent}% off ${deal.category} right now! Code <strong>${deal.code}</strong>
+  toast.innerHTML = `🎉 ${deal.discountPercent}% off ${escapeHtml(deal.category)} right now! Code <strong>${escapeHtml(deal.code)}</strong>
     <a href="deals.html">View deal</a>`;
   document.body.appendChild(toast);
 
@@ -255,6 +306,7 @@ onAppReady(() => {
   injectFooter();
   injectWhatsApp();
   injectChatbot();
+  injectPrivacyNotice();
   // The deal notification is fired by deals.js once the promotions have
   // been fetched — it can't run until we know what's on offer.
 });

@@ -31,6 +31,28 @@
 
         <button type="submit">Save Changes</button>
       </form>
+
+      <!-- Changing the password signs every other device out. See
+           changePassword() in js/auth.js for why that matters. -->
+      <h2 style="margin-top: 36px;">Change Password</h2>
+      <p class="sub" style="margin-top: -8px; color: #666;">
+        Changing your password signs you out everywhere except this device.
+      </p>
+      <form id="password-form">
+        <label for="current-password">Current Password</label>
+        <input type="password" id="current-password" autocomplete="current-password" />
+
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" autocomplete="new-password"
+          minlength="8" placeholder="At least 8 characters" />
+
+        <label for="confirm-password">Confirm New Password</label>
+        <input type="password" id="confirm-password" autocomplete="new-password" />
+
+        <div class="form-error" id="password-result"></div>
+
+        <button type="submit">Change Password</button>
+      </form>
     </div>
   </section>
 
@@ -39,6 +61,7 @@
   <!-- Supabase client, then where the project is, then the connection. -->
   <script src="js/vendor/supabase.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
   <script src="js/db.js"></script>
   <script src="js/products.js"></script>
   <script src="js/auth.js"></script>
@@ -77,6 +100,37 @@
       }).then((errorMessage) => {
         savedEl.textContent = errorMessage || "Profile saved!";
         savedEl.style.color = errorMessage ? "#c0392b" : "#1e8e3e";
+      });
+    });
+
+    document.getElementById("password-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const resultEl = document.getElementById("password-result");
+      const button = e.target.querySelector("button[type=submit]");
+
+      resultEl.style.color = "#666";
+      resultEl.textContent = "Changing...";
+      button.disabled = true;
+
+      changePassword(
+        document.getElementById("current-password").value,
+        document.getElementById("new-password").value,
+        document.getElementById("confirm-password").value
+      ).then((errorMessage) => {
+        button.disabled = false;
+
+        if (errorMessage) {
+          resultEl.textContent = errorMessage;
+          resultEl.style.color = "#c0392b";
+          return;
+        }
+
+        // Clear the boxes: three passwords left sitting in a form on a
+        // shared machine is the problem this page is meant to fix.
+        e.target.reset();
+        resultEl.textContent =
+          "Password changed. Any other device signed into this account has been signed out.";
+        resultEl.style.color = "#1e8e3e";
       });
     });
   </script>

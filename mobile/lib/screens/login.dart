@@ -25,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   String? _error;
+  // Set when a sign-up succeeded but the address still has to be
+  // confirmed by email. A success, so it is not shown as an error.
+  String? _notice;
   bool _busy = false;
 
   @override
@@ -38,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     setState(() {
       _error = null;
+      _notice = null;
       _busy = true;
     });
 
@@ -50,11 +54,28 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         return;
       }
-      error = await widget.shop.register(
+      final result = await widget.shop.register(
         _name.text.trim(),
         _email.text.trim(),
         _password.text,
       );
+
+      if (!mounted) return;
+
+      // Made, but the address needs confirming before there is a session.
+      // A success shown in the red box would read as a failed sign-up, so
+      // it gets its own notice and the screen stays put rather than
+      // popping back signed out.
+      if (result.ok && result.message != null) {
+        setState(() {
+          _notice = result.message;
+          _error = null;
+          _busy = false;
+        });
+        return;
+      }
+
+      error = result.ok ? null : result.message;
     } else {
       error = await widget.shop.login(_email.text.trim(), _password.text);
     }
@@ -155,6 +176,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 autofillHints: const [AutofillHints.newPassword],
                 decoration: const InputDecoration(
                   labelText: 'Confirm password',
+                ),
+              ),
+            ],
+            if (_notice != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _notice!,
+                  style: const TextStyle(color: Color(0xFF1E8E3E), fontSize: 13),
                 ),
               ),
             ],

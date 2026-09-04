@@ -1474,3 +1474,61 @@ footer {
   padding: 8px 12px;
   cursor: pointer;
 }
+
+/* ============================================================
+   First-visit privacy notice (js/layout.js -> injectPrivacyNotice).
+   Sits along the bottom rather than over the middle: the shop stays
+   usable behind it, which is the point -- a banner that blocks the page
+   teaches people to dismiss it unread.
+   ============================================================ */
+.privacy-notice {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: #1f2933;
+  color: #e8eef4;
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.22);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.privacy-notice p {
+  margin: 0;
+  max-width: 760px;
+}
+
+.privacy-notice a {
+  color: #7fc4ff;
+  text-decoration: underline;
+}
+
+.privacy-notice-ok {
+  flex-shrink: 0;
+  padding: 9px 20px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f80ed;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.privacy-notice-ok:hover { background: #1c6fd8; }
+
+/* The floating WhatsApp button sits bottom-right; lift it clear while
+   the notice is on screen so the two do not overlap on a phone. */
+.privacy-notice ~ .whatsapp-btn { bottom: 96px; }
+
+@media (max-width: 600px) {
+  .privacy-notice { font-size: 12.5px; padding: 12px 14px; gap: 10px; }
+  .privacy-notice ~ .whatsapp-btn { bottom: 140px; }
+}

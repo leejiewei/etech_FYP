@@ -184,7 +184,7 @@ function renderActiveFilterNotice() {
   }
 
   el.style.display = "block";
-  el.innerHTML = `<span class="active-filter-chip">${label}
+  el.innerHTML = `<span class="active-filter-chip">${escapeHtml(label)}
     <button onclick="clearMegaFilter()" title="Clear filter">&times;</button></span>`;
 }
 

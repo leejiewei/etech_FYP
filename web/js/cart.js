@@ -260,13 +260,13 @@ function drawCartTable() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="cart-product">
-        <img class="cart-img" src="${firstSrc}" alt="${item.name}"
-          onerror="this.onerror=null; this.src='${fallbackSrc}';" />
-        <span>${item.name}</span>
+        <img class="cart-img" src="${safeUrl(firstSrc)}" alt="${escapeHtml(item.name)}"
+          onerror="this.onerror=null; this.src='${safeUrl(fallbackSrc)}';" />
+        <span>${escapeHtml(item.name)}</span>
         ${item.upgrades && item.upgrades.length ? `
         <ul class="cart-upgrades">
           ${item.upgrades.map((u) => `
-            <li>+ ${u.label} <em>RM ${u.priceDelta.toFixed(2)}</em>
+            <li>+ ${escapeHtml(u.label)} <em>RM ${u.priceDelta.toFixed(2)}</em>
                 <button type="button" class="upgrade-drop"
                         title="Remove this upgrade"
                         onclick="removeUpgrade(${item.id}, ${u.id})">&times;</button>

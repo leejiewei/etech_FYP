@@ -434,15 +434,27 @@ class Shop extends ChangeNotifier {
   /// Registering writes to Supabase Auth. The row in customers is made by
   /// a database trigger watching for new sign-ups, which is why the name
   /// travels as sign-up metadata — the trigger reads it from there.
-  Future<String?> register(String name, String email, String password) async {
+  /// Signing up has three outcomes, not two, now that email confirmation
+  /// is on: refused, made-and-signed-in, and made-but-go-and-confirm. The
+  /// third is a success and must not be painted in the red error box, so
+  /// this returns a record rather than the old `String?` where any
+  /// non-null value meant failure.
+  ///
+  ///   (ok: true,  message: null)     signed in, close the screen
+  ///   (ok: true,  message: "Check…") made, needs confirming
+  ///   (ok: false, message: "…")      refused, show as an error
+  Future<({bool ok, String? message})> register(
+      String name, String email, String password) async {
     name = name.trim();
     email = email.trim().toLowerCase();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      return 'Please fill in every field.';
+      return (ok: false, message: 'Please fill in every field.');
     }
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters.';
+    // Matches auth.minimum_password_length in supabase/config.toml and the
+    // same check in web/js/auth.js.
+    if (password.length < 8) {
+      return (ok: false, message: 'Password must be at least 8 characters.');
     }
 
     try {
@@ -454,23 +466,45 @@ class Shop extends ChangeNotifier {
 
       // No session back means the project is set to confirm addresses by
       // email before letting anyone in. The account exists either way.
+      // With confirmation on this is the normal path for a new customer,
+      // not the unusual one. The link expires in fifteen minutes
+      // (auth.email.otp_expiry in supabase/config.toml).
       if (result.session == null) {
-        return 'Account created. Check your email to confirm the address, '
-            'then sign in.';
+        return (
+          ok: true,
+          message: 'Account created. Check your email to confirm the address, '
+              'then sign in. The link expires in 15 minutes.',
+        );
       }
     } on AuthException catch (e) {
+      // Deliberately does not say whether the address is already taken.
+      // Answering that turns this form into a way of testing whether a
+      // given person shops here, one address at a time — see the note on
+      // registerError() in web/js/auth.js. The sign-in screen has always
+      // given one answer to both a wrong password and an unknown address;
+      // this is the same rule, applied to the other door.
+      //
+      // Passing e.message straight back is dropped for the same reason:
+      // Supabase's own wording names the cause.
       final m = e.message.toLowerCase();
-      if (m.contains('already registered')) {
-        return 'An account with this email already exists.';
+      if (m.contains('invalid') && m.contains('email')) {
+        return (ok: false, message: 'That email address does not look right.');
       }
-      return e.message;
+      if (m.contains('weak') || m.contains('password')) {
+        return (ok: false, message: 'Please choose a stronger password.');
+      }
+      return (
+        ok: false,
+        message: 'Could not create the account. If you have signed up before, '
+            'please sign in instead.',
+      );
     } catch (e) {
-      return Api.message(e, 'Could not create the account.');
+      return (ok: false, message: Api.message(e, 'Could not create the account.'));
     }
 
     await refreshSession();
     await _claimAnonActivity();
-    return null;
+    return (ok: true, message: null);
   }
 
   Future<void> logout() async {

@@ -90,7 +90,24 @@ function isLoggedIn() {
 // database trigger watching for new auth users, which is why the name
 // is passed as sign-up metadata — the trigger reads it from there.
 //
-// Returns "" when it worked, or a message to show the customer.
+// WHAT THIS RETURNS, AND WHY IT IS NO LONGER A STRING
+//
+// It used to return "" for success and a sentence for a failure, which
+// worked only while every sign-up ended with the customer signed in.
+// With email confirmation switched on there is a third outcome — the
+// account was made, correctly, and the customer must now go and read
+// their email — and it is neither of the other two. Returned as a
+// string it would have been shown in the red error box, telling somebody
+// their sign-up failed at the exact moment it had succeeded.
+//
+// So the answer is an object:
+//
+//   { ok: true,  message: "" }              signed in, carry on
+//   { ok: true,  message: "Check your …" }  made, needs confirming
+//   { ok: false, message: "…" }             refused, show it as an error
+//
+// ok says which box to put the message in. message is what to write in
+// it.
 // ------------------------------------------------------------
 function registerUser(name, email, password) {
   name = (name || "").trim();
@@ -100,25 +117,37 @@ function registerUser(name, email, password) {
   // customer sees does not change. Supabase enforces its own versions
   // as well; these just get in first with a friendlier sentence.
   if (name === "" || email === "" || !password) {
-    return Promise.resolve("Please fill in every field.");
+    return Promise.resolve({ ok: false, message: "Please fill in every field." });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Promise.resolve("That email address does not look right.");
+    return Promise.resolve({ ok: false, message: "That email address does not look right." });
   }
-  if (password.length < 6) {
-    return Promise.resolve("Password must be at least 6 characters.");
+  // Matches auth.minimum_password_length in supabase/config.toml. If the
+  // two ever drift, Supabase wins and the customer gets its wording
+  // instead of ours.
+  if (password.length < 8) {
+    return Promise.resolve({ ok: false, message: "Password must be at least 8 characters." });
   }
 
   return sb.auth.signUp({ email, password, options: { data: { name } } })
     .then(({ data, error }) => {
-      if (error) return registerError(error);
+      if (error) return { ok: false, message: registerError(error) };
 
       // No session back means the project is set to confirm addresses by
       // email before letting anyone in. The account exists either way.
+      //
+      // This is now the normal path, not the unusual one: confirmation is
+      // on, so a new customer always lands here and is sent to their
+      // inbox. The link in that email expires in fifteen minutes
+      // (auth.email.otp_expiry).
       if (!data.session) {
-        return "Account created. Check your email to confirm the address, then log in.";
+        return {
+          ok: true,
+          message: "Account created. Check your email to confirm the address, then log in. " +
+                   "The link expires in 15 minutes.",
+        };
       }
-      return loadSession().then(claimEarlierActivity).then(() => "");
+      return loadSession().then(claimEarlierActivity).then(() => ({ ok: true, message: "" }));
     });
 }
 
@@ -141,20 +170,47 @@ function claimEarlierActivity(user) {
   return claimAnonActivity().then(() => user, () => user);
 }
 
+// ------------------------------------------------------------
+// Why this does not say "that email is already registered".
+//
+// It used to, and it was the one place on the site that would tell a
+// stranger whether a given person shops here. Type an address, read the
+// answer, repeat: that is account enumeration, and a list of confirmed
+// customer addresses is worth having to somebody running a phishing or
+// credential-stuffing campaign. The login page has never had this
+// problem -- it answers "Incorrect email or password." to both a wrong
+// password and an unknown address -- and sign-up should not undo that.
+//
+// So a duplicate address now gets the same sentence a new one does, and
+// the customer is pointed at the login page rather than told why.
+// Someone who genuinely forgot they had an account still gets there in
+// one click; someone probing gets nothing back to distinguish the two.
+//
+// Two honest limits, because this is a mitigation and not a cure:
+//
+//   * Supabase Auth still answers the underlying HTTP call differently
+//     for a known address while email confirmations are off. Closing
+//     that needs enable_confirmations = true, which would put every beta
+//     tester behind a confirmation email and the project's mail
+//     allowance is two per hour. Not worth breaking the beta over.
+//   * Faults are folded in with duplicates here. That is the price of a
+//     single sentence; the real error still goes to the console.
+// ------------------------------------------------------------
 function registerError(error) {
   console.error("Sign-up:", error);
   const message = (error.message || "").toLowerCase();
 
-  if (message.includes("already registered") || message.includes("already been registered")) {
-    return "An account with this email already exists.";
-  }
+  // Both of these are facts about what the customer just typed, not
+  // about who already has an account, so they stay specific.
   if (message.includes("invalid") && message.includes("email")) {
     return "That email address does not look right.";
   }
   if (message.includes("password")) {
-    return "Password must be at least 6 characters.";
+    return "Password must be at least 8 characters.";
   }
-  return "Could not create the account. Please try again.";
+
+  return "Could not create the account. If you have signed up before, " +
+         "please log in instead.";
 }
 
 // ------------------------------------------------------------
@@ -190,6 +246,88 @@ function loginUser(email, password) {
         // storage belonging to somebody with no shop account.
         return sb.auth.signOut().then(() => "staff", () => "staff");
       });
+    });
+  });
+}
+
+// ------------------------------------------------------------
+// Changing the password, and what has to happen to the other sessions.
+//
+// Supabase issues a session per device, each one a signed token that
+// keeps working on its own until it expires -- refreshing itself
+// quietly in the background for as long as the browser holding it is
+// open. Nothing about changing the password invalidates them. So a
+// customer who changes their password *because* they think somebody
+// else is in the account would, by default, achieve nothing at all: the
+// intruder's phone carries on refreshing its token and stays signed in.
+//
+// That is the whole point of this function. updateUser sets the new
+// password; signOut({ scope: "others" }) then revokes every session
+// except the one doing the changing, so the customer stays logged in
+// here and everything else is thrown out. "others" rather than "global"
+// deliberately -- being signed out of the page you are standing on,
+// immediately after successfully changing your password, reads as a
+// failure.
+//
+// The current password is asked for and checked first, by signing in
+// with it. Without that, anyone who found an unlocked laptop could set
+// a new password from this page and take the account -- and the
+// revocation above would then be working for them, not against them.
+// Supabase can enforce this itself (auth.email.secure_password_change),
+// and that is set too; this is the same guard on the near side, where
+// it can say something useful when it fails.
+//
+// Returns "" when it worked, or a message to show the customer.
+// ------------------------------------------------------------
+function changePassword(currentPassword, newPassword, confirmPassword) {
+  if (!currentUser) return Promise.resolve("Please log in first.");
+
+  if (!currentPassword || !newPassword) {
+    return Promise.resolve("Please fill in every field.");
+  }
+  if (newPassword.length < 8) {
+    return Promise.resolve("New password must be at least 8 characters.");
+  }
+  if (newPassword !== confirmPassword) {
+    return Promise.resolve("The two new passwords do not match.");
+  }
+  if (newPassword === currentPassword) {
+    return Promise.resolve("The new password must be different from the old one.");
+  }
+
+  // Prove the person at the keyboard knows the password they are
+  // replacing. A wrong answer here ends it before updateUser is called.
+  return sb.auth.signInWithPassword({
+    email: currentUser.email,
+    password: currentPassword,
+  }).then(({ error }) => {
+    if (error) {
+      console.error("Re-authenticating before password change:", error);
+      return "Your current password is not correct.";
+    }
+
+    return sb.auth.updateUser({ password: newPassword }).then(({ error: updateError }) => {
+      if (updateError) {
+        console.error("Password change:", updateError);
+        const message = (updateError.message || "").toLowerCase();
+        if (message.includes("weak") || message.includes("password")) {
+          return "Please choose a stronger password.";
+        }
+        return "Could not change the password. Please try again.";
+      }
+
+      // The reason this function exists. A failure here is not a failed
+      // password change -- the new password is already saved -- but the
+      // customer must be told, because the old sessions are the thing
+      // they were trying to get rid of.
+      return sb.auth.signOut({ scope: "others" }).then(
+        () => "",
+        (signOutError) => {
+          console.error("Revoking other sessions:", signOutError);
+          return "Password changed, but other devices may still be signed in. " +
+                 "Please change it again from a different device.";
+        }
+      );
     });
   });
 }
