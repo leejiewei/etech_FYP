@@ -1532,3 +1532,76 @@ footer {
   .privacy-notice { font-size: 12.5px; padding: 12px 14px; gap: 10px; }
   .privacy-notice ~ .whatsapp-btn { bottom: 140px; }
 }
+
+
+/* ============================================================
+   Phones.
+
+   The shop was built at a desk and had one media query in it, for the
+   privacy notice. Everything else was laid out for a wide window, and
+   on a 390px phone the page scrolled sideways -- the whole body slid
+   left and right under the thumb, which makes a site feel broken before
+   anyone has read a word of it.
+
+   That matters now rather than eventually: the Objective 1 testers are
+   recruited people using their own phones, and a sideways-sliding page
+   is the kind of thing that ends a session early and takes its data
+   with it.
+
+   The single worst offender was .nav-links. The navbar itself already
+   carried flex-wrap, but its <ul> did not, so eight links -- Shop,
+   Build PC, Prebuilt, Deals, Compare, Wishlist, Cart, Account -- sat in
+   one unbreakable 575px row and dragged the document out to that width.
+
+   The links wrap onto two or three rows here rather than folding into a
+   hamburger. A hamburger is the tidier answer and the wrong one to
+   reach for a week before a beta: it is new markup, new JavaScript and
+   a control every tester has to find, in exchange for looks. Wrapping
+   is a one-line change that hides nothing.
+   ============================================================ */
+@media (max-width: 700px) {
+  /* 40px of side padding is a tenth of the screen on each side. */
+  .navbar { padding: 12px 16px; column-gap: 14px; }
+  .navbar .logo { font-size: 19px; }
+
+  /* The fix. row-gap keeps the wrapped rows off each other. */
+  .nav-links { flex-wrap: wrap; gap: 16px; row-gap: 10px; }
+
+  /* Search gets its own full row instead of competing with the logo for
+     what is left after it. */
+  .search-box { flex: 1 1 100%; max-width: none; order: 3; }
+
+  /* BRANDS and CATEGORIES together are wider than the screen at the
+     desktop padding, by about the width of one thumb. */
+  .mega-bar { padding: 0 8px; }
+  .mega-tab { padding: 12px 14px; font-size: 13px; letter-spacing: 0.5px; }
+  .mega-menu { padding: 24px 16px; }
+  .mega-inner { gap: 24px; }
+  .mega-left { width: 100%; }
+
+  /* Section padding is the other place 80px went missing across the
+     page, and it is applied to nearly every screen in the shop. */
+  .section { padding: 24px 16px; }
+  .hero { padding: 44px 16px; }
+  .hero h1 { font-size: 27px; }
+  .hero p { font-size: 16px; }
+
+  /* Tables are the one thing that genuinely cannot fit: the cart has six
+     columns and Compare has one per product. Let them scroll inside
+     their own box rather than taking the page with them -- a sideways
+     drag on a price table is expected, a sideways drag on the whole shop
+     is not. */
+  .cart-table,
+  .compare-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Deliberately no `html, body { overflow-x: hidden }` here. That hides
+     a sideways-scrolling page rather than fixing one, and it takes
+     position: sticky down with it. Every page above was measured at
+     393px with nothing past the edge, so the layout stands on its own
+     and a future regression will show itself instead of being clipped
+     out of sight. */
+}
