@@ -29,10 +29,11 @@ adminPage("Edit Product", "products", async (content) => {
   const id = Number(params().id || 0);
   const isNew = id === 0;
 
-  const [brands, categories, product] = await Promise.all([
+  const [brands, categories, product, fromParts] = await Promise.all([
     loadBrands(),
     loadCategories(),
     isNew ? null : loadProduct(id),
+    isNew ? false : stockIsDerived(id),
   ]);
 
   if (!isNew && !product) {
@@ -88,6 +89,15 @@ adminPage("Edit Product", "products", async (content) => {
 
       <div class="card">
         <h2 style="margin-top:0;">Price and stock</h2>
+        ${fromParts ? `
+          <p class="hint" style="margin:0 0 14px;">
+            This machine's stock is worked out from its parts, so the three
+            stock fields below are read-only. Change a component's stock, or
+            what this machine is built from, on
+            <a href="prebuilts.html" style="color:#d62839;">Prebuilt Parts</a>.
+            A quantity typed in here would be overwritten the next time any
+            of its parts moved.
+          </p>` : ""}
         <div class="form-row">
           <div class="field">
             <label for="price">Selling price (RM)</label>
@@ -105,18 +115,18 @@ adminPage("Edit Product", "products", async (content) => {
         <div class="form-row">
           <div class="field">
             <label for="stock_qty">Quantity in stock</label>
-            <input type="number" id="stock_qty" min="0"
+            <input type="number" id="stock_qty" min="0"${fromParts ? " disabled" : ""}
                    value="${value("stock_qty", null) === null ? "" : value("stock_qty")}" />
             <small>Leave blank if not counted yet.</small>
           </div>
           <div class="field">
             <label for="reorder_level">Low-stock level</label>
-            <input type="number" id="reorder_level" min="0" value="${value("reorder_level", 5)}" />
+            <input type="number" id="reorder_level" min="0"${fromParts ? " disabled" : ""} value="${value("reorder_level", 5)}" />
             <small>At or below this many, the shop shows "Low Stock".</small>
           </div>
           <div class="field">
             <label for="stock_status">Status shown in the shop</label>
-            <select id="stock_status">
+            <select id="stock_status"${fromParts ? " disabled" : ""}>
               <option value="in"  ${value("stock_status") === "in"  ? "selected" : ""}>In Stock</option>
               <option value="low" ${value("stock_status") === "low" ? "selected" : ""}>Low Stock</option>
               <option value="out" ${value("stock_status") === "out" ? "selected" : ""}>Out of Stock</option>
@@ -195,6 +205,20 @@ async function loadBrands() {
   return data;
 }
 
+// True when this product is one of the eleven E-Tech machines and every
+// one of its slots has been answered -- at which point recompute_prebuilt_stock()
+// owns its badge and anything typed here is temporary.
+async function stockIsDerived(id) {
+  const { data, error } = await sb.from("prebuilt_availability")
+    .select("pending,derived_status").eq("prebuilt_id", id).maybeSingle();
+  if (error) throw error;
+
+  // derived_status is null when nothing is linked, which is the case
+  // recompute_prebuilt_stock() leaves alone -- the same pair the shop
+  // and the Products list check.
+  return !!data && data.pending === 0 && !!data.derived_status;
+}
+
 async function loadProduct(id) {
   const { data, error } = await sb.from("admin_products")
     .select("product_id,name,brand_id,category_id,price,cost_price,stock_qty," +
@@ -249,15 +273,26 @@ async function save(id, isNew) {
   button.disabled = true;
   errorBox.style.display = "none";
 
+  // A derived machine's stock is left out of the write entirely. Note
+  // that disabling a field does not empty it -- it still reads back
+  // whatever was loaded -- so this is not about avoiding a null. It is
+  // that sending those three would write numbers which look like a
+  // decision somebody made and are really just what the page happened to
+  // be showing, to be overwritten at the next recompute anyway. Leaving
+  // them out keeps the write to what the person actually changed.
+  const stockFields = document.getElementById("stock_qty").disabled ? {} : {
+    stock_qty: qty,
+    reorder_level: reorder,
+    stock_status: status,
+  };
+
   const record = {
     name,
     brand_id: Number(field("brand_id")),
     category_id: Number(field("category_id")),
     price,
     cost_price: cost,
-    stock_qty: qty,
-    reorder_level: reorder,
-    stock_status: status,
+    ...stockFields,
     description: field("description"),
     img_slug: field("img_slug") || "default",
     exclude_from_builder: document.getElementById("exclude_from_builder").checked ? 1 : 0,

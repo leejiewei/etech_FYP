@@ -13,6 +13,27 @@
 // that the person doing it is staff, because there is no point in one:
 // the policy on that table refuses the statement outright if they are
 // not, and a check in this file could be skipped by not using this file.
+//
+// ------------------------------------------------------------
+// STOCK
+//
+// A count beats the dropdown. If a quantity is given, the badge the shop
+// shows is worked out from it -- 0 is Out, at or below the reorder level
+// is Low, anything more is In -- and the dropdown is only consulted for
+// products nobody has counted. That rule was already here; what was
+// missing was any way to *add* to a count, and any sign of the
+// difference between "counted, none left" and "never counted at all".
+// Both are fixed below: the Qty cell now carries a second box for stock
+// that has just arrived, and an uncounted product says so instead of
+// showing an empty square.
+//
+// The eleven E-Tech machines are the exception. Their badge is derived
+// from their parts by recompute_prebuilt_stock() and a hand edit is
+// overwritten the next time any component moves, so their fields are
+// shown read-only with the reason rather than left to be typed into and
+// silently undone. Only machines whose every slot is answered are locked
+// -- an unfinished one still falls back to its own status, so editing it
+// still means something.
 // ============================================================
 
 const PER_PAGE = 25;
@@ -26,6 +47,11 @@ adminPage("Products", "products", async (content) => {
   let page = Math.max(1, Number(q.page || 1));
 
   const categories = await loadCategories();
+
+  // Machines whose stock the database works out for itself. pending is
+  // the number of slots nobody has answered; at zero the derived badge
+  // takes over from the row's own stock_status.
+  const derived = await loadDerivedMachines();
 
   // Build the query once for counting and again for the page of rows,
   // because the filters have to be identical for the pager to be right.
@@ -72,6 +98,9 @@ adminPage("Products", "products", async (content) => {
     <p class="hint">
       ${count(total)} product${total === 1 ? "" : "s"}${showGone ? " removed from the shop" : " in the shop"}.
       Price and stock can be changed here; use Edit for everything else.
+      Type a quantity and the shop's badge follows it; put what has just
+      arrived in the <strong>+ in</strong> box to add to a count rather than
+      work out the new total yourself.
     </p>
 
     <form class="filters" id="filters">
@@ -115,7 +144,7 @@ adminPage("Products", "products", async (content) => {
       <tbody>
       ${rows.length === 0
         ? `<tr><td colspan="9" style="text-align:center; color:#888; padding:26px;">Nothing matches those filters.</td></tr>`
-        : rows.map(productRow).join("")}
+        : rows.map((r) => productRow(r, derived)).join("")}
       </tbody>
     </table>
     </div>
@@ -136,9 +165,10 @@ adminPage("Products", "products", async (content) => {
   wireRowActions(rows);
 });
 
-function productRow(r) {
+function productRow(r, derived) {
   const img = r.image_path ? r.image_path : "../images/" + (r.img_slug || "default") + ".svg";
   const categoryPath = r.parent_category ? r.parent_category + " > " + r.category : r.category;
+  const fromParts = derived.has(r.product_id);
 
   return `
     <tr data-id="${r.product_id}">
@@ -159,16 +189,30 @@ function productRow(r) {
           : e(money(r.cost_price))}
       </td>
       <td class="num">
-        <input type="number" min="0" data-field="stock_qty"
-               style="width:70px; text-align:right;" placeholder="&mdash;"
-               value="${r.stock_qty === null ? "" : r.stock_qty}" />
+        ${fromParts
+          ? `<span style="color:#888;">${r.stock_qty === null ? "&mdash;" : r.stock_qty}</span>`
+          : `<input type="number" min="0" data-field="stock_qty"
+                    style="width:64px; text-align:right;" placeholder="&mdash;"
+                    value="${r.stock_qty === null ? "" : r.stock_qty}" />
+             <br />
+             <input type="number" min="1" data-field="stock_add"
+                    style="width:64px; text-align:right; margin-top:4px;" placeholder="+ in"
+                    title="How many have just arrived. Added to the count on Save." />
+             ${r.stock_qty === null
+               ? `<br /><small style="color:#c88;">not counted</small>`
+               : ""}`}
       </td>
       <td>
-        <select data-field="stock_status" style="width:105px;">
-          <option value="in"  ${r.stock_status === "in"  ? "selected" : ""}>In stock</option>
-          <option value="low" ${r.stock_status === "low" ? "selected" : ""}>Low</option>
-          <option value="out" ${r.stock_status === "out" ? "selected" : ""}>Out</option>
-        </select>
+        ${fromParts
+          ? `<span class="badge ${e(r.stock_status)}">${
+               r.stock_status === "out" ? "Out of stock"
+                 : r.stock_status === "low" ? "Low" : "In stock"}</span>
+             <br /><small style="color:#999;">from its parts</small>`
+          : `<select data-field="stock_status" style="width:105px;">
+               <option value="in"  ${r.stock_status === "in"  ? "selected" : ""}>In stock</option>
+               <option value="low" ${r.stock_status === "low" ? "selected" : ""}>Low</option>
+               <option value="out" ${r.stock_status === "out" ? "selected" : ""}>Out</option>
+             </select>`}
       </td>
       <td style="white-space:nowrap;">
         <button type="button" data-act="save" class="btn small">Save</button>
@@ -178,6 +222,24 @@ function productRow(r) {
           : `<button type="button" data-act="restore" class="btn small">Restore</button>`}
       </td>
     </tr>`;
+}
+
+// Which machines the database is deciding the stock of. prebuilt_availability
+// is a view, so this is one small read whatever the page is showing; the
+// eleven ids are the same on every page of the list.
+async function loadDerivedMachines() {
+  const { data, error } = await sb.from("prebuilt_availability")
+    .select("prebuilt_id,pending,derived_status");
+  if (error) throw error;
+
+  // pending alone is not the rule. A machine whose every slot is marked
+  // not-stocked has nothing pending and nothing linked either, so
+  // recompute_prebuilt_stock() skips it and derived_status comes back
+  // null -- locking its fields would leave a badge nobody can set. The
+  // shop asks the same two questions of this view; asking fewer here is
+  // how the two sides start disagreeing again.
+  return new Set(data.filter((row) => row.pending === 0 && row.derived_status)
+                     .map((row) => row.prebuilt_id));
 }
 
 function wireRowActions(rows) {
@@ -192,22 +254,37 @@ function wireRowActions(rows) {
 
       try {
         if (act === "save") {
-          const value = (field) => row.querySelector(`[data-field="${field}"]`).value.trim();
-          const qty = value("stock_qty") === "" ? null : Number(value("stock_qty"));
-          let status = value("stock_status");
+          // A derived machine has no stock fields in its row at all, so
+          // these come back null and only the price is written.
+          const cell = (field) => row.querySelector(`[data-field="${field}"]`);
+          const value = (field) => (cell(field) ? cell(field).value.trim() : "");
 
-          // If a real count is given, work the badge out from it rather
-          // than trusting the dropdown — the number is the better source.
-          if (qty !== null) {
-            const reorder = byId.get(id).reorder_level ?? 5;
-            status = qty <= 0 ? "out" : (qty <= reorder ? "low" : "in");
+          const patch = { price: Number(value("price")) };
+
+          if (cell("stock_qty")) {
+            const counted = value("stock_qty") === "" ? null : Number(value("stock_qty"));
+            const arrived = value("stock_add") === "" ? 0 : Number(value("stock_add"));
+
+            // Stock that has just come in is added to the count rather
+            // than replacing it. Adding to a product nobody has counted
+            // yet starts the count at what arrived, which is the only
+            // honest reading of "five turned up" when the answer to "how
+            // many were there" is unknown.
+            const qty = arrived > 0 ? (counted ?? 0) + arrived : counted;
+
+            let status = value("stock_status");
+            // If a real count is given, work the badge out from it rather
+            // than trusting the dropdown — the number is the better source.
+            if (qty !== null) {
+              const reorder = byId.get(id).reorder_level ?? 5;
+              status = qty <= 0 ? "out" : (qty <= reorder ? "low" : "in");
+            }
+
+            patch.stock_qty = qty;
+            patch.stock_status = status;
           }
 
-          await write(sb.from("products").update({
-            price: Number(value("price")),
-            stock_qty: qty,
-            stock_status: status,
-          }).eq("product_id", id));
+          await write(sb.from("products").update(patch).eq("product_id", id));
 
           reloadWith("Saved.");
 
