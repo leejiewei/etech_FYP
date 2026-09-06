@@ -82,6 +82,7 @@ adminPage("Prebuilt Parts", "prebuilts", async (content) => {
                                      availability[m.product_id], productName)).join("")}`;
 
   wireSlotControls(catalogue);
+  wirePosterControls();
 });
 
 // ------------------------------------------------------------
@@ -91,7 +92,7 @@ async function loadMachines() {
   // admin_products carries the category names already joined on, which
   // is what decides whether a desktop is one of the shop's own builds.
   const { data, error } = await sb.from("admin_products")
-    .select("product_id,name,price,stock_status,category")
+    .select("product_id,name,price,stock_status,category,img_slug,image_path")
     .in("category", ["Prebuilt Gaming PCs", "Office PC Series", "Custom Office CO1"])
     .order("product_id");
   if (error) throw error;
@@ -150,16 +151,21 @@ function machineCard(machine, slots, availability, productName) {
 
   return `
     <div class="card" style="margin-bottom:22px;">
-      <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
-        <h2 style="margin:0; font-size:17px;">${e(machine.name)}</h2>
-        ${badge}
-        <small style="color:#999;">${e(machine.category)} &middot; ${e(money(machine.price))}</small>
+      <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+        ${poster(machine)}
+        <div style="flex:1; min-width:260px;">
+          <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+            <h2 style="margin:0; font-size:17px;">${e(machine.name)}</h2>
+            ${badge}
+            <small style="color:#999;">${e(machine.category)} &middot; ${e(money(machine.price))}</small>
+          </div>
+          ${complete
+            ? blocking
+            : `<p class="hint" style="margin:6px 0 0;">
+                 Showing this machine's own status (<strong>${e(machine.stock_status)}</strong>)
+                 until every slot is answered.</p>`}
+        </div>
       </div>
-      ${complete
-        ? blocking
-        : `<p class="hint" style="margin:6px 0 0;">
-             Showing this machine's own status (<strong>${e(machine.stock_status)}</strong>)
-             until every slot is answered.</p>`}
 
       <div class="table-wrap" style="margin-top:12px;">
       <table class="data">
@@ -204,6 +210,108 @@ function slotRow(machine, slot, productName) {
       </td>
       <td>${state}</td>
     </tr>`;
+}
+
+// ------------------------------------------------------------
+// The poster
+//
+// Every one of the eleven machines ships with a drawn SVG and no
+// photograph — img_slug "prebuilt" for all of them, so the Ember Core
+// and the Titan Aegis are the same picture. That is fine for a mouse mat
+// and useless for a rig, which is the one thing in the shop somebody
+// buys partly on how it looks.
+//
+// The upload is the product photo uploader, unchanged: js/photo.js
+// resizes to 800px, flattens to JPEG and puts it in the product-images
+// bucket, and the URL goes into products.image_path — the same column
+// and the same bucket the Products page writes. There is no separate
+// "poster" field, and deliberately so: a second column would be a
+// schema change, and the shop already draws image_path wherever it
+// draws a product.
+//
+// It sits here rather than only on Products > Edit because this is the
+// page where somebody thinks about a machine. Making them find the
+// product row for "E-Tech Inferno Apex" on another page to give it a
+// picture is how the eleven ended up with no pictures.
+// ------------------------------------------------------------
+function poster(machine) {
+  const src = machine.image_path
+    ? machine.image_path
+    : `../images/${machine.img_slug || "prebuilt"}.svg`;
+
+  return `
+    <div style="width:150px; flex-shrink:0;">
+      <img src="${e(src)}" alt=""
+           style="width:100%; height:110px; object-fit:contain; background:#fafbfc;
+                  border:1px solid #e8eaed; border-radius:6px;" />
+      <small style="display:block; color:#999; margin:4px 0 6px;">
+        ${machine.image_path ? "Photo" : "Drawn illustration"}
+      </small>
+      <input type="file" class="poster-file" data-machine="${machine.product_id}"
+             accept="image/jpeg,image/png,image/webp"
+             style="width:100%; font-size:11px;" />
+      <button class="btn small poster-save" data-machine="${machine.product_id}"
+              style="width:100%; margin-top:6px;" disabled>Upload poster</button>
+      ${machine.image_path
+        ? `<button class="btn small grey poster-clear" data-machine="${machine.product_id}"
+                   style="width:100%; margin-top:4px;">Back to drawing</button>`
+        : ""}
+    </div>`;
+}
+
+function wirePosterControls() {
+  // The button stays disabled until a file is chosen, so it never asks
+  // the bucket for nothing.
+  document.querySelectorAll("input.poster-file").forEach((input) => {
+    const id = input.dataset.machine;
+    const button = document.querySelector(`button.poster-save[data-machine="${id}"]`);
+    input.onchange = () => { button.disabled = !input.files[0]; };
+  });
+
+  document.querySelectorAll("button.poster-save").forEach((button) => {
+    button.onclick = async () => {
+      const id = Number(button.dataset.machine);
+      const input = document.querySelector(`input.poster-file[data-machine="${id}"]`);
+      const file = input.files[0];
+      if (!file) return;
+
+      // Same two questions the Products page asks, asked by photo.js so
+      // there is only one answer to keep up to date.
+      const problem = checkPhoto(file);
+      if (problem) { alert(problem); return; }
+
+      button.disabled = true;
+      button.textContent = "Uploading...";
+      try {
+        const url = await uploadPhoto(file, id);
+        await write(sb.from("products").update({ image_path: url }).eq("product_id", id));
+        reloadWith("Poster uploaded.");
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "Upload poster";
+        alert("Could not upload that: " + (error.message || error));
+      }
+    };
+  });
+
+  // Clearing the column, not the bucket. The old file stays where it is
+  // -- it is a few tens of kilobytes, deleting it is a second thing that
+  // can fail, and an order placed while the photo was up should still be
+  // able to show what was on the page at the time.
+  document.querySelectorAll("button.poster-clear").forEach((button) => {
+    button.onclick = async () => {
+      if (!confirm("Go back to the drawn illustration for this machine?")) return;
+      const id = Number(button.dataset.machine);
+      button.disabled = true;
+      try {
+        await write(sb.from("products").update({ image_path: null }).eq("product_id", id));
+        reloadWith("Poster removed.");
+      } catch (error) {
+        button.disabled = false;
+        alert("Could not remove that: " + (error.message || error));
+      }
+    };
+  });
 }
 
 // ------------------------------------------------------------

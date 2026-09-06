@@ -2,28 +2,11 @@
 // Add a new product, or edit an existing one — including uploading a
 // photo, which replaces the drawn illustration on the shop.
 //
-// The photo is the part that changed most. product_edit.php took the
-// upload, checked it was really an image, resized it with GD and wrote a
-// JPEG into web/uploads/. That only worked because there was a PHP
-// process with a filesystem behind it, and there isn't one now.
-//
-// So the same three steps happen in the browser instead — check, resize,
-// convert to JPEG — using a canvas, and the result is uploaded to
-// Supabase Storage. Doing the resize here is not only a substitute: it
-// means a 4MB phone photo becomes an 80KB JPEG before it is sent, rather
-// than after.
-//
-// The checks being in the browser does raise the obvious question, and
-// the answer is that they are not the security boundary. The bucket
-// itself refuses anything over 5MB or of the wrong type, and refuses
-// uploads from anyone who is not staff. What happens here is for the
-// person using the page; what happens in the bucket is the rule.
+// The photo itself is uploaded by js/photo.js, which this page shares
+// with the prebuilt page -- a rig gets its poster through the same
+// resize-and-store path a mouse mat does.
 // ============================================================
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-const MAX_PHOTO_SIDE = 800;
-const PHOTO_QUALITY = 0.85;
-const PHOTO_BUCKET = "product-images";
 
 adminPage("Edit Product", "products", async (content) => {
   const id = Number(params().id || 0);
@@ -257,12 +240,8 @@ async function save(id, isNew) {
   }
 
   const photoFile = document.getElementById("photo").files[0] || null;
-  if (photoFile) {
-    if (photoFile.size > MAX_PHOTO_BYTES) errors.push("Photo must be under 5MB.");
-    if (!["image/jpeg", "image/png", "image/webp"].includes(photoFile.type)) {
-      errors.push("Photo must be a JPG, PNG or WEBP.");
-    }
-  }
+  const photoProblem = checkPhoto(photoFile);   // photo.js
+  if (photoProblem) errors.push(photoProblem);
 
   if (errors.length > 0) {
     errorBox.innerHTML = errors.map(e).join("<br />");
@@ -331,50 +310,3 @@ async function save(id, isNew) {
   }
 }
 
-// ------------------------------------------------------------
-// The photo: check it, shrink it, flatten it, send it.
-//
-// Reading the file into an <img> is also the check that it really is an
-// image, in the same way getimagesize() was: a renamed .exe will not
-// decode and the promise rejects. Drawing it onto a canvas and reading
-// it back as JPEG is what strips anything hidden in the original file,
-// which is why the PHP redrew rather than simply moving the upload.
-// ------------------------------------------------------------
-async function uploadPhoto(file, productId) {
-  const image = await readImage(file);
-
-  // Scale down so the shop stays quick to load. Never scales up.
-  const scale = Math.min(MAX_PHOTO_SIDE / image.width, MAX_PHOTO_SIDE / image.height, 1);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
-
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#ffffff";                 // flatten transparency
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-  const blob = await new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not convert that image."))),
-                  "image/jpeg", PHOTO_QUALITY));
-
-  // The timestamp is what the PHP used too: a new name every time, so a
-  // replaced photo is never served from a stale cache.
-  const path = `p${productId}_${Date.now()}.jpg`;
-
-  const { error } = await sb.storage.from(PHOTO_BUCKET)
-    .upload(path, blob, { contentType: "image/jpeg", upsert: false });
-  if (error) throw error;
-
-  return sb.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
-function readImage(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
-    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file is not an image.")); };
-    image.src = url;
-  });
-}
