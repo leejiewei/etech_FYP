@@ -121,11 +121,11 @@ async function loadCatalogue() {
   // themselves complete machines. Fetched once and reused by every
   // dropdown on the page rather than per slot.
   const { data, error } = await sb.from("admin_products")
-    .select("product_id,name,stock_status,category,parent")
+    .select("product_id,name,stock_status,category,parent_category")
     .eq("is_active", 1)
     .order("name");
   if (error) throw error;
-  return data.filter((p) => (p.parent || p.category) !== "Desktops");
+  return data.filter((p) => (p.parent_category || p.category) !== "Desktops");
 }
 
 // ------------------------------------------------------------
@@ -259,7 +259,7 @@ function currentLinkFor(select) {
 function narrow(select, catalogue, wantedCategories) {
   const keep = new Set(catalogue
     .filter((p) => wantedCategories.includes(p.category) ||
-                   wantedCategories.includes(p.parent))
+                   wantedCategories.includes(p.parent_category))
     .map((p) => String(p.product_id)));
 
   if (keep.size === 0) return; // no such category — leave the full list
