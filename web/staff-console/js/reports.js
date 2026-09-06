@@ -6,8 +6,12 @@
 // nothing to explain that isn't in this file. That was true when this
 // was reports.php and it is still true.
 //
-// The demand forecast line is deliberately not here — it has a page of
-// its own now, forecast.html.
+// There is deliberately no projected line on this page. There was a
+// forecast page beside it once -- a least-squares fit over monthly
+// sales -- and it has been removed. Seven months holding 36 orders is
+// not enough history for a trend line to mean anything, and a number
+// drawn with a straight face is worse than no number at all. What is
+// left here is counting, which is true whatever the row count.
 //
 // Four aggregates feed this page, and all four are views. A GROUP BY is
 // not something a browser can send, and that is a feature rather than an
@@ -45,8 +49,7 @@ adminPage("Sales & Customers", "reports", async (content) => {
   ]);
 
   // The last twelve months. The view returns every month there has ever
-  // been a sale, because the forecast page wants all of it; the trim is
-  // this page's business.
+  // been a sale; the trim is this page's business.
   const monthly = monthlyAll.slice(-12);
 
   const totals = monthly.reduce((t, m) => ({
@@ -105,7 +108,6 @@ adminPage("Sales & Customers", "reports", async (content) => {
         </div>
         <p class="hint" style="margin:14px 0 0;">
           Monthly revenue, cancelled orders excluded.
-          <a href="forecast.html" style="color:#d62839;">The projection is on the forecast page</a>.
         </p>`}
     </div>
 
