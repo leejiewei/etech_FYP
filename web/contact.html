@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Contact - eTech Computer Accessories</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -19,13 +20,13 @@
       <h3>Send us an Enquiry</h3>
       <form id="enquiry-form" onsubmit="submitEnquiry(event)">
         <label for="enquiry-name">Name</label>
-        <input type="text" id="enquiry-name" required />
+        <input type="text" id="enquiry-name" name="name" autocomplete="name" required />
 
         <label for="enquiry-email">Email</label>
-        <input type="email" id="enquiry-email" required />
+        <input type="email" id="enquiry-email" name="email" autocomplete="email" required />
 
         <label for="enquiry-message">Message</label>
-        <textarea id="enquiry-message" rows="4" required></textarea>
+        <textarea id="enquiry-message" autocomplete="off" rows="4" required></textarea>
 
         <button type="submit">Send Enquiry</button>
       </form>
@@ -42,6 +43,7 @@
   <!-- Supabase client, then where the project is, then the connection. -->
   <script src="js/vendor/supabase.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
   <script src="js/db.js"></script>
   <script src="js/products.js"></script>
   <script src="js/auth.js"></script>

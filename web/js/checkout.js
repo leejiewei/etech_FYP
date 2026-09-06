@@ -32,7 +32,7 @@ function renderCheckoutSummary() {
   }
 
   listEl.innerHTML = items.map((item) =>
-    `<li>${item.qty} x ${item.name} — RM ${item.lineTotal.toFixed(2)}</li>`).join("");
+    `<li>${item.qty} x ${escapeHtml(item.name)} — RM ${item.lineTotal.toFixed(2)}</li>`).join("");
   totalEl.textContent = "RM " + items.reduce((s, i) => s + i.lineTotal, 0).toFixed(2);
 }
 

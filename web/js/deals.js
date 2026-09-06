@@ -110,11 +110,11 @@ function renderDealCards() {
     const card = document.createElement("div");
     card.className = "deal-card";
     card.innerHTML = `
-      <h3>${deal.description}</h3>
-      <p class="product-category">${deal.category}</p>
+      <h3>${escapeHtml(deal.description)}</h3>
+      <p class="product-category">${escapeHtml(deal.category)}</p>
       <p class="deal-percent">${deal.discountPercent}% OFF</p>
-      <button class="add-btn" onclick="copyCoupon('${deal.code}')">Copy Code: ${deal.code}</button>
-      <a class="deal-link" href="shop.html?category=${encodeURIComponent(deal.category)}">Shop ${deal.category} &rarr;</a>
+      <button class="add-btn" onclick="copyCoupon('${escapeHtml(deal.code)}')">Copy Code: ${escapeHtml(deal.code)}</button>
+      <a class="deal-link" href="shop.html?category=${encodeURIComponent(deal.category)}">Shop ${escapeHtml(deal.category)} &rarr;</a>
     `;
     grid.appendChild(card);
   });

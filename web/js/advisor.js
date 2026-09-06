@@ -399,14 +399,14 @@ function formatBuildReply(request, result) {
   const parts = result.parts;
   const problems = verifyBuild(parts);
 
-  let html = `Here's my recommendation for <strong>${target.label}</strong>`;
+  let html = `Here's my recommendation for <strong>${escapeHtml(target.label)}</strong>`;
   if (request.budget !== null) html += ` with a <strong>${moneyText(request.budget)}</strong> budget`;
   html += `:<br><br>`;
 
   html += `<table class="chat-build">`;
   builderSlots.forEach((slot) => {
     const p = parts[slot];
-    html += `<tr><td>${slot}</td><td>${p.name}</td><td>${moneyText(p.price)}</td></tr>`;
+    html += `<tr><td>${escapeHtml(slot)}</td><td>${escapeHtml(p.name)}</td><td>${moneyText(p.price)}</td></tr>`;
   });
   html += `<tr class="chat-build-total"><td>Total</td><td></td><td>${moneyText(result.total)}</td></tr>`;
   html += `</table>`;
@@ -449,7 +449,7 @@ function suggestExtras(moneyLeft, request) {
 
   let remaining = moneyLeft;
   if (monitor && monitor.price <= remaining) {
-    wanted.push(`a ${monitor.name} (${moneyText(monitor.price)})`);
+    wanted.push(`a ${escapeHtml(monitor.name)} (${moneyText(monitor.price)})`);
     remaining -= monitor.price;
   }
 
@@ -458,7 +458,7 @@ function suggestExtras(moneyLeft, request) {
     .sort((a, b) => a.price - b.price)
     .forEach((gear) => {
       if (gear.price <= remaining && wanted.length < 4) {
-        wanted.push(`a ${gear.name} (${moneyText(gear.price)})`);
+        wanted.push(`a ${escapeHtml(gear.name)} (${moneyText(gear.price)})`);
         remaining -= gear.price;
       }
     });
@@ -474,17 +474,17 @@ function whyText(request, parts) {
 
   let why = "";
   if (workload === "esports") {
-    why += `Games like CS2 depend far more on the processor than the graphics card, so most of the money went into the ${cpu.name}. `;
-    why += `At ${resolution} the ${gpu.name} already pushes high frame rates, so spending more on the GPU wouldn't help much. `;
+    why += `Games like CS2 depend far more on the processor than the graphics card, so most of the money went into the ${escapeHtml(cpu.name)}. `;
+    why += `At ${escapeHtml(resolution)} the ${escapeHtml(gpu.name)} already pushes high frame rates, so spending more on the GPU wouldn't help much. `;
   } else if (workload === "creator") {
-    why += `Editing and rendering use all the CPU cores, so the ${cpu.name} does the heavy lifting here, backed by the ${gpu.name} for preview and export. `;
+    why += `Editing and rendering use all the CPU cores, so the ${escapeHtml(cpu.name)} does the heavy lifting here, backed by the ${escapeHtml(gpu.name)} for preview and export. `;
   } else if (workload === "office") {
     why += `Office and study work needs very little power, so this build keeps costs down while staying quick and quiet. `;
   } else {
-    why += `At ${resolution} the graphics card does most of the work, so the ${gpu.name} takes the biggest share of the budget, paired with the ${cpu.name} so nothing is held back. `;
+    why += `At ${escapeHtml(resolution)} the graphics card does most of the work, so the ${escapeHtml(gpu.name)} takes the biggest share of the budget, paired with the ${escapeHtml(cpu.name)} so nothing is held back. `;
   }
 
-  why += `The ${cooler.name} is rated for ${cooler.attrs.coolerRating}W and the ${cpu.name} needs ${cpu.attrs.tdp}W, so it stays cool. `;
+  why += `The ${escapeHtml(cooler.name)} is rated for ${escapeHtml(cooler.attrs.coolerRating)}W and the ${escapeHtml(cpu.name)} needs ${escapeHtml(cpu.attrs.tdp)}W, so it stays cool. `;
   why += `The ${psu.attrs.wattage}W supply covers the roughly ${(cpu.attrs.tdp || 0) + (gpu.attrs.power || 0) + OTHER_PARTS_WATTAGE}W this build draws.`;
   return why;
 }

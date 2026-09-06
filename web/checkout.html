@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Checkout - eTech Computer Accessories</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -26,26 +27,32 @@
       <form onsubmit="placeOrder(event)">
         <h3>Shipping Details</h3>
         <label for="checkout-name">Full Name</label>
-        <input type="text" id="checkout-name" required />
+        <input type="text" id="checkout-name" name="shipping-name" autocomplete="shipping name" required />
 
         <label for="checkout-phone">Phone Number</label>
-        <input type="text" id="checkout-phone" required />
+        <input type="tel" id="checkout-phone" name="shipping-tel" autocomplete="shipping tel"
+          inputmode="tel" required />
 
         <label for="checkout-address">Shipping Address</label>
-        <textarea id="checkout-address" rows="3" required></textarea>
+        <textarea id="checkout-address" name="shipping-address" autocomplete="shipping street-address"
+          rows="3" required></textarea>
 
         <label for="checkout-coupon">Coupon Code (optional)</label>
-        <input type="text" id="checkout-coupon" placeholder="e.g. PARTS10" />
+        <input type="text" id="checkout-coupon" autocomplete="off" autocapitalize="characters"
+          spellcheck="false" placeholder="e.g. PARTS10" />
 
         <h3 style="margin-top: 20px;">Mock Payment (sandbox — not a real gateway)</h3>
         <label for="card-number">Card Number</label>
-        <input type="text" id="card-number" placeholder="1234 5678 9012 3456" required />
+        <input type="text" id="card-number" autocomplete="off" inputmode="numeric"
+          placeholder="1234 5678 9012 3456" required />
 
         <label for="card-expiry">Expiry (MM/YY)</label>
-        <input type="text" id="card-expiry" placeholder="12/28" required />
+        <input type="text" id="card-expiry" autocomplete="off" inputmode="numeric"
+          placeholder="12/28" required />
 
         <label for="card-cvv">CVV</label>
-        <input type="text" id="card-cvv" placeholder="123" required />
+        <input type="text" id="card-cvv" autocomplete="off" inputmode="numeric"
+          placeholder="123" required />
 
         <div class="form-error" id="checkout-error"></div>
 
@@ -68,6 +75,7 @@
   <!-- Supabase client, then where the project is, then the connection. -->
   <script src="js/vendor/supabase.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
   <script src="js/db.js"></script>
   <script src="js/products.js"></script>
   <script src="js/auth.js"></script>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
@@ -20,10 +22,30 @@ class _ShopScreenState extends State<ShopScreen> {
   String _sort = 'default';
   final _searchController = TextEditingController();
 
+  // Recording a search waits until the typing stops. Without this, "rtx"
+  // would be written down as three searches, two of which found nothing.
+  Timer? _searchDebounce;
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Called on every keystroke; writes at most one row per typed phrase.
+  ///
+  /// The count comes from _filtered rather than from a guess, so it is the
+  /// number of products the shopper was actually shown — including zero,
+  /// which is the case worth knowing about.
+  void _onSearchChanged(String value) {
+    setState(() => _search = value);
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 750), () {
+      if (!mounted) return;
+      widget.shop.trackSearch(value, _filtered.length);
+    });
   }
 
   List<Product> get _filtered {
@@ -90,7 +112,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         },
                       ),
               ),
-              onChanged: (v) => setState(() => _search = v),
+              onChanged: _onSearchChanged,
             ),
           ),
           SizedBox(

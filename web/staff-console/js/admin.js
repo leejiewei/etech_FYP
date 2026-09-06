@@ -113,6 +113,7 @@ function keepQuery(extra) {
 const ADMIN_MENU = [
   ["dashboard",  "index.html",        "Dashboard"],
   ["products",   "products.html",     "Products"],
+  ["prebuilts",  "prebuilts.html",    "Prebuilt Parts"],
   ["coupons",    "coupons.html",      "Promotions"],
   ["orders",     "orders.html",       "Orders"],
   ["chatlogs",   "chatlogs.html",     "Chatbot Logs"],
@@ -120,7 +121,6 @@ const ADMIN_MENU = [
   ["velocity",   "velocity.html",     "Inventory Velocity"],
   ["alerts",     "alerts.html",       "Stock Alerts"],
   ["reports",    "reports.html",      "Sales &amp; Customers"],
-  ["forecast",   "forecast.html",     "Sales Forecast"],
 ];
 
 function buildChrome(title, active, staffName) {

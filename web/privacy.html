@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Notice - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <div style="max-width: 760px; margin: 0 auto; color: #333; line-height: 1.65;">
+
+      <h2 style="text-align:center;">Privacy Notice</h2>
+      <p style="text-align:center; color:#777; margin-top:-10px;">
+        Last updated 5 September 2026
+      </p>
+
+      <div style="background:#fff8e1; border:1px solid #ffe0a3; border-radius:8px;
+                  padding:16px 18px; margin:24px 0;">
+        <strong>This site is a student final-year project.</strong>
+        eTech Computer Accessories is being built and tested as university
+        coursework. Checkout is a simulation &mdash; no card is charged and no
+        goods are shipped. During the test period the site records how it is
+        used, and this page explains exactly what that means.
+      </div>
+
+      <h3>Who is responsible</h3>
+      <p>
+        This site is operated by a student at a Malaysian university as part of a
+        final-year project, supervised by an academic supervisor. Questions about
+        anything on this page, including a request to see or delete your data,
+        can be sent through the <a href="contact.html">Contact</a> page.
+      </p>
+
+      <h3>What is recorded, and why</h3>
+
+      <p><strong>If you create an account</strong>, we store your name, email
+      address, phone number and delivery address. These are needed to hold your
+      basket, show your order history, and address an order. Your password is
+      held by Supabase Auth as a hash &mdash; the shop never sees or stores the
+      password itself.</p>
+
+      <p><strong>Whether or not you sign in</strong>, the site records:</p>
+      <ul>
+        <li>which products you open, and when;</li>
+        <li>what you type into the search box, and how many results came back;</li>
+        <li>what you ask the chatbot, and what it answered;</li>
+        <li>what you add to your basket, wishlist, and what you order.</li>
+      </ul>
+
+      <p>
+        This is the point of the project rather than a side effect. The research
+        question is whether a shop's own records can be used to recommend
+        products and forecast stock, so the browsing record <em>is</em> the
+        subject being studied. It is used to rank products in the shop's admin
+        dashboard, to suggest items on the home page, and &mdash; in aggregate,
+        with no names attached &mdash; as the dataset analysed in the written
+        dissertation.
+      </p>
+
+      <h3>Being recognised without being identified</h3>
+      <p>
+        If you browse without signing in, your device is given a random
+        identifier (a UUID) that is stored in this browser and sent with the
+        records above. It is not a login, it proves nothing, and it is not
+        linked to your name, email or any other person &mdash; it only answers
+        the question "was this the same browser?", so that a single visit can be
+        read as one visit rather than as a heap of unrelated clicks.
+      </p>
+      <p>
+        If you later create an account or sign in, the activity recorded under
+        that identifier on this device is attached to your account, so that a
+        purchase can be read together with the browsing that led to it. Clearing
+        your browser's site data ends the old identifier and starts a new one.
+      </p>
+
+      <h3>What is not recorded</h3>
+      <ul>
+        <li>No card or payment details. Checkout is simulated and the card box
+            accepts any sixteen digits; nothing is sent anywhere or stored.</li>
+        <li>No advertising or third-party analytics trackers, and nothing is
+            sold or passed to advertisers.</li>
+        <li>No cookies for tracking. The site keeps your sign-in token and the
+            device identifier in your browser's own local storage.</li>
+      </ul>
+
+      <h3>Where it is kept, and who can see it</h3>
+      <p>
+        Everything is stored in a Supabase (PostgreSQL) database. Access is
+        restricted by database policies: you can read your own account and your
+        own orders and nothing else, and the browsing records can be read only
+        by shop staff. Questions sent to the AI assistant are passed to Google's
+        Gemini API to generate a reply; the shop's product catalogue and your
+        message are sent, and your name, email and account details are not.
+      </p>
+
+      <h3>How long it is kept</h3>
+      <p>
+        Account and order records are kept while the account exists. Browsing,
+        search and chatbot records are kept for the duration of the project and
+        the assessment that follows it, after which the project database is
+        deleted. Data that appears in the dissertation appears only in
+        aggregate, with no individual identified.
+      </p>
+
+      <h3>Your choices</h3>
+      <ul>
+        <li><strong>You do not have to take part.</strong> You can browse without
+            creating an account, and you can stop at any time.</li>
+        <li><strong>You can ask for a copy</strong> of what is held about you, or
+            ask for it to be corrected or deleted, through the
+            <a href="contact.html">Contact</a> page. Deleting your account
+            removes your personal details; the browsing records that remain are
+            detached from you and cannot be traced back.</li>
+        <li><strong>You can clear the device identifier</strong> at any time by
+            clearing this site's data in your browser settings.</li>
+      </ul>
+
+      <p style="margin-top:28px; padding-top:18px; border-top:1px solid #eee; color:#666;">
+        This notice is provided in line with the Personal Data Protection Act
+        2010 (Malaysia). If you are taking part in the project's test period,
+        this page is also the participant information sheet for that test.
+      </p>
+
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

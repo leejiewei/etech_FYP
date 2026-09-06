@@ -32,12 +32,16 @@ function loadWishlist() {
 // page should not be the thing deciding which of those happened. The
 // function hands the whole list back, so one round trip is enough to
 // repaint every heart on the page.
+// Returns a promise that settles once the wishlist has actually changed.
+// Nothing had to wait for it while every heart on the page was redrawn
+// by the calls at the bottom of this function; the product modal is not
+// one of those pages, and reads the new state itself once this is done.
 function toggleWishlist(productId) {
   if (!isLoggedIn()) {
     askToLogIn("You need an account to save things to your wishlist.");
-    return;
+    return Promise.resolve();
   }
-  sb.rpc("toggle_wishlist", { p_product_id: productId }).then(({ data, error }) => {
+  return sb.rpc("toggle_wishlist", { p_product_id: productId }).then(({ data, error }) => {
     if (error) { alert(dbMessage(error, "Could not update your wishlist.")); return; }
     wishlistIds = data || [];
     updateWishlistCount();

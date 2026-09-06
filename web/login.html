@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login - eTech Computer Accessories</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -14,10 +15,10 @@
       <h2>Login</h2>
       <form id="login-form">
         <label for="email">Email</label>
-        <input type="email" id="email" required />
+        <input type="email" id="email" name="email" autocomplete="username" required />
 
         <label for="password">Password</label>
-        <input type="password" id="password" required />
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
 
         <div class="form-error" id="login-error"></div>
 
@@ -32,6 +33,7 @@
   <!-- Supabase client, then where the project is, then the connection. -->
   <script src="js/vendor/supabase.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
   <script src="js/db.js"></script>
   <script src="js/products.js"></script>
   <script src="js/auth.js"></script>
@@ -58,7 +60,7 @@
         // skipped entirely -- the admin pages hold their own separate
         // session, which is the point of them being separate.
         if (errorMessage === "staff") {
-          window.location.href = "admin/login.html?staff=" + encodeURIComponent(email);
+          window.location.href = "staff-console/login.html?staff=" + encodeURIComponent(email);
           return;
         }
         if (errorMessage) {

@@ -17,6 +17,16 @@ dependencies:
   # package keeps the session itself.
   supabase_flutter: ^2.8.0
 
+  # Back, and for one key only: anon_id. It is the id this phone gives
+  # itself so that what somebody browses before signing in can be joined
+  # to the account they eventually make. It has to outlive the app being
+  # closed, which rules out holding it in memory, and it cannot live in
+  # the Supabase session because the whole point is that there is no
+  # session yet. supabase_flutter already depends on this package for its
+  # own session storage, so this promotes a transitive dependency to a
+  # named one rather than adding anything new.
+  shared_preferences: ^2.5.0
+
   # Draws the product illustrations, which are SVG files bundled in assets/
   flutter_svg: ^2.0.16
 

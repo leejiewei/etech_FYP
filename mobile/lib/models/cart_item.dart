@@ -1,7 +1,13 @@
 import '../config.dart';
 import 'product.dart' show numericOf;
+import 'prebuilt.dart';
 
 /// A line in the basket: a row of cart_items with its product joined on.
+///
+/// A line for one of the shop's own builds can also carry the upgrades
+/// the customer ticked on the prebuilt card. They are part of the line
+/// rather than lines of their own, because they are not separately
+/// deliverable — nobody is buying a "+RM499 to RTX 5050" on its own.
 class CartItem {
   final int id;
   final String name;
@@ -10,6 +16,7 @@ class CartItem {
   final String imgSlug;
   final String? imagePath;
   final String stock;
+  final List<PrebuiltUpgrade> upgrades;
   final double lineTotal;
 
   CartItem({
@@ -20,13 +27,21 @@ class CartItem {
     required this.imgSlug,
     this.imagePath,
     required this.stock,
+    this.upgrades = const [],
     required this.lineTotal,
   });
 
-  factory CartItem.fromRow(Map<String, dynamic> row) {
+  factory CartItem.fromRow(
+    Map<String, dynamic> row, {
+    List<PrebuiltUpgrade> upgrades = const [],
+  }) {
     final product = Map<String, dynamic>.from(row['products'] as Map);
     final price = numericOf(product['price']);
     final qty = row['quantity'] as int;
+    // Each machine carries its own upgrades, so two of them cost two
+    // upgrade fees -- the same way two of anything costs twice.
+    final perUnit =
+        price + upgrades.fold<double>(0, (sum, u) => sum + u.priceDelta);
 
     return CartItem(
       id: row['product_id'] as int,
@@ -36,11 +51,17 @@ class CartItem {
       imgSlug: product['img_slug'] ?? 'default',
       imagePath: product['image_path'],
       stock: product['stock_status'] ?? 'in',
+      upgrades: upgrades,
       // Worked out here rather than read back, because it is the same
       // arithmetic either way and one less thing to keep in step.
-      lineTotal: price * qty,
+      lineTotal: perUnit * qty,
     );
   }
+
+  /// What the upgrades add to this line, for showing the base price and
+  /// the extras apart from one another.
+  double get upgradeTotal =>
+      upgrades.fold<double>(0, (sum, u) => sum + u.priceDelta) * qty;
 
   String get imageUrl =>
       imagePath != null ? imagePath! : Config.illustration(imgSlug);

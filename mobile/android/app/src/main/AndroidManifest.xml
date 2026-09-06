@@ -4,14 +4,28 @@
          permission to use the network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!--
+        usesCleartextTraffic was here for XAMPP, which served the old PHP API
+        over plain http. That server is gone: the app now talks only to
+        Supabase, over https, so allowing cleartext bought nothing and left
+        the door open to a downgrade or an intercepting proxy on a hostile
+        network. Removing the attribute restores Android 9's default, which
+        is to refuse plaintext outright.
+
+        allowBackup is false because the Supabase session token lives in
+        SharedPreferences, which is plain XML. With backup enabled that file
+        can leave the phone through Android's backup and device-transfer
+        paths, and a session token is a signed-in account to whoever ends up
+        holding it. Nothing in this app is worth restoring from a backup
+        anyway: the cart, the wishlist and the orders are all in the
+        database, not on the handset.
+    -->
     <application
         android:label="eTech"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"><!--
-        XAMPP serves over plain http, and since Android 9 apps block that by
-        default. This allows it, which is fine for a local project. A real
-        deployment would use https and this line would be removed. -->
+        android:allowBackup="false"
+        android:fullBackupContent="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

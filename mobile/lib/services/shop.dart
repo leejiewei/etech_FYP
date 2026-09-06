@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
+import '../models/prebuilt.dart';
 import 'api.dart';
 
 /// Everything the app knows about the shop, in one place.
@@ -24,6 +28,14 @@ class Shop extends ChangeNotifier {
   List<Product> products = [];
   bool loadingProducts = false;
   String? loadError;
+
+  // ---- the shop's own builds ----
+  //
+  // Keyed by the machine's product id. Both are empty for every product
+  // that is not one of the shop's DIY builds, and the helpers below are
+  // written so that an empty map means "nothing to say", never "no".
+  Map<int, PrebuiltAvailability> availability = {};
+  Map<int, List<PrebuiltUpgrade>> upgrades = {};
 
   // ---- who is signed in ----
   Map<String, dynamic>? user;
@@ -57,9 +69,64 @@ class Shop extends ChangeNotifier {
   // Start-up
   // ------------------------------------------------------------
   Future<void> start() async {
+    await _loadAnonId();
     await loadProducts();
     await refreshSession();
     await loadDeals();
+  }
+
+  // ------------------------------------------------------------
+  // The id of this phone, as distinct from the person holding it
+  //
+  // customer_id answers "who is this?" and is null for anyone not signed
+  // in, which leaves an anonymous visitor's rows as a heap of unrelated
+  // facts — two views a minute apart from this phone cannot be told from
+  // two views by two strangers. _anonId answers the weaker question "was
+  // this the same phone?", which is all that is needed to group a visit
+  // into a session and, once they sign up, to hand them what they did
+  // before they had an account.
+  //
+  // Made once and kept. It is not a login and proves nothing: the
+  // database does not check it, and it identifies an install rather than
+  // a person. Reinstalling starts a new one, which is correct — that is
+  // a new anonymous visitor as far as anything here can tell.
+  //
+  // Read once at start-up and held, so that tracking a view stays a
+  // fire-and-forget call with no await in front of it.
+  // ------------------------------------------------------------
+  static const String _anonIdKey = 'etech_anon_id';
+  String? _anonId;
+
+  Future<void> _loadAnonId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var id = prefs.getString(_anonIdKey);
+      if (id == null) {
+        id = _newUuidV4();
+        await prefs.setString(_anonIdKey, id);
+      }
+      _anonId = id;
+    } catch (e) {
+      // Storage unavailable. Tracking must never stop the app starting,
+      // so this install is simply untrackable while signed out.
+      debugPrint('Anon id: $e');
+      _anonId = null;
+    }
+  }
+
+  /// A version 4 UUID, which is the type the anon_id column holds.
+  ///
+  /// Written out rather than pulled in: the uuid package would be a new
+  /// dependency for sixteen random bytes, and Random.secure() is the same
+  /// source of randomness it would use.
+  static String _newUuidV4() {
+    final rnd = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
   // ------------------------------------------------------------
@@ -95,9 +162,22 @@ class Shop extends ChangeNotifier {
         Api.selectAll(() => Api.db
             .from('product_attributes')
             .select('product_id,attr_key,attr_value')),
+        // The shop's own builds. Fetched with the catalogue rather than
+        // when the Prebuilt tab opens, because the stock badge has to be
+        // right everywhere a machine appears -- search results, the Shop
+        // grid, its own product page -- not only on the one screen.
+        Api.selectAll(() => Api.db.from('prebuilt_availability').select(
+            'prebuilt_id,linked,pending,not_stocked,derived_status,blocking_parts')),
+        Api.selectAll(() => Api.db
+            .from('prebuilt_upgrades')
+            .select('upgrade_id,prebuilt_id,slot,label,price_delta,kind')
+            .eq('is_active', 1)
+            .order('prebuilt_id')
+            .order('sort_order')),
       ]);
 
       products = _shapeCatalogue(results[0], results[1], results[2], results[3]);
+      _shapePrebuilts(results[4], results[5]);
       loadError = null;
     } catch (e) {
       loadError = Api.message(e, 'Could not load the catalogue.');
@@ -173,6 +253,65 @@ class Shop extends ChangeNotifier {
       );
     }).toList();
   }
+
+  // ------------------------------------------------------------
+  // The shop's own builds
+  //
+  // A Gaming or Office machine is assembled here from parts the shop
+  // also sells separately, so "can this be sold?" is a question about
+  // those parts. The database answers it in prebuilt_availability; this
+  // just files the answers by machine.
+  // ------------------------------------------------------------
+  void _shapePrebuilts(
+    List<Map<String, dynamic>> availabilityRows,
+    List<Map<String, dynamic>> upgradeRows,
+  ) {
+    availability = {
+      for (final row in availabilityRows)
+        row['prebuilt_id'] as int: PrebuiltAvailability.fromRow(row),
+    };
+
+    final byMachine = <int, List<PrebuiltUpgrade>>{};
+    for (final row in upgradeRows) {
+      final upgrade = PrebuiltUpgrade.fromRow(row);
+      (byMachine[upgrade.prebuiltId] ??= []).add(upgrade);
+    }
+    upgrades = byMachine;
+  }
+
+  /// The stock status to show for a product.
+  ///
+  /// For anything that is not one of the shop's builds, and for a build
+  /// whose bill of materials is not finished, this is the product's own
+  /// status and nothing has changed. For a build that is fully described,
+  /// the parts decide: one of them out and the machine is out.
+  ///
+  /// Every screen should ask this rather than reading product.stock, so
+  /// that a machine cannot read "In Stock" in the Shop grid and "Out of
+  /// Stock" on the Prebuilt tab.
+  String stockOf(Product p) =>
+      availability[p.id]?.statusOr(p.stock) ?? p.stock;
+
+  bool inStock(Product p) => stockOf(p) != 'out';
+
+  String stockLabelOf(Product p) {
+    switch (stockOf(p)) {
+      case 'in':
+        return 'In Stock';
+      case 'low':
+        return 'Low Stock';
+      default:
+        return 'Out of Stock';
+    }
+  }
+
+  /// Which parts are holding a machine back, when that is why it is out.
+  /// Null whenever there is nothing useful to say.
+  String? blockedBy(Product p) => availability[p.id]?.blockedBy;
+
+  /// The upgrade options offered on a machine, in the shop's own order.
+  List<PrebuiltUpgrade> upgradesFor(int productId) =>
+      upgrades[productId] ?? const [];
 
   // ------------------------------------------------------------
   // Promotions
@@ -276,21 +415,34 @@ class Shop extends ChangeNotifier {
     }
 
     await refreshSession();
+    await _claimAnonActivity();
     return loggedIn ? null : 'That account cannot sign in to the shop.';
   }
 
   /// Registering writes to Supabase Auth. The row in customers is made by
   /// a database trigger watching for new sign-ups, which is why the name
   /// travels as sign-up metadata — the trigger reads it from there.
-  Future<String?> register(String name, String email, String password) async {
+  /// Signing up has three outcomes, not two, now that email confirmation
+  /// is on: refused, made-and-signed-in, and made-but-go-and-confirm. The
+  /// third is a success and must not be painted in the red error box, so
+  /// this returns a record rather than the old `String?` where any
+  /// non-null value meant failure.
+  ///
+  ///   (ok: true,  message: null)     signed in, close the screen
+  ///   (ok: true,  message: "Check…") made, needs confirming
+  ///   (ok: false, message: "…")      refused, show as an error
+  Future<({bool ok, String? message})> register(
+      String name, String email, String password) async {
     name = name.trim();
     email = email.trim().toLowerCase();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      return 'Please fill in every field.';
+      return (ok: false, message: 'Please fill in every field.');
     }
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters.';
+    // Matches auth.minimum_password_length in supabase/config.toml and the
+    // same check in web/js/auth.js.
+    if (password.length < 8) {
+      return (ok: false, message: 'Password must be at least 8 characters.');
     }
 
     try {
@@ -302,22 +454,45 @@ class Shop extends ChangeNotifier {
 
       // No session back means the project is set to confirm addresses by
       // email before letting anyone in. The account exists either way.
+      // With confirmation on this is the normal path for a new customer,
+      // not the unusual one. The link expires in fifteen minutes
+      // (auth.email.otp_expiry in supabase/config.toml).
       if (result.session == null) {
-        return 'Account created. Check your email to confirm the address, '
-            'then sign in.';
+        return (
+          ok: true,
+          message: 'Account created. Check your email to confirm the address, '
+              'then sign in. The link expires in 15 minutes.',
+        );
       }
     } on AuthException catch (e) {
+      // Deliberately does not say whether the address is already taken.
+      // Answering that turns this form into a way of testing whether a
+      // given person shops here, one address at a time — see the note on
+      // registerError() in web/js/auth.js. The sign-in screen has always
+      // given one answer to both a wrong password and an unknown address;
+      // this is the same rule, applied to the other door.
+      //
+      // Passing e.message straight back is dropped for the same reason:
+      // Supabase's own wording names the cause.
       final m = e.message.toLowerCase();
-      if (m.contains('already registered')) {
-        return 'An account with this email already exists.';
+      if (m.contains('invalid') && m.contains('email')) {
+        return (ok: false, message: 'That email address does not look right.');
       }
-      return e.message;
+      if (m.contains('weak') || m.contains('password')) {
+        return (ok: false, message: 'Please choose a stronger password.');
+      }
+      return (
+        ok: false,
+        message: 'Could not create the account. If you have signed up before, '
+            'please sign in instead.',
+      );
     } catch (e) {
-      return Api.message(e, 'Could not create the account.');
+      return (ok: false, message: Api.message(e, 'Could not create the account.'));
     }
 
     await refreshSession();
-    return null;
+    await _claimAnonActivity();
+    return (ok: true, message: null);
   }
 
   Future<void> logout() async {
@@ -366,13 +541,39 @@ class Shop extends ChangeNotifier {
   Future<void> loadCart() async {
     if (!loggedIn) return;
     try {
-      final rows = await Api.db
-          .from('cart_items')
-          .select('product_id,quantity,'
-              'products(name,price,icon,img_slug,image_path,stock_status)')
-          .order('added_at');
+      // Two requests rather than one nested select. cart_item_upgrades
+      // hangs off cart_items by a two-column key, which PostgREST will
+      // not walk without being told which constraint to use; asking for
+      // the rows plainly and matching them up here is the version that
+      // keeps working when the schema is next touched.
+      final results = await Future.wait([
+        Api.db
+            .from('cart_items')
+            .select('product_id,quantity,'
+                'products(name,price,icon,img_slug,image_path,stock_status)')
+            .order('added_at'),
+        Api.db.from('cart_item_upgrades').select(
+            'product_id,prebuilt_upgrades(upgrade_id,prebuilt_id,slot,label,price_delta,kind)'),
+      ]);
 
-      cart = rows.map<CartItem>((r) => CartItem.fromRow(r)).toList();
+      final chosen = <int, List<PrebuiltUpgrade>>{};
+      for (final row in results[1]) {
+        final upgrade = row['prebuilt_upgrades'];
+        if (upgrade == null) continue;
+        (chosen[row['product_id'] as int] ??= []).add(
+          PrebuiltUpgrade.fromRow(Map<String, dynamic>.from(upgrade as Map)),
+        );
+      }
+      for (final list in chosen.values) {
+        list.sort((a, b) => a.slot.compareTo(b.slot));
+      }
+
+      cart = results[0]
+          .map<CartItem>((r) => CartItem.fromRow(
+                r,
+                upgrades: chosen[r['product_id'] as int] ?? const [],
+              ))
+          .toList();
       cartTotal = cart.fold(0, (sum, item) => sum + item.lineTotal);
       notifyListeners();
     } catch (e) {
@@ -386,15 +587,62 @@ class Shop extends ChangeNotifier {
   /// could write those separately it could write the second without the
   /// first, and the score the admin dashboard is built on would mean
   /// nothing. cart_add() does both or neither, and re-checks the stock.
-  Future<String?> addToCart(int productId) async {
+  /// [upgradeIds] are the options ticked on a prebuilt card. They are
+  /// written after the line exists, because cart_item_upgrades is keyed
+  /// on the line and cannot be written before there is one. Adding the
+  /// same machine again replaces its upgrades with the newer choice
+  /// rather than merging the two, which is what a customer changing
+  /// their mind on the card expects to happen.
+  Future<String?> addToCart(
+    int productId, {
+    List<int> upgradeIds = const [],
+  }) async {
     if (!loggedIn) return 'Please sign in first.';
     try {
       await Api.db.rpc('cart_add', params: {'p_product_id': productId});
     } catch (e) {
       return Api.message(e, 'Could not add that.');
     }
+
+    if (upgradeIds.isNotEmpty) {
+      final customerId = user?['customer_id'];
+      try {
+        await Api.db
+            .from('cart_item_upgrades')
+            .delete()
+            .eq('product_id', productId);
+        await Api.db.from('cart_item_upgrades').insert([
+          for (final id in upgradeIds)
+            {
+              'customer_id': customerId,
+              'product_id': productId,
+              'upgrade_id': id,
+            },
+        ]);
+      } catch (e) {
+        // The machine is in the basket either way; say so plainly rather
+        // than leaving the customer thinking nothing happened.
+        await loadCart();
+        return Api.message(e, 'Added, but the upgrades could not be saved.');
+      }
+    }
+
     await loadCart();
     return null;
+  }
+
+  /// Drop one upgrade from a basket line, from the cart screen.
+  Future<void> removeUpgrade(int productId, int upgradeId) async {
+    try {
+      await Api.db
+          .from('cart_item_upgrades')
+          .delete()
+          .eq('product_id', productId)
+          .eq('upgrade_id', upgradeId);
+    } catch (e) {
+      debugPrint('Removing an upgrade: $e');
+    }
+    await loadCart();
   }
 
   Future<void> setQty(int productId, int qty) async {
@@ -519,6 +767,8 @@ class Shop extends ChangeNotifier {
     // Fire and forget; a failure here must never interrupt shopping.
     Api.db.from('events').insert({
       'customer_id': _customerId, // null = browsing signed out
+      'anon_id': _anonId, // ...but still the same phone
+      'source': 'app',
       'product_id': productId,
       'event_type': 'view',
     }).catchError((e) => debugPrint('Recording a view: $e'));
@@ -527,10 +777,65 @@ class Shop extends ChangeNotifier {
   void logChat(String question, String answer, bool wasBuildRequest) {
     Api.db.from('chatbot_logs').insert({
       'customer_id': _customerId,
+      'anon_id': _anonId,
+      'source': 'app',
       'question': question,
       'answer': answer,
       'was_build_request': wasBuildRequest ? 1 : 0,
     }).catchError((e) => debugPrint('Logging the conversation: $e'));
+  }
+
+  /// What was typed into the search box, and how many products came back.
+  ///
+  /// A typed search says more about what somebody wants than a handful of
+  /// taps does, and it is the only signal here that can describe a thing
+  /// the shop does not sell — which is why the count is recorded too. A
+  /// search returning nothing is the most useful row in the table.
+  ///
+  /// The screen filters as you type, so the naive thing would write "r",
+  /// "rt", "rtx" and call the first two searches that found nothing. The
+  /// screen waits until the typing stops before calling this; this end
+  /// drops anything too short to be a question and anything identical to
+  /// what it just wrote, so that tapping a category chip afterwards does
+  /// not log the same search twice.
+  String _lastLoggedSearch = '';
+
+  void trackSearch(String query, int resultCount) {
+    final text = query.trim();
+    if (text.length < 3) return;
+    if (text.toLowerCase() == _lastLoggedSearch) return;
+    _lastLoggedSearch = text.toLowerCase();
+
+    Api.db.from('search_logs').insert({
+      'customer_id': _customerId,
+      'anon_id': _anonId,
+      'source': 'app',
+      'query': text,
+      'result_count': resultCount,
+    }).catchError((e) => debugPrint('Recording a search: $e'));
+  }
+
+  /// Hands this phone's signed-out activity to the account that just
+  /// signed in.
+  ///
+  /// Someone browses, decides to buy, and only then makes an account.
+  /// Until this runs, their browsing is filed under _anonId and belongs
+  /// to nobody, so the purchase arrives with nothing leading up to it —
+  /// which is exactly the shape a recommender is trying to learn.
+  ///
+  /// The database function does the work, and can only ever hand rows
+  /// belonging to nobody to whoever is calling; it cannot be made to take
+  /// somebody else's. Awaited rather than fired and forgotten so that it
+  /// finishes before the login screen pops, but a failure is swallowed:
+  /// losing the join is a worse dataset, not a failed sign-in.
+  Future<void> _claimAnonActivity() async {
+    final id = _anonId;
+    if (id == null || !loggedIn) return;
+    try {
+      await Api.db.rpc('claim_anon_activity', params: {'p_anon_id': id});
+    } catch (e) {
+      debugPrint('Claiming earlier activity: $e');
+    }
   }
 
   /// Ask the AI hardware consultant.

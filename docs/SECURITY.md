@@ -1,0 +1,594 @@
+# Security controls — eTech
+
+What is in place, where it lives, and what is deliberately not done.
+
+Written against the twenty-item review of 4 September 2026, plus email
+verification added on 5 September. Each item is
+recorded whether it needed work or not, because "already done" and "does
+not apply here" are answers a reviewer needs as much as "fixed".
+
+## The shape of the system, which decides most of the answers
+
+There is no server of ours. The website is static files on Vercel and the
+Flutter app is a binary on a phone; both talk to Supabase (Postgres,
+Auth, Storage) directly, and one Supabase Edge Function holds the Gemini
+key for the chatbot. What used to be `web/api/*.php` and
+`web/admin/*.php` is now Row Level Security policies and `SECURITY
+DEFINER` functions inside the database.
+
+That has two consequences that run through everything below:
+
+- **The publishable key is public on purpose.** It grants nothing on its
+  own. Every request it makes arrives at Postgres as `anon`, and the
+  policies decide what `anon` may see. The key that must never ship is
+  `service_role`, and it does not.
+- **There is no session cookie.** Being signed in is a bearer token in
+  `localStorage`, sent in an `Authorization` header by our own code.
+  Nothing is attached to a request automatically, which is why items 2
+  and 19 read the way they do.
+
+---
+
+## 1. HSTS — done
+
+`vercel.json`, applied to every response:
+
+```
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+```
+
+Alongside it, and for the same cost: `Content-Security-Policy`,
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`.
+
+The CSP allows `'unsafe-inline'` for scripts. That is not a decision so
+much as a description: eight pages carry an inline `<script>` block and
+six use inline `onclick`/`onchange` handlers, and a CSP without
+`'unsafe-inline'` would break all of them. It still restricts `connect-src`
+to our own Supabase project, forbids `object-src`, pins `base-uri` and
+`form-action`, and sets `frame-ancestors 'none'`. Removing
+`'unsafe-inline'` means moving those handlers into the `.js` files first;
+worth doing, not done here.
+
+## 2. CSRF tokens — does not apply, and here is why
+
+A CSRF token defends a request that the browser authorises **by itself**.
+That is a cookie: the browser attaches it to any request to the site,
+including one triggered by a form on somebody else's page, so the server
+needs a second secret the other page cannot know.
+
+Nothing here works that way. The Supabase session is a token in
+`localStorage`, read by our own JavaScript and put into an
+`Authorization` header. A form on `evil.example` posting to our Supabase
+project sends no token at all and arrives as `anon`. There is nothing for
+a CSRF token to add.
+
+What *is* real from the same family, and is done: **clickjacking**. Our
+pages carry the session, so framing one and tricking a signed-in customer
+into clicking through it would work. `X-Frame-Options: DENY` and
+`frame-ancestors 'none'` in `vercel.json` close it.
+
+## 3. Reset sessions on password change — done
+
+Two halves, because there was no password-change flow at all before this.
+
+- `changePassword()` in `web/js/auth.js`, and a form on `profile.html`.
+  It re-authenticates with the current password, calls `updateUser`, then
+  `signOut({ scope: "others" })`.
+- `secure_password_change = true` in `supabase/config.toml`, so Auth
+  enforces the re-authentication too.
+
+The `signOut({ scope: "others" })` is the point of the item. Supabase
+sessions are independent signed tokens that refresh themselves; changing
+a password does **not** invalidate them. Without that line, a customer
+who changes their password *because* somebody else is in their account
+achieves nothing — the intruder's session carries on refreshing. `others`
+rather than `global` so the customer is not signed out of the page they
+are standing on.
+
+## 4. Expire reset links — done
+
+`auth.email.otp_expiry` in `supabase/config.toml`: `3600` → `900`.
+
+An hour is a long time for a password-reset link to sit in an inbox, a
+mail log, or a forwarded message. Fifteen minutes is enough to walk to
+the machine.
+
+## 5. Prevent user enumeration — done
+
+`registerError()` in `web/js/auth.js` said "An account with this email
+already exists." That was the one place on the site that would confirm
+whether a given person shops here — type an address, read the answer,
+repeat. It now returns the same sentence for a duplicate as for a fault,
+and points at the login page. `register()` in
+`mobile/lib/services/shop.dart` had the identical leak and also returned
+Supabase's raw message; both are fixed.
+
+The sign-in page never had the problem — it answers "Incorrect email or
+password." to both a wrong password and an unknown address — and
+`hook_password_verification_attempt` deliberately keeps that true.
+
+**This is now fully closed by item 21 below.** Supabase Auth's own HTTP
+response to a sign-up used to differ for a known address while email
+confirmations were off; with confirmation on, both answers look the same.
+The client-side wording above still matters — it is the half that does
+not depend on a Dashboard setting staying switched on.
+
+## 6. Whitelist upload types — already done, verified
+
+The `product-images` bucket, checked live:
+
+```
+allowed_mime_types: image/jpeg, image/png, image/webp
+file_size_limit:    5242880 (5MB)
+```
+
+with `INSERT`/`UPDATE`/`DELETE` policies all gated on `is_admin()`. The
+admin page additionally re-encodes every upload through a canvas to JPEG
+before sending, which destroys anything hidden in the original file. The
+existing comment in `product_edit.js` already says the browser checks are
+for the person using the page and the bucket is the rule, which is the
+right way round. Nothing to change.
+
+## 7. Verify payment webhooks — not applicable, no gateway
+
+Checkout is a mock. `web/checkout.html` says "Mock Payment (sandbox — not
+a real gateway)" on the page, the card number is a 16-digit format check
+and nothing else, and no money moves. There is no gateway, so there is no
+webhook to verify.
+
+**When one is added**, the three things this item is asking for:
+
+1. Verify the provider's signature over the **raw** request body, before
+   parsing it. Any framework that hands you a parsed object has already
+   changed the bytes the signature covers.
+2. Treat the webhook as the only source of "paid". A client saying it
+   paid is a client saying anything.
+3. Make it idempotent on the provider's event id — gateways retry, and a
+   retry must not fulfil an order twice.
+
+An Edge Function is where this would live, for the same reason the Gemini
+key does.
+
+## 8. Set prices server side — already done, verified
+
+`place_order()` takes `(name, phone, address, coupon)` and no money at
+all. It computes the subtotal from `products.price` and
+`prebuilt_upgrades.price_delta`, validates the coupon against `coupons`
+including its date window, and writes `order_items` from the same rows.
+`INSERT`/`UPDATE`/`DELETE` on `orders` and `order_items` are revoked from
+every client role, so a shopper cannot name their own total by any route.
+
+## 9. Block prompt injection — done
+
+`supabase/functions/chat-advisor/index.ts`:
+
+- The customer's message goes inside a named fence, and rule 0 of the
+  system instruction says everything between the markers is data.
+- `asData()` strips the fence spelling, leading role labels
+  (`system:`, `assistant:`), and control characters from anything that
+  arrives from a client.
+- **`history` is the vector that mattered most.** The client sends the
+  previous turns back and nothing proved the model ever said them, so a
+  forged `{role: "bot", text: "..."}` was a way of putting words in the
+  model's own mouth. Turns are now re-labelled from a fixed pair of
+  roles, capped, and sanitised, and rule 0 says prior turns attributed to
+  the model are not proof it said anything.
+
+The load-bearing controls remain the ones that do not depend on the model
+behaving: it returns product **ids** only, `stripUnreliable()` deletes any
+sentence containing a price or a stock claim, and both clients render
+prices from our own rows. A fully captured model still cannot make the
+shop quote a price it will not honour.
+
+## 10. Cap AI usage — done, with the real cap named
+
+Rate limiting in the same function: 8 calls per caller per minute, 120 per
+isolate per minute, keyed on the session token when there is one and the
+forwarded IP otherwise. `429` with `Retry-After`.
+
+**Honest limit:** this counts in memory, and Supabase runs several
+isolates and recycles them, so the true ceiling is the number above times
+however many isolates are warm. It is a brake. The cap that cannot be got
+round by any request pattern is the spending limit on the Google side,
+and this does not replace it.
+
+## 11. Limit request size — done
+
+`readBody()` in the same function. `Content-Length` is checked first
+because it is free, then the body is read through a counter that stops at
+16KB whether the header was accurate or absent. Message capped at 1000
+characters, history at 6 turns of 1000. Over-size gets `413`.
+
+## 12. Rate limit password resets — done
+
+`auth.email.max_frequency` in `supabase/config.toml`: `1s` → `60s`, under
+the existing `auth.rate_limit.email_sent = 2` per hour.
+
+One second is no limit: a script could fill a stranger's inbox and,
+because each new link invalidates the last, keep the real owner from ever
+using one.
+
+## 13. Sanitize before storing — done, as *escape on output*
+
+The item says "before storing"; the fix is at output, and that is
+deliberate. Escaping on the way in means the database holds HTML entities
+instead of text, which breaks search, sorting and the mobile app, and
+still fails wherever a value reaches a different context. Escaping at the
+point of rendering is correct once and stays correct.
+
+`web/js/escape.js` is new: `escapeHtml()` and `safeUrl()`, loaded on every
+page. Applied through `ui.js`, `cart.js`, `compare.js`, `deals.js`,
+`prebuilt.js`, `build.js`, `layout.js`, `shop.js`, `checkout.js`,
+`chatbot.js` and `advisor.js`. The staff console already escaped its
+output via `e()` and was not the gap; the shop front was.
+
+`safeUrl()` exists because escaping quotes does nothing about
+`javascript:` as a scheme — `<img src="javascript:...">` contains no quote
+to escape. `products.image_path` is typed into the admin panel and lands
+in a `src` attribute, so it goes through it. `data:image/svg+xml` is
+refused along with everything else unrecognised: an SVG can carry a
+`<script>`.
+
+Verified in a browser against the real render path: a product named
+``PWNED <img src=x onerror=...>`` with `image_path` of `javascript:...`
+renders as visible text, creates no element, and fires neither payload.
+
+**Who could have exploited it:** the catalogue is written by staff, so
+this was never reachable by the public directly. It matters because "only
+an admin can do it" is one compromised staff password away from "anyone
+can", and the payload would then be stored and served to every visitor.
+
+## 14. Lock down CORS — done
+
+`chat-advisor` answered `Access-Control-Allow-Origin: *`, so any page on
+the internet could embed our chatbot and our Gemini bill. It now echoes
+the origin only when it is on an allowlist (`ALLOWED_ORIGINS`, plus
+localhost for development).
+
+A request with **no** `Origin` header is still served: that is the Flutter
+app and `curl`, neither of which is a browser and neither of which CORS
+was ever able to constrain. CORS is a rule browsers enforce on pages, not
+a door lock — item 10 is what protects the bill.
+
+Supabase's own PostgREST/Auth CORS is separate and is governed by the
+project's allowed origins in the Dashboard.
+
+## 15. Disable directory listing — satisfied by the platform, dead file removed
+
+Vercel does not list directories; a directory path with no `index.html`
+returns 404. There is no configuration to set.
+
+`web/uploads/` was removed. It had been empty since product photos moved
+to Supabase Storage, and its only content was an `.htaccess` carrying
+`Options -Indexes` and a PHP-execution block — an Apache file on a host
+that never reads it. Leaving a security control in place that does
+nothing is worse than not having it, because a review counts it.
+
+## 16. Remove default admin route — done
+
+`web/admin/` → `web/staff-console/`. The one link to it
+(`web/login.html:61`) was updated; every page inside uses `../`-relative
+paths at the same depth, so nothing else moved. `vercel.json` adds
+`X-Robots-Tag: noindex, nofollow, noarchive` and `Cache-Control: no-store`
+to that path.
+
+This is obscurity and is worth naming as such: any static path is
+enumerable, and the control that actually matters is that
+`staff-console/js/admin.js` gates on `is_admin()` and every policy behind
+it does too. It removes the panel from the first page of guesses, nothing
+more.
+
+## 17. Lock accounts after failed login — done
+
+`hook_password_verification_attempt` in
+`supabase/migrations/20260904140000_security_hardening.sql`.
+Five failures in fifteen minutes locks the account for fifteen; a
+successful sign-in clears the count.
+
+**Why it is an Auth hook and not a check in the login page.** The obvious
+version — ask the database whether the account is locked before calling
+`signInWithPassword` — is worth nothing, because the browser is the
+attacker's own code and they would call Auth directly and never ask. The
+password verification hook runs *inside* Auth, on every password check,
+and a decision returned from it is one no client can skip.
+
+Supabase's built-in limit is 30 sign-in requests per five minutes per IP.
+That is not an account lockout: it is over eight thousand guesses a day
+from one address, there is no shortage of addresses, and it is indifferent
+to *which* account is being guessed.
+
+The lock is tested before `valid` is read, so a locked account stays
+locked even when the attacker finally guesses right.
+
+`login_attempts` — a MySQL-era table nothing had written to since the PHP
+was removed — is reshaped to key on the auth user id and back this.
+
+**Needs one manual step:** Dashboard → Authentication → Hooks → Password
+Verification Attempt → Postgres → `public.hook_password_verification_attempt`.
+Until then the function exists and never runs.
+
+## 18. Log security events — done
+
+`security_events` in the same migration, plus `log_security_event()` and
+four triggers.
+
+Recorded: failed sign-ins and lockouts; changes to who is staff; product
+price and visibility changes; order status changes; coupon changes.
+Browsing is already in `events` and is not security.
+
+Staff can read it. **Nothing can write it through the API** — no `INSERT`
+policy, no `INSERT` grant, and `EXECUTE` on `log_security_event()` revoked
+from `anon` and `authenticated`. Rows arrive only from `SECURITY DEFINER`
+functions and triggers, which is what makes the trail worth reading: a
+client that could write here could write a false entry, or flood the table
+until the real one scrolled off.
+
+Triggers rather than calls added to each function, for the same reason —
+a trigger cannot be gone round.
+
+## 19. Set secure cookie flags — does not apply
+
+There are no cookies. `grep document.cookie` across `web/js`,
+`web/staff-console/js` and `mobile/lib` returns nothing. The session is a
+token in `localStorage` under `etech-auth` (`etech-admin-auth` for staff,
+a separate key on purpose so signing in as staff in one tab does not sign
+a customer out in another).
+
+`Secure`, `HttpOnly` and `SameSite` have nothing to attach to.
+
+**The trade-off, stated rather than skipped:** `localStorage` is readable
+by JavaScript, so an XSS gets the token — which an `HttpOnly` cookie would
+not give up. That is precisely why item 13 was worth doing, and why the
+CSP is set. The alternative — cookie-based sessions — would need a server
+of ours to set them, which is the architecture this project deliberately
+left behind, and would bring item 2 back with it.
+
+## 20. Restrict database permissions — done
+
+In the migration:
+
+- `EXECUTE` revoked from `anon` and `authenticated` on
+  `handle_new_auth_user()`, `prebuilt_parts_changed()` and
+  `prebuilt_stock_follows_parts()`. All three are **trigger** functions:
+  they need no `EXECUTE` grant at all, and the default one did nothing
+  except publish them at `/rest/v1/rpc/<name>` where anyone holding the
+  publishable key could call them.
+- `recompute_prebuilt_stock()` restricted to `authenticated` (the admin
+  Prebuilt Parts page calls it; it rewrites stock on the prebuilt
+  machines).
+- `admin_dashboard` and `admin_products` revoked from `anon`.
+- `ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM anon`, so
+  the next migration to add a function does not silently reopen this.
+
+This continues the pass `20260828005426_revoke_anon_defaults.sql` did for
+the functions that existed then; the four above arrived later, with the
+Supabase default grant still attached.
+
+### Advisor findings deliberately left as they are
+
+- **`admin_dashboard` / `admin_products` are `SECURITY DEFINER` views
+  (reported as ERROR).** Intentional. They exist to show `cost_price` and
+  `stock_qty`, which are revoked from every client role precisely so a
+  shopper cannot read the shop's margins — a `security_invoker` view could
+  not read them either. Both carry `WHERE (SELECT public.is_admin())`, so a
+  non-admin gets zero rows. The mechanism is the finding and the mechanism
+  is the point.
+- **`login_attempts` has RLS on with no policy (reported as INFO).** That
+  is the intent: "nobody, by any route that respects RLS". Auth reaches it
+  as `supabase_auth_admin`, which is not subject to policies.
+- **`current_customer_id()` callable by `anon` (WARN).** Deliberate and
+  documented in `20260828005426`. The `anon` INSERT policies on `events`
+  and `chatbot_logs` call it in their `WITH CHECK`, and a policy expression
+  runs with the caller's privileges — revoking it would stop a logged-out
+  visitor being tracked or using the chatbot. It returns NULL for `anon`,
+  which is what those policies expect.
+- **`admin_*` functions callable by `authenticated` (WARN).** Each checks
+  `is_admin()` before doing anything and returns nothing, or raises
+  `Staff access only.`, otherwise. This is the intended pattern; the
+  advisor cannot see inside the body.
+
+## 21. Email verification — added on request, needs SMTP first
+
+Not on the original twenty; asked for afterwards.
+`auth.email.enable_confirmations` is `false` → `true` in
+`supabase/config.toml`.
+
+What it buys:
+
+- An address that signs up is one somebody can actually read, so an
+  account cannot be opened in a stranger's name and orders cannot be
+  placed under an address its owner never sees.
+- It closes the remainder of item 5. The client stopped *saying* whether
+  an address was registered; this stops Auth's own response from saying
+  it either.
+- Password reset stops being reachable for an unverified address.
+
+**It needs custom SMTP before it is switched on, or the beta cannot
+run.** Supabase's built-in mail service is documented as being for
+testing, at a best-effort **two emails per hour**. Objective 1 needs real
+testers signing up over several days; at two an hour the third person in
+any given hour never receives a link and simply cannot register.
+
+Set it at Dashboard → Project Settings → Authentication → SMTP Settings.
+Free tiers that cover a beta comfortably: Resend (3,000/month), Brevo
+(300/day), SendGrid (100/day). Then raise `auth.rate_limit.email_sent`
+from 2 — 30 is a sensible beta figure — and not before, or sign-ups will
+appear to work while the emails quietly do not arrive.
+
+**Code changes this forced**, in both clients. Sign-up used to have two
+outcomes and now has three: refused, made-and-signed-in, and
+made-but-go-and-confirm. The third is a *success*, and both clients
+would have painted it in the red error box — telling somebody their
+sign-up had failed at the moment it succeeded.
+
+- `registerUser()` in `web/js/auth.js` returns `{ ok, message }` instead
+  of a bare string; `web/register.html` shows the notice in green and
+  stays on the page rather than redirecting home signed out.
+- `register()` in `mobile/lib/services/shop.dart` returns
+  `({bool ok, String? message})`; `mobile/lib/screens/login.dart` gained
+  a `_notice` box beside `_error`.
+
+The mobile half needs an APK rebuild to reach the phone.
+
+---
+
+# Second pass — full-system scan, 5 September 2026
+
+A scan of web, mobile and database after the first twenty items. Six
+findings; four fixed, two recorded.
+
+## 22. Anyone could forge behaviour events — fixed
+
+`supabase/migrations/20260905090000_protect_behaviour_capture.sql`.
+**Policies and grants only — no table, column or row is touched.**
+
+The INSERT policy on `events` checked only `customer_id`, and `anon` held
+INSERT on `event_type`. The enum is
+`view / cart_add / wishlist_add / purchase`, so anyone holding the
+publishable key — which ships in `web/js/config.js` and in the APK, by
+design — could post `event_type: 'purchase'` for any product, dated to
+any moment, as often as they liked.
+
+Two things broke. The Inventory Velocity score weights purchases 5×, so
+the admin ranking became whatever the last person with `curl` wanted. And
+`events` **is** the Objective 1 dataset — forged rows are
+indistinguishable from real ones afterwards, so a polluted table is a
+lost result, not a bad report.
+
+Now: clients may assert `event_type = 'view'` and nothing else;
+`created_at` and `event_id` are no longer columns any client may set;
+`chatbot_logs` and `search_logs` gained length and range caps in their
+policies. `cart_add`, `wishlist_add` and `purchase` rows still arrive
+from `cart_add()`, `toggle_wishlist()` and `place_order()` — SECURITY
+DEFINER, so not subject to these policies at all. That is the design: the
+event types that mean something are written by the database when the
+thing happens; the one that cannot be verified is the only one a client
+may claim.
+
+Verified with eight assertions against the live schema inside a rolled
+back transaction — genuine inserts accepted, forged purchase refused,
+backdated row refused, client-chosen id refused, oversized chat refused,
+negative result count refused.
+
+**A note on how the first attempt was wrong.** It used
+`REVOKE INSERT (created_at, event_id)`, and the test showed a backdated
+row still being accepted: a table-level `GRANT INSERT` beats any
+column-level `REVOKE`. The fix is to revoke the table-level grant and
+re-grant the named columns — `20260827114650_client_privileges.sql`
+documents the same trap for `SELECT`. Worth recording because it fails
+silently: the statement succeeds and changes nothing.
+
+**Not fixed, and not closeable with a policy:** a visitor can still post
+any number of genuine-looking *view* rows. A view is a client assertion
+with nothing to check it against. What changed is the weight — a forged
+view counts 1 rather than 5, and cannot be backdated. A per-`anon_id`
+rate limit needs somewhere to count, and therefore a table.
+
+## 23. The release APK was signed with the public Android debug key — fixed
+
+`mobile/android/app/build.gradle.kts` carried Flutter's generated
+`signingConfig = signingConfigs.getByName("debug")` and its unactioned
+TODO. That is not a weak key but a *published* one: the debug keystore
+ships with the Android SDK, is byte-identical on every machine, and its
+password is `android`. Anyone could take a tester's APK, modify it —
+point it at their own Supabase project, log what the tester types —
+re-sign it with the same key, and Android would install it over the top
+as a legitimate update.
+
+Release signing now reads `android/key.properties` (already gitignored
+alongside `*.jks`). Without that file the build still works and still
+uses the debug key, because blocking `flutter build apk` outright would
+be worse than the problem — but it logs a warning every time, so it
+cannot be forgotten silently the way the TODO was.
+
+**You still have to create the keystore.** Both paths were verified with
+a throwaway key, since an untested signing config a week before deploy is
+worth little: with `key.properties` the APK came out
+`CN=eTech Test Only`; without it, `CN=Android Debug`. The throwaway was
+deleted afterwards.
+
+Keep the `.jks` safe. Losing it means no future build can ever update an
+installed copy.
+
+## 24. Cleartext HTTP and device backup — fixed
+
+`AndroidManifest.xml`:
+
+- `android:usesCleartextTraffic="true"` removed. It was there for XAMPP
+  on plain `http://`; that server is gone and the app talks only to
+  Supabase over HTTPS, so it bought nothing and left a downgrade and
+  intercepting-proxy path open. Removing it restores Android 9's default
+  of refusing plaintext.
+- `android:allowBackup="false"` added. The Supabase session token lives
+  in `SharedPreferences`, which is plain XML; with backup on that file
+  can leave the phone through Android's backup and device-transfer paths,
+  and a session token is a signed-in account to whoever holds it. Nothing
+  here is worth restoring anyway — cart, wishlist and orders are all in
+  the database.
+
+## 25. R8 enabled on the release build — fixed
+
+`isMinifyEnabled` and `isShrinkResources`, with a Flutter-aware
+`proguard-rules.pro`. Flutter's Dart is AOT compiled into `libapp.so` and
+unaffected, so this is a smaller download and a slightly harder APK to
+read rather than a control in its own right. Release APK builds clean at
+52.0MB.
+
+## 26. `claim_anon_activity` trusts a caller-supplied id — recorded, not fixed
+
+A signed-in user who learned another visitor's `anon_id` could absorb
+that visitor's *unclaimed* rows. The function is otherwise tight —
+`customer_id IS NULL` in every `WHERE`, target always
+`current_customer_id()` and never an argument — so it cannot take rows
+that already belong to somebody, nor assign them to anyone but the
+caller. `anon_id` is a v4 UUID and is published nowhere, so this is a
+dataset-integrity note rather than a live risk. Fixing it properly means
+changing how the clients hand the id over.
+
+## 27. No privacy notice existed — fixed
+
+Not a vulnerability; the thing most likely to cost you the beta.
+
+No page in `web/` mentioned privacy, consent or the PDPA, and the site
+was about to start recording every product viewed, every search and every
+chatbot message from real named people with accounts. Under the PDPA,
+notice is owed at the point of collection. Ethics approval for
+human-subject data collection is normally required *before* collection —
+if it turns out you needed it, data gathered without it may not be usable
+in the dissertation.
+
+Added `web/privacy.html`, linked in the footer, plus a one-time notice on
+first visit (`injectPrivacyNotice()` in `web/js/layout.js`). It states
+what is recorded and why, that the record *is* the object of study, that
+checkout is simulated, what the anonymous device id does and does not
+mean, that Gemini receives chatbot messages but no account details, how
+long data is kept, and how to ask for a copy or a deletion. It doubles as
+a participant information sheet.
+
+The notice sits along the bottom and does not block the page — a banner
+that blocks teaches people to dismiss it unread, which is worse than
+useless for consent. The acknowledgement is stored in the browser only;
+if the project needs per-participant evidence of consent, that belongs
+with the account record, not in `localStorage`.
+
+**This does not settle the ethics question.** Your supervisor was asked
+on 1 September and has not answered. Ask again before the beta opens.
+
+### Still to enable in the Dashboard
+
+Not settable from a migration or `config.toml` on the hosted project:
+
+1. **Custom SMTP** (Project Settings → Authentication → SMTP Settings) —
+   required before email confirmation, see item 21. Do this one first.
+2. **Email confirmation** (Auth → Providers → Email → Confirm email) —
+   item 21. Only after SMTP.
+3. **Leaked password protection** (Auth → Passwords) — checks new
+   passwords against HaveIBeenPwned. Currently off; the advisor flags it.
+4. **The password verification hook** — see item 17.
+5. **Allowed origins / redirect URLs** — must include the Vercel domain
+   once the site is deployed, or sign-in breaks there. With email
+   confirmation on this also decides where the confirmation link lands,
+   so it stops being optional.
+6. **`ALLOWED_ORIGINS`** on the `chat-advisor` function — see item 14.
+   `supabase secrets set ALLOWED_ORIGINS="https://<domain>"`.

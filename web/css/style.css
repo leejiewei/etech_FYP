@@ -904,6 +904,89 @@ footer {
   margin: 10px 0;
 }
 
+/* ---------- Prebuilt upgrades, and why a machine is unavailable ---------- */
+
+/* Which part is holding a machine back. The difference between a
+   customer giving up and a customer asking when it is back. */
+.prebuilt-waiting {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #777;
+}
+
+.addon-list .addon-hint {
+  margin: 2px 0 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* One tickable upgrade: name on the left, what it adds on the right. */
+.addon-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+  border-top: 1px solid #eee;
+}
+
+.addon-option span {
+  flex: 1;
+}
+
+.addon-option em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--red-dark);
+  white-space: nowrap;
+}
+
+.addon-option.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The base price, kept visible beside the new one so nobody has to work
+   out what the ticks did. */
+.prebuilt-price-basis {
+  margin: -6px 0 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* The same upgrades once they are in the basket, under the line they
+   belong to. */
+.cart-upgrades {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 12px;
+  color: #555;
+}
+
+.cart-upgrades li {
+  padding: 1px 0;
+}
+
+.cart-upgrades em {
+  font-style: normal;
+  color: var(--red-dark);
+}
+
+.upgrade-drop {
+  border: none;
+  background: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.upgrade-drop:hover {
+  color: var(--red-dark);
+}
+
 /* ---------- Deals page ---------- */
 .countdown-banner {
   background-color: var(--red-dark);
@@ -1242,4 +1325,283 @@ footer {
   padding: 14px 20px;
   text-align: center;
   font-size: 14px;
+}
+
+/* ---------- Product detail modal ----------
+   The website has no product page: the card is the product, and the
+   pages are static HTML with no router to add one to. A modal is the
+   whole of the detail view, opened from any card on any page.
+
+   It also gives the card image click something to do. It always looked
+   clickable — cursor: pointer and a hover zoom, above — and until now it
+   only recorded a view and left the shopper where they were. */
+.product-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  z-index: 1200;          /* over the chatbot panel and the deal toast */
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.product-modal-backdrop.open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.product-modal {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 760px;
+  margin: auto;
+  overflow: hidden;
+}
+
+.product-modal-head {
+  background-color: var(--red-dark);
+  color: white;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-modal-head h2 {
+  font-size: 17px;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.product-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Picture beside the facts on a desktop, stacked on a phone. */
+.product-modal-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 18px;
+}
+
+.product-modal-figure {
+  flex: 1 1 260px;
+  align-self: flex-start;   /* don't stretch to the height of the spec table */
+  background-color: #fafbfc;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.product-modal-figure img {
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+  display: block;
+}
+
+.product-modal-facts {
+  flex: 1 1 300px;
+}
+
+.product-modal-meta {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.product-modal-price {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--red-dark);
+  margin: 10px 0;
+}
+
+.product-modal-desc {
+  font-size: 14px;
+  color: #444;
+  margin: 12px 0;
+}
+
+.product-modal-specs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.product-modal-specs th,
+.product-modal-specs td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #eceef1;
+  vertical-align: top;
+}
+
+.product-modal-specs th {
+  color: #666;
+  font-weight: normal;
+  width: 45%;
+}
+
+.product-modal-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.product-modal-actions .add-btn {
+  flex: 1;
+}
+
+.product-modal-wish {
+  background: none;
+  border: 1px solid #dcdfe3;
+  border-radius: 6px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   First-visit privacy notice (js/layout.js -> injectPrivacyNotice).
+   Sits along the bottom rather than over the middle: the shop stays
+   usable behind it, which is the point -- a banner that blocks the page
+   teaches people to dismiss it unread.
+   ============================================================ */
+.privacy-notice {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: #1f2933;
+  color: #e8eef4;
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.22);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.privacy-notice p {
+  margin: 0;
+  max-width: 760px;
+}
+
+.privacy-notice a {
+  color: #7fc4ff;
+  text-decoration: underline;
+}
+
+.privacy-notice-ok {
+  flex-shrink: 0;
+  padding: 9px 20px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f80ed;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.privacy-notice-ok:hover { background: #1c6fd8; }
+
+/* The floating WhatsApp button sits bottom-right; lift it clear while
+   the notice is on screen so the two do not overlap on a phone. */
+.privacy-notice ~ .whatsapp-btn { bottom: 96px; }
+
+@media (max-width: 600px) {
+  .privacy-notice { font-size: 12.5px; padding: 12px 14px; gap: 10px; }
+  .privacy-notice ~ .whatsapp-btn { bottom: 140px; }
+}
+
+
+/* ============================================================
+   Phones.
+
+   The shop was built at a desk and had one media query in it, for the
+   privacy notice. Everything else was laid out for a wide window, and
+   on a 390px phone the page scrolled sideways -- the whole body slid
+   left and right under the thumb, which makes a site feel broken before
+   anyone has read a word of it.
+
+   That matters now rather than eventually: the Objective 1 testers are
+   recruited people using their own phones, and a sideways-sliding page
+   is the kind of thing that ends a session early and takes its data
+   with it.
+
+   The single worst offender was .nav-links. The navbar itself already
+   carried flex-wrap, but its <ul> did not, so eight links -- Shop,
+   Build PC, Prebuilt, Deals, Compare, Wishlist, Cart, Account -- sat in
+   one unbreakable 575px row and dragged the document out to that width.
+
+   The links wrap onto two or three rows here rather than folding into a
+   hamburger. A hamburger is the tidier answer and the wrong one to
+   reach for a week before a beta: it is new markup, new JavaScript and
+   a control every tester has to find, in exchange for looks. Wrapping
+   is a one-line change that hides nothing.
+   ============================================================ */
+@media (max-width: 700px) {
+  /* 40px of side padding is a tenth of the screen on each side. */
+  .navbar { padding: 12px 16px; column-gap: 14px; }
+  .navbar .logo { font-size: 19px; }
+
+  /* The fix. row-gap keeps the wrapped rows off each other. */
+  .nav-links { flex-wrap: wrap; gap: 16px; row-gap: 10px; }
+
+  /* Search gets its own full row instead of competing with the logo for
+     what is left after it. */
+  .search-box { flex: 1 1 100%; max-width: none; order: 3; }
+
+  /* BRANDS and CATEGORIES together are wider than the screen at the
+     desktop padding, by about the width of one thumb. */
+  .mega-bar { padding: 0 8px; }
+  .mega-tab { padding: 12px 14px; font-size: 13px; letter-spacing: 0.5px; }
+  .mega-menu { padding: 24px 16px; }
+  .mega-inner { gap: 24px; }
+  .mega-left { width: 100%; }
+
+  /* Section padding is the other place 80px went missing across the
+     page, and it is applied to nearly every screen in the shop. */
+  .section { padding: 24px 16px; }
+  .hero { padding: 44px 16px; }
+  .hero h1 { font-size: 27px; }
+  .hero p { font-size: 16px; }
+
+  /* Tables are the one thing that genuinely cannot fit: the cart has six
+     columns and Compare has one per product. Let them scroll inside
+     their own box rather than taking the page with them -- a sideways
+     drag on a price table is expected, a sideways drag on the whole shop
+     is not. */
+  .cart-table,
+  .compare-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Deliberately no `html, body { overflow-x: hidden }` here. That hides
+     a sideways-scrolling page rather than fixing one, and it takes
+     position: sticky down with it. Every page above was measured at
+     393px with nothing past the edge, so the layout stands on its own
+     and a future regression will show itself instead of being clipped
+     out of sight. */
 }
