@@ -181,17 +181,29 @@ sentence containing a price or a stock claim, and both clients render
 prices from our own rows. A fully captured model still cannot make the
 shop quote a price it will not honour.
 
-## 10. Cap AI usage — done, with the real cap named
+## 10. Cap AI usage — the in-memory limit does not fire
 
 Rate limiting in the same function: 8 calls per caller per minute, 120 per
 isolate per minute, keyed on the session token when there is one and the
 forwarded IP otherwise. `429` with `Retry-After`.
 
-**Honest limit:** this counts in memory, and Supabase runs several
-isolates and recycles them, so the true ceiling is the number above times
-however many isolates are warm. It is a brake. The cap that cannot be got
-round by any request pattern is the spending limit on the Google side,
-and this does not replace it.
+**Measured on 2026-09-07 against the deployed function, and it never
+trips.** Forty-two authorised calls in about two minutes from one address
+-- eight sequential, twenty in parallel, then twelve down a single
+keep-alive connection -- produced not one `429`, and every response
+carried a different `x-deno-execution-id`.
+
+The counters are module-level, so they only accumulate while an isolate
+is reused. On this project's traffic each request appears to get a fresh
+isolate, which resets both buckets to zero. This was written expecting a
+weakened limit -- "a brake, not a cap". The measurement says it is not
+even a brake, and the code should not be described as rate limited.
+
+The cap that cannot be got round by any request pattern is the spending
+limit on the Google side, and until that is set nothing bounds this bill.
+A limit that actually held would have to count somewhere outside the
+isolate -- a table with an RPC, keyed on the user or the address -- which
+is a schema change and has not been made.
 
 ## 11. Limit request size — done
 
@@ -575,20 +587,41 @@ with the account record, not in `localStorage`.
 **This does not settle the ethics question.** Your supervisor was asked
 on 1 September and has not answered. Ask again before the beta opens.
 
-### Still to enable in the Dashboard
+### Dashboard configuration — done 2026-09-07
 
-Not settable from a migration or `config.toml` on the hosted project:
+Not settable from a migration or `config.toml` on the hosted project. All
+of the following were applied and verified against the live project on
+the day the site was deployed to `https://etech-fyp.vercel.app`.
 
-1. **Custom SMTP** (Project Settings → Authentication → SMTP Settings) —
-   required before email confirmation, see item 21. Do this one first.
-2. **Email confirmation** (Auth → Providers → Email → Confirm email) —
-   item 21. Only after SMTP.
-3. **Leaked password protection** (Auth → Passwords) — checks new
-   passwords against HaveIBeenPwned. Currently off; the advisor flags it.
-4. **The password verification hook** — see item 17.
-5. **Allowed origins / redirect URLs** — must include the Vercel domain
-   once the site is deployed, or sign-in breaks there. With email
-   confirmation on this also decides where the confirmation link lands,
-   so it stops being optional.
-6. **`ALLOWED_ORIGINS`** on the `chat-advisor` function — see item 14.
-   `supabase secrets set ALLOWED_ORIGINS="https://<domain>"`.
+1. **Site URL and redirect URLs** (Auth → URL Configuration) — Site URL
+   `https://etech-fyp.vercel.app`, redirect allowlist
+   `https://etech-fyp.vercel.app/**`. Verified end to end: a test
+   registration's confirmation link redeemed once and landed on that
+   domain. No localhost entry remains, which is harmless because
+   `signUp()` passes no `emailRedirectTo` and the link is always built
+   from Site URL.
+2. **Custom SMTP** (Auth → Emails → SMTP Settings) — Gmail,
+   `smtp.gmail.com:465`, sender and username both `chlee9580@gmail.com`,
+   authenticated with a Google app password. Confirmed by the auth log
+   line `Email limiter from 2/1h to 30`, which Supabase only writes when
+   it accepts the SMTP configuration, and by a real delivered email.
+3. **Email confirmation** — was already on (`mailer_autoconfirm: false`
+   on the public settings endpoint). Nothing to change.
+4. **Email rate limit** (Auth → Rate Limits) — raised to 100/hour. The
+   built-in mailer's 2/hour would have stranded the third tester in any
+   hour; 30/hour, the custom-SMTP default, counts every auth email
+   including resends.
+5. **`ALLOWED_ORIGINS`** on `chat-advisor` — set to
+   `https://etech-fyp.vercel.app`, and the function redeployed from this
+   repo (it had been stale at v13, still answering
+   `Access-Control-Allow-Origin: *`; now v15). Verified: the preflight
+   echoes our origin, refuses a foreign one, and still allows
+   `localhost:5500`.
+
+Still outstanding, and not Dashboard work:
+
+- **Leaked password protection** (Auth → Passwords) — checks new
+  passwords against HaveIBeenPwned. Still off; the advisor flags it.
+- **The password verification hook** — see item 17.
+- **A spending limit on the Google side** — see item 10. This is now the
+  only real bound on the Gemini bill.

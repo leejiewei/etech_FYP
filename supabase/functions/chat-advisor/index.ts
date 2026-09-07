@@ -54,7 +54,7 @@ const NEWLINE = String.fromCharCode(10);
 // actually protects the bill.
 //
 // Set ALLOWED_ORIGINS on the function to add the deployed site:
-//   supabase secrets set ALLOWED_ORIGINS="https://etech.vercel.app"
+//   supabase secrets set ALLOWED_ORIGINS="https://etech-fyp.vercel.app"
 // ------------------------------------------------------------
 const DEFAULT_ORIGINS = [
   "http://localhost:3000",
