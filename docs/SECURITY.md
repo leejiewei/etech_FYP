@@ -620,8 +620,12 @@ the day the site was deployed to `https://etech-fyp.vercel.app`.
 
 Still outstanding, and not Dashboard work:
 
-- **Leaked password protection** (Auth → Passwords) — checks new
-  passwords against HaveIBeenPwned. Still off; the advisor flags it.
+- **Leaked password protection** (Auth → Attack Protection) — checks new
+  passwords against HaveIBeenPwned. **Not available on this project:** it
+  is gated behind the Pro plan, and this is a Free-plan project. The
+  advisor will keep flagging it, and that warning cannot be cleared
+  without paying. What stands in its place is the minimum password
+  length; there is no way to reject a breached password on this plan.
 - **The password verification hook** — see item 17.
 - **A spending limit on the Google side** — see item 10. This is now the
   only real bound on the Gemini bill.
