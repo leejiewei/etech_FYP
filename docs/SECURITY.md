@@ -584,8 +584,11 @@ useless for consent. The acknowledgement is stored in the browser only;
 if the project needs per-participant evidence of consent, that belongs
 with the account record, not in `localStorage`.
 
-**This does not settle the ethics question.** Your supervisor was asked
-on 1 September and has not answered. Ask again before the beta opens.
+**The ethics question is settled for Objective 1.** The supervisor was
+asked on 1 September and confirmed on 7 September that the beta test may
+go ahead. The privacy notice and `web/privacy.html` stand as the
+participant information sheet for that session. Objective 2's data
+source is a separate question and was not covered by that approval.
 
 ### Dashboard configuration — done 2026-09-07
 
