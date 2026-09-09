@@ -79,8 +79,17 @@ function renderComparePage() {
   html += "</tr></thead><tbody>";
 
   html += "<tr><td>Brand</td>" + list.map((p) => `<td>${escapeHtml(p.brand)}</td>`).join("") + "</tr>";
-  html += "<tr><td>Price</td>" + list.map((p) => `<td>RM ${p.price.toFixed(2)}</td>`).join("") + "</tr>";
-  html += "<tr><td>Stock</td>" + list.map((p) => `<td>${stockLabel(p.stock)}</td>`).join("") + "</tr>";
+  // priceOf, not p.price: comparing two machines on their list prices
+  // when one of them is on offer answers a question nobody asked.
+  html += "<tr><td>Price</td>" + list.map((p) => `<td>${
+    hasDeal(p)
+      ? `<span class="price-was">RM ${p.price.toFixed(2)}</span>
+         <span class="price-now">RM ${priceOf(p).toFixed(2)}</span>`
+      : `RM ${p.price.toFixed(2)}`
+  }</td>`).join("") + "</tr>";
+  // stockOf, not p.stock, for the same reason the cards use it: a
+  // machine's parts decide whether it can be sold.
+  html += "<tr><td>Stock</td>" + list.map((p) => `<td>${stockLabel(stockOf(p))}</td>`).join("") + "</tr>";
 
   attrKeys.forEach((key) => {
     html += `<tr><td>${escapeHtml(attrLabel(key))}</td>` + list.map((p) => `<td>${escapeHtml((p.attrs && p.attrs[key]) || "-")}</td>`).join("") + "</tr>";

@@ -12,6 +12,11 @@ class CartItem {
   final int id;
   final String name;
   final double price;
+
+  /// What the product costs when nothing is on offer. Equal to [price]
+  /// unless a deal is running, and kept so the basket can strike it
+  /// through rather than quietly showing a smaller number.
+  final double listPrice;
   final int qty;
   final String imgSlug;
   final String? imagePath;
@@ -23,6 +28,7 @@ class CartItem {
     required this.id,
     required this.name,
     required this.price,
+    required this.listPrice,
     required this.qty,
     required this.imgSlug,
     this.imagePath,
@@ -31,12 +37,20 @@ class CartItem {
     required this.lineTotal,
   });
 
+  bool get onDeal => price < listPrice;
+
+  /// [dealPrice] is passed in by Shop.loadCart from the catalogue, which
+  /// is reading the same window place_order reads out of the deals
+  /// table. Null for a line with no deal on it, and then the product's
+  /// own price stands -- which is what the till would charge for it too.
   factory CartItem.fromRow(
     Map<String, dynamic> row, {
     List<PrebuiltUpgrade> upgrades = const [],
+    double? dealPrice,
   }) {
     final product = Map<String, dynamic>.from(row['products'] as Map);
-    final price = numericOf(product['price']);
+    final listPrice = numericOf(product['price']);
+    final price = dealPrice ?? listPrice;
     final qty = row['quantity'] as int;
     // Each machine carries its own upgrades, so two of them cost two
     // upgrade fees -- the same way two of anything costs twice.
@@ -47,6 +61,7 @@ class CartItem {
       id: row['product_id'] as int,
       name: product['name'] ?? '',
       price: price,
+      listPrice: listPrice,
       qty: qty,
       imgSlug: product['img_slug'] ?? 'default',
       imagePath: product['image_path'],
@@ -81,6 +96,20 @@ class Order {
   final String shippingAddress;
   final List<OrderLine> items;
 
+  /// Where the money stands, as distinct from where the goods stand.
+  ///
+  /// An order can be Pending with the payment approved (paid, not yet
+  /// packed) or Processing with the payment rejected (a blurred receipt
+  /// on an order somebody has already started), so these are separate
+  /// fields and are shown separately.
+  ///
+  /// [paymentMethod] is null on the orders placed before the shop could
+  /// take a payment at all, through the old card sandbox. That null means
+  /// something and is not filled in with a guess.
+  final String? paymentMethod;
+  final String paymentStatus;
+  final String? receiptPath;
+
   Order({
     required this.id,
     required this.date,
@@ -91,7 +120,13 @@ class Order {
     this.couponCode,
     required this.shippingAddress,
     required this.items,
+    this.paymentMethod,
+    this.paymentStatus = 'PENDING',
+    this.receiptPath,
   });
+
+  bool get paymentSettled => paymentStatus == 'APPROVED';
+  bool get needsReceipt => paymentMethod != null && !paymentSettled;
 
   factory Order.fromRow(Map<String, dynamic> row) => Order(
         id: row['order_id'] as int,
@@ -109,6 +144,9 @@ class Order {
         items: ((row['order_items'] ?? []) as List)
             .map((e) => OrderLine.fromRow(Map<String, dynamic>.from(e)))
             .toList(),
+        paymentMethod: row['payment_method'],
+        paymentStatus: row['payment_status'] ?? 'PENDING',
+        receiptPath: row['receipt_image_path'],
       );
 }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
+import '../payment_details.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/payment_panel.dart';
 
 /// The customer's own orders, and where each one has got to.
 class OrdersScreen extends StatefulWidget {
@@ -182,8 +184,92 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       color: AppTheme.redDark)),
             ],
           ),
+          _paymentSection(order),
         ],
       ),
+    );
+  }
+
+  /// Where the money stands, and what the customer can do about it.
+  ///
+  /// Kept apart from the delivery stages above deliberately. An order can
+  /// be Pending with the payment approved, or Processing with the payment
+  /// rejected, and folding those into one line would hide exactly the
+  /// case the customer needs to act on.
+  Widget _paymentSection(Order order) {
+    // Null means this order predates the shop being able to take a
+    // payment at all — it went through the old card sandbox. Said plainly
+    // rather than dressed up as a bank transfer that never happened.
+    if (order.paymentMethod == null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text('Placed before online payment was available.',
+            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+      );
+    }
+
+    final settled = order.paymentSettled;
+    final rejected = order.paymentStatus == 'REJECTED';
+    final colour = settled
+        ? AppTheme.green
+        : rejected
+            ? AppTheme.red
+            : AppTheme.amber;
+
+    final method = PaymentMethod.values.firstWhere(
+      (m) => m.value == order.paymentMethod,
+      orElse: () => PaymentMethod.bankTransfer,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 24),
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: colour.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(paymentStatusLabel(order.paymentStatus),
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: colour)),
+          ),
+          const SizedBox(width: 8),
+          Text(paymentMethodLabel(order.paymentMethod),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        ]),
+
+        // Approved is the end of it. There is nothing for the customer to
+        // do and nothing they are allowed to change.
+        if (settled) const SizedBox.shrink() else ...[
+          const SizedBox(height: 8),
+          Text(
+            rejected
+                ? 'We could not match that receipt to this order. Please send '
+                    'another — a clear photo showing the amount and the date.'
+                : order.receiptPath != null
+                    ? 'Your receipt is with us. We will confirm it shortly.'
+                    : 'We have not received a receipt for this order yet.',
+            style: TextStyle(
+                fontSize: 12,
+                color: rejected ? AppTheme.red : Colors.grey.shade600),
+          ),
+          const SizedBox(height: 10),
+          PaymentPanel(method: method),
+          const SizedBox(height: 10),
+          ReceiptUploader(
+            shop: widget.shop,
+            orderId: order.id,
+            // Reload rather than patch the one card: the database has
+            // just moved payment_status back to PENDING, and reading it
+            // again is how this screen finds that out rather than
+            // guessing it.
+            onSent: () => setState(() => _future = widget.shop.loadOrders()),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -19,6 +19,13 @@
       <input type="text" id="shop-search" class="attr-select" style="width: 100%;"
         placeholder="Search products or brands..." oninput="handleSearchInput(this.value)" />
     </div>
+    <div style="max-width: 300px; margin: 0 auto 12px auto;">
+      <select id="stock-select" class="attr-select" style="width: 100%;" onchange="handleStockChange(this.value)">
+        <option value="all">Availability: All products</option>
+        <option value="in_stock">In stock only</option>
+        <option value="out_of_stock">Out of stock only</option>
+      </select>
+    </div>
     <div style="max-width: 300px; margin: 0 auto 24px auto;">
       <select id="sort-select" class="attr-select" style="width: 100%;" onchange="handleSortChange(this.value)">
         <option value="default">Sort by: Default</option>
@@ -27,6 +34,10 @@
         <option value="price-high">Price: High to Low</option>
       </select>
     </div>
+    <!-- What the filters above are answering. Scrolled to by name when a
+         category or a mega-menu tile is picked, so the answer arrives on
+         screen instead of being left below the fold. -->
+    <div id="product-grid-top"></div>
     <p id="no-results">No products match your filters.</p>
     <div class="product-grid" id="product-grid"></div>
   </section>

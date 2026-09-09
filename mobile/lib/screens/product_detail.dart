@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/deal_price.dart';
 import '../widgets/product_image.dart';
 
 class ProductDetailScreen extends StatelessWidget {
@@ -104,12 +105,17 @@ class ProductDetailScreen extends StatelessWidget {
                     Text(product.categoryPath,
                         style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                     const SizedBox(height: 12),
-                    Row(children: [
-                      Text(money(product.price),
-                          style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.redDark)),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // The countdown belongs here rather than on the
+                      // grid card: this is the screen somebody reads
+                      // before deciding, and the time left is part of
+                      // the decision.
+                      DealPriceText(
+                        product: product,
+                        shop: shop,
+                        size: 26,
+                        showCountdown: true,
+                      ),
                       const SizedBox(width: 12),
                       StockPill(
                         stock: shop.stockOf(product),

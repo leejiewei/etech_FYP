@@ -15,6 +15,83 @@ function productImageTag(product, cssClass) {
     onerror="this.onerror=null; this.src='${safeUrl(productImageFallback(product))}';" />`;
 }
 
+// ============================================================
+// Prices, and the deal that may be on one.
+//
+// Every price the shop draws goes through here, so a struck-through
+// RM1,499 and the RM1,249 beside it are two halves of one decision made
+// in one place. The list price is kept in a data attribute rather than
+// being recovered by arithmetic, because when the clock runs out the
+// card has to put it back.
+// ============================================================
+function money(amount) {
+  return "RM " + Number(amount).toFixed(2);
+}
+
+function priceBlockHtml(product, cssClass) {
+  const deal = dealFor(product);
+
+  if (!deal) {
+    return `<p class="${cssClass}">${money(product.price)}</p>`;
+  }
+
+  return `
+    <p class="${cssClass} on-deal" data-list-price="${product.price}">
+      <span class="price-was">${money(product.price)}</span>
+      <span class="price-now">${money(deal.price)}</span>
+    </p>
+    <p class="deal-countdown" data-deal-ends="${escapeHtml(deal.endsAt)}">
+      <span class="deal-countdown-label">Ends in</span>
+      <span class="deal-countdown-clock">${formatCountdown(dealTimeLeft(deal))}</span>
+    </p>`;
+}
+
+// ------------------------------------------------------------
+// One clock for the whole page.
+//
+// Every countdown on screen is the same second, so they are driven by a
+// single interval rather than one per card -- a shop grid with forty
+// deals on it would otherwise be forty timers all waking up to write
+// the same number.
+//
+// When a deal runs out the card is corrected in place: the strikethrough
+// goes, the list price comes back, and the countdown is removed. That is
+// the visible half of "automatic expiration". The half that matters is
+// in the database, which stops handing the deal out and stops charging
+// it at the same instant, whether or not anybody's browser noticed.
+// ------------------------------------------------------------
+let dealTickerStarted = false;
+
+function tickDealCountdowns() {
+  document.querySelectorAll("[data-deal-ends]").forEach((el) => {
+    const left = new Date(el.dataset.dealEnds).getTime() - Date.now();
+
+    if (left > 0) {
+      const clock = el.querySelector(".deal-countdown-clock");
+      if (clock) clock.textContent = formatCountdown(left);
+      return;
+    }
+
+    // Over. Put the card back the way it would have been drawn a second
+    // later, without a round trip and without a reload.
+    const container = el.parentElement;
+    if (container) {
+      container.querySelectorAll(".on-deal").forEach((priceEl) => {
+        priceEl.classList.remove("on-deal");
+        priceEl.textContent = money(priceEl.dataset.listPrice);
+      });
+    }
+    el.remove();
+  });
+}
+
+function startDealTicker() {
+  if (dealTickerStarted) return;
+  dealTickerStarted = true;
+  tickDealCountdowns();
+  setInterval(tickDealCountdowns, 1000);
+}
+
 function buildProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
@@ -38,7 +115,7 @@ function buildProductCard(product) {
     <h3>${escapeHtml(product.name)}</h3>
     <p class="product-category">${escapeHtml(product.category)}${product.subcategory ? " · " + escapeHtml(product.subcategory) : ""}</p>
     <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
-    <p class="product-price">RM ${product.price.toFixed(2)}</p>
+    ${priceBlockHtml(product, "product-price")}
     <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
       ${outOfStock ? "Out of Stock" : "Add to Cart"}
     </button>
@@ -161,7 +238,7 @@ function productModalContent(product) {
           product.subcategory ? " · " + escapeHtml(product.subcategory) : ""
         }</p>
         <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
-        <p class="product-modal-price">RM ${product.price.toFixed(2)}</p>
+        ${priceBlockHtml(product, "product-modal-price")}
         ${product.description
           ? `<p class="product-modal-desc">${escapeHtml(product.description)}</p>`
           : ""}
@@ -209,3 +286,10 @@ function wireProductModalActions(product) {
     });
   });
 }
+
+// The clock starts once the catalogue has arrived, which is when the
+// first card can exist. It goes on running for the life of the page and
+// picks up cards drawn later -- a re-filtered grid, a reopened modal --
+// because it looks the countdowns up on each tick rather than holding a
+// list of them.
+onAppReady(startDealTicker);

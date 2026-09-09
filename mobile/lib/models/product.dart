@@ -126,3 +126,131 @@ class Product {
   List<String> get supportedFormFactors => _list('supportedFormFactors');
   List<String> get incompatibleSockets => _list('incompatibleSockets');
 }
+
+/// A price on one product until a stated moment.
+///
+/// Not the same thing as a [Deal], which despite the name is a coupon
+/// code for a whole category that the customer has to type at the
+/// checkout. This is a price on the shelf: nothing is typed, the old
+/// price is shown struck through, and place_order charges this one until
+/// the window closes.
+///
+/// The end time is checked twice. The database only ever hands over a
+/// deal that is running, and [isRunning] checks it again on every call,
+/// because a phone can sit in a pocket with the app open. Somebody
+/// looking at the Shop tab at 23:59 should watch the sale end rather
+/// than find out at the checkout.
+class TimedDeal {
+  final int id;
+  final int productId;
+  final double price;
+  final DateTime startsAt;
+  final DateTime endsAt;
+
+  TimedDeal({
+    required this.id,
+    required this.productId,
+    required this.price,
+    required this.startsAt,
+    required this.endsAt,
+  });
+
+  factory TimedDeal.fromRow(Map<String, dynamic> row) => TimedDeal(
+        id: row['deal_id'] as int,
+        productId: row['product_id'] as int,
+        price: numericOf(row['discount_price']),
+        startsAt: DateTime.parse(row['start_time'] as String).toLocal(),
+        endsAt: DateTime.parse(row['end_time'] as String).toLocal(),
+      );
+
+  bool get isRunning => DateTime.now().isBefore(endsAt);
+
+  Duration get timeLeft {
+    final left = endsAt.difference(DateTime.now());
+    return left.isNegative ? Duration.zero : left;
+  }
+}
+
+/// HH:MM:SS, with the days broken out in front once there is more than
+/// one. A three-week deal reading "504:00:00" is arithmetic, not an
+/// answer to "how long have I got".
+String formatCountdown(Duration left) {
+  if (left <= Duration.zero) return 'Ended';
+
+  String two(int n) => n.toString().padLeft(2, '0');
+  final clock = '${two(left.inHours % 24)}:${two(left.inMinutes % 60)}:'
+      '${two(left.inSeconds % 60)}';
+  return left.inDays > 0 ? '${left.inDays}d $clock' : clock;
+}
+
+/// A machine somebody built, photographed, with the parts they used.
+///
+/// The ASUS badge is not a field anybody sets. It is worked out in the
+/// database from the tagged parts by a trigger, every time the tags
+/// change, so it is a fact about the build rather than an opinion about
+/// it. This class only carries the answer.
+class RigShowcase {
+  final int id;
+  final String title;
+  final String? description;
+  final List<String> imageUrls;
+  final bool asusVerified;
+  final String builder;
+  final DateTime createdAt;
+
+  /// Filled in from rig_gallery_parts, which only ever returns the parts
+  /// of a published build.
+  final List<RigPart> parts;
+
+  RigShowcase({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.imageUrls,
+    required this.asusVerified,
+    required this.builder,
+    required this.createdAt,
+    this.parts = const [],
+  });
+
+  factory RigShowcase.fromRow(Map<String, dynamic> row,
+          {List<RigPart> parts = const []}) =>
+      RigShowcase(
+        id: row['rig_id'] as int,
+        title: row['title'] ?? '',
+        description: row['description'],
+        imageUrls:
+            ((row['image_urls'] ?? []) as List).map((e) => '$e').toList(),
+        asusVerified: (row['is_asus_verified'] ?? 0) == 1,
+        builder: row['builder'] ?? 'a customer',
+        createdAt:
+            DateTime.tryParse('${row['created_at']}')?.toLocal() ?? DateTime.now(),
+        parts: parts,
+      );
+}
+
+/// One part tagged in a build. A real product id rather than a line of
+/// text, so tapping it can go to the thing itself.
+class RigPart {
+  final int rigId;
+  final int productId;
+  final String name;
+  final String brand;
+  final double price;
+
+  RigPart({
+    required this.rigId,
+    required this.productId,
+    required this.name,
+    required this.brand,
+    required this.price,
+  });
+
+  factory RigPart.fromRow(Map<String, dynamic> row) => RigPart(
+        rigId: row['rig_id'] as int,
+        productId: row['product_id'] as int,
+        name: row['product_name'] ?? '',
+        brand: row['brand'] ?? '',
+        price: numericOf(row['price']),
+      );
+}

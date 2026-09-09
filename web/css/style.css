@@ -13,6 +13,26 @@
   --red-darker: #5c0916;
 }
 
+/* Anchors and scrollIntoView() glide rather than jump, so a click on a
+   category tab reads as the page moving to the answer instead of the
+   answer being swapped out underneath.
+
+   scroll-padding-top is the gap left above whatever is being scrolled
+   to. Nothing on this site is position: sticky today, so 16px is only
+   breathing room -- but if the navbar or the mega-bar is ever pinned,
+   this is the one number to raise to its height, and every anchor on
+   every page stops landing underneath it. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 16px;
+}
+
+/* Someone who has asked their system to stop animations has asked for
+   this one too. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #f4f5f7;
@@ -107,6 +127,16 @@ a {
   font-size: 24px;
   margin-bottom: 20px;
   text-align: center;
+}
+
+/* A line under a heading, for when two sections on one page do
+   different things and the difference is worth saying out loud. */
+.section-sub {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  max-width: 640px;
+  margin: -12px auto 22px auto;
 }
 
 /* Product grid */
@@ -987,6 +1017,42 @@ footer {
   color: var(--red-dark);
 }
 
+/* ============================================================
+   A price with a deal on it.
+   ============================================================ */
+
+/* The old price stays visible and struck through rather than being
+   replaced. A number nobody can see is not a saving anybody believes. */
+.price-was {
+  display: block;
+  font-size: 13px;
+  font-weight: normal;
+  color: #8a8f98;
+  text-decoration: line-through;
+}
+
+.price-now {
+  color: var(--red);
+}
+
+.deal-countdown {
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  color: #8a4b00;
+  background: #fff4e0;
+  border-radius: 5px;
+  padding: 4px 8px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.deal-countdown-clock {
+  /* Tabular figures so the seconds do not shove the label sideways
+     twice a second as the digits change width. */
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+}
+
 /* ---------- Deals page ---------- */
 .countdown-banner {
   background-color: var(--red-dark);
@@ -1031,6 +1097,265 @@ footer {
   margin-top: 10px;
   font-size: 13px;
   color: var(--red);
+}
+
+/* ============================================================
+   Paying, and proving you paid.
+
+   There is no gateway behind any of this: the customer pays from their
+   own banking app and sends a photograph of the receipt, which somebody
+   then looks at. So the job of these styles is to make the account
+   details easy to copy correctly and the amount hard to misread.
+   ============================================================ */
+.pay-choice {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 16px 0;
+}
+
+.pay-option {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dcdfe3;
+  border-radius: 8px;
+  cursor: pointer;
+  background: white;
+}
+
+.pay-option:has(input:checked) {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red) inset;
+}
+
+.pay-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pay-option small {
+  color: #777;
+  font-size: 12px;
+}
+
+.pay-panel {
+  background: #fbfbfc;
+  border: 1px solid #e6e8ec;
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 8px;
+}
+
+.pay-line {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+/* The number people are about to type into a banking app. Monospace so
+   a 0 cannot be read as an O, and selectable in one go. */
+.pay-line strong {
+  font-family: Consolas, "Courier New", monospace;
+  letter-spacing: 0.5px;
+  user-select: all;
+}
+
+.pay-qr {
+  display: block;
+  max-width: 240px;
+  margin: 10px 0;
+  border: 1px solid #e6e8ec;
+  border-radius: 6px;
+}
+
+.pay-qr-missing {
+  font-size: 13px;
+  color: #96690b;
+  background: #fff4e0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+
+/* Where an order stands with the money, as distinct from where it
+   stands with the goods. */
+.pay-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 11px;
+  white-space: nowrap;
+}
+
+.pay-badge.pending  { background: #fff4e0; color: #96690b; }
+.pay-badge.approved { background: #e3f8e8; color: #1e8e3e; }
+.pay-badge.rejected { background: #fde8e8; color: #c0392b; }
+
+/* ============================================================
+   Powered by ASUS: the showcase gallery.
+
+   Wider cards than the product grid, because the photograph is the
+   point here rather than an illustration beside a price.
+   ============================================================ */
+.rig-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.rig-card {
+  position: relative;
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* The badge is worked out in the database from the tagged parts, so it
+   is a fact about the build rather than a decoration. It is styled to
+   look like one. */
+.rig-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  background: #1c1c1e;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border-left: 3px solid var(--red);
+}
+
+/* Several photos of one build, scrolling sideways inside their own box
+   rather than taking the page with them. */
+.rig-photos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.rig-photos img {
+  height: 190px;
+  width: auto;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.rig-builder {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.rig-description {
+  font-size: 13.5px;
+  color: #444;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.rig-parts {
+  border-top: 1px solid #eef0f3;
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.rig-parts ul {
+  list-style: none;
+  margin-top: 6px;
+}
+
+.rig-parts li {
+  padding: 3px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rig-parts a {
+  color: var(--red-dark);
+  text-decoration: underline;
+}
+
+.rig-part-brand {
+  color: #999;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* ---------- Submitting a build ---------- */
+.rig-part-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.rig-part-option {
+  text-align: left;
+  background: white;
+  border: 1px solid #e2e5e9;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rig-part-option:hover {
+  border-color: var(--red);
+}
+
+.rig-part-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.rig-part-chip {
+  background: #f0f2f5;
+  border-radius: 14px;
+  padding: 5px 8px 5px 12px;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rig-part-chip button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  color: #888;
+  line-height: 1;
+}
+
+.rig-badge-preview {
+  width: 100%;
+  font-size: 12.5px;
+  color: #1e8e3e;
+  background: #e3f8e8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
 }
 
 /* ---------- FAQ accordion ---------- */
@@ -1524,13 +1849,24 @@ footer {
 
 .privacy-notice-ok:hover { background: #1c6fd8; }
 
-/* The floating WhatsApp button sits bottom-right; lift it clear while
-   the notice is on screen so the two do not overlap on a phone. */
-.privacy-notice ~ .whatsapp-btn { bottom: 96px; }
+/* The notice is fixed, so it is outside the flow and the document ends
+   underneath it: the last row of the shop grid, the bottom row of the
+   Brands and Categories panels and the footer links all sit behind the
+   bar until someone dismisses it. Reserving the same height at the end
+   of the body gives that content somewhere to scroll to.
+
+   The class is put on <body> by injectPrivacyNotice() and taken off when
+   the notice is dismissed. It replaces a sibling selector that never
+   matched -- the notice is appended after the floating buttons, and
+   "~" only reaches forwards, so the WhatsApp button was never actually
+   being lifted clear of it. */
+body.privacy-notice-open { padding-bottom: 96px; }
+body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 @media (max-width: 600px) {
   .privacy-notice { font-size: 12.5px; padding: 12px 14px; gap: 10px; }
-  .privacy-notice ~ .whatsapp-btn { bottom: 140px; }
+  body.privacy-notice-open { padding-bottom: 150px; }
+  body.privacy-notice-open .whatsapp-btn { bottom: 150px; }
 }
 
 

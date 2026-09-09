@@ -61,17 +61,35 @@ function applyCart(rows, upgradeRows) {
   cartItems = rows.map((row) => {
     const product = row.products;
     const upgrades = chosen[row.product_id] || [];
+
+    // A live deal changes what the line costs, so the basket has to know
+    // about it or the total on screen disagrees with the total charged.
+    // priceOf() reads the deal out of the catalogue, which is the same
+    // window place_order reads out of the deals table.
+    //
+    // The catalogue is keyed on the shaped product, not on this basket
+    // row, so it is looked up by id. If it is not there -- a product
+    // switched off while it sat in somebody's basket -- the row's own
+    // price stands, which is what the till would charge for it too.
+    const catalogueEntry = typeof getProductById === "function"
+      ? getProductById(row.product_id)
+      : null;
+    const listPrice = Number(product.price);
+    const unitPrice = catalogueEntry ? priceOf(catalogueEntry) : listPrice;
+
     // Each machine carries its own upgrades, so two of them cost two
     // upgrade fees -- the same way two of anything costs twice. This is
     // the same arithmetic place_order does on the other side; if the two
     // ever disagree the database wins, because it is the one charging.
-    const perUnit = Number(product.price) +
+    const perUnit = unitPrice +
       upgrades.reduce((sum, u) => sum + u.priceDelta, 0);
 
     return {
       id:        row.product_id,
       name:      product.name,
-      price:     Number(product.price),
+      price:     unitPrice,
+      listPrice: listPrice,
+      onDeal:    unitPrice < listPrice,
       qty:       row.quantity,
       icon:      product.icon,
       img:       product.img_slug,
@@ -273,7 +291,12 @@ function drawCartTable() {
             </li>`).join("")}
         </ul>` : ""}
       </td>
-      <td>RM ${item.price.toFixed(2)}</td>
+      <td>
+        ${item.onDeal
+          ? `<span class="price-was">RM ${item.listPrice.toFixed(2)}</span>
+             <span class="price-now">RM ${item.price.toFixed(2)}</span>`
+          : `RM ${item.price.toFixed(2)}`}
+      </td>
       <td>
         <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
         <span class="qty-value">${item.qty}</span>

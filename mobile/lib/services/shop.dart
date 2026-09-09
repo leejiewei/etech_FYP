@@ -37,6 +37,15 @@ class Shop extends ChangeNotifier {
   Map<int, PrebuiltAvailability> availability = {};
   Map<int, List<PrebuiltUpgrade>> upgrades = {};
 
+  // ---- timed deals ----
+  //
+  // Keyed by product id, and the same promise as the two above: a
+  // product with no deal on it is simply not in here. Fetched with the
+  // catalogue rather than when the Deals tab opens, because a struck
+  // through price has to read the same in the Shop grid, on the product
+  // page and in the basket, not only on the one screen.
+  Map<int, TimedDeal> timedDeals = {};
+
   // ---- who is signed in ----
   Map<String, dynamic>? user;
   bool get loggedIn => user != null;
@@ -174,10 +183,28 @@ class Shop extends ChangeNotifier {
             .eq('is_active', 1)
             .order('prebuilt_id')
             .order('sort_order')),
+        // live_deals is a view and it is already only the running ones:
+        // the policy on the deals table hides the rest from the shop
+        // front, and the view's own WHERE hides them from a signed-in
+        // member of staff. The app is not asked to filter anything.
+        //
+        // This one is allowed to fail on its own. Every other request
+        // here is the shop -- no products, no app -- but an app that
+        // cannot read its deals is an app at list price, which is a
+        // worse day rather than a broken one. It also means a build can
+        // ship before the migration that creates the view.
+        Api.selectAll(() => Api.db
+                .from('live_deals')
+                .select('deal_id,product_id,discount_price,start_time,end_time'))
+            .catchError((Object e) {
+          debugPrint('Reading deals (prices shown will be list prices): $e');
+          return <Map<String, dynamic>>[];
+        }),
       ]);
 
       products = _shapeCatalogue(results[0], results[1], results[2], results[3]);
       _shapePrebuilts(results[4], results[5]);
+      _shapeDeals(results[6]);
       loadError = null;
     } catch (e) {
       loadError = Api.message(e, 'Could not load the catalogue.');
@@ -293,6 +320,45 @@ class Shop extends ChangeNotifier {
       availability[p.id]?.statusOr(p.stock) ?? p.stock;
 
   bool inStock(Product p) => stockOf(p) != 'out';
+
+  void _shapeDeals(List<dynamic> dealRows) {
+    timedDeals = {
+      for (final row in dealRows)
+        row['product_id'] as int:
+            TimedDeal.fromRow(Map<String, dynamic>.from(row as Map)),
+    };
+  }
+
+  /// The deal running on a product right now, or null.
+  ///
+  /// A deal priced at or above the list price is a slip rather than an
+  /// offer, and is ignored here for the same reason place_order takes
+  /// the lower of the two: nobody should be charged more because a sale
+  /// was typed in wrong.
+  TimedDeal? dealFor(Product p) {
+    final deal = timedDeals[p.id];
+    if (deal == null || !deal.isRunning) return null;
+    if (deal.price >= p.price) return null;
+    return deal;
+  }
+
+  bool hasDeal(Product p) => dealFor(p) != null;
+
+  /// What a product costs. Ask this rather than reading p.price, the
+  /// same way [stockOf] is asked rather than reading p.stock.
+  double priceOf(Product p) => dealFor(p)?.price ?? p.price;
+
+  /// The products on offer, biggest saving first -- as a proportion, so
+  /// RM50 off a RM200 keyboard is not buried under RM50 off a RM4,000
+  /// machine.
+  List<Product> get dealProducts {
+    final list = products.where(hasDeal).toList();
+    list.sort((a, b) {
+      double cut(Product p) => (p.price - priceOf(p)) / p.price;
+      return cut(b).compareTo(cut(a));
+    });
+    return list;
+  }
 
   String stockLabelOf(Product p) {
     switch (stockOf(p)) {
@@ -568,12 +634,21 @@ class Shop extends ChangeNotifier {
         list.sort((a, b) => a.slot.compareTo(b.slot));
       }
 
-      cart = results[0]
-          .map<CartItem>((r) => CartItem.fromRow(
-                r,
-                upgrades: chosen[r['product_id'] as int] ?? const [],
-              ))
-          .toList();
+      // A live deal changes what the line costs, so the basket has to
+      // know about it or the total on screen disagrees with the total
+      // charged. The deal is looked up in the catalogue by id; a product
+      // switched off while it sat in somebody's basket is not there, and
+      // then its own price stands.
+      cart = results[0].map<CartItem>((r) {
+        final productId = r['product_id'] as int;
+        final inCatalogue = byId(productId);
+
+        return CartItem.fromRow(
+          r,
+          upgrades: chosen[productId] ?? const [],
+          dealPrice: inCatalogue == null ? null : dealFor(inCatalogue)?.price,
+        );
+      }).toList();
       cartTotal = cart.fold(0, (sum, item) => sum + item.lineTotal);
       notifyListeners();
     } catch (e) {
@@ -715,6 +790,7 @@ class Shop extends ChangeNotifier {
           .from('orders')
           .select('order_id,order_date,status,subtotal,discount,total,'
               'coupon_code,shipping_name,shipping_phone,shipping_address,'
+              'payment_method,payment_status,receipt_image_path,'
               'order_items(product_id,product_name,unit_price,quantity,line_total)')
           .order('order_date', ascending: false);
 
@@ -732,17 +808,22 @@ class Shop extends ChangeNotifier {
   /// each product and empties the basket — all as one indivisible step, so
   /// a failure halfway cannot leave an order with no items in it.
   ///
-  /// Only the delivery details and the coupon code are sent. Every price,
-  /// the discount and the total are worked out down there from the basket
-  /// rows, so a modified app cannot change what anything costs.
+  /// Only the delivery details, the coupon code and how the customer
+  /// intends to pay are sent. Every price, the discount and the total are
+  /// worked out down there from the basket rows, so a modified app cannot
+  /// change what anything costs — nor whether the payment has been
+  /// checked, which starts at PENDING on that side and can only be moved
+  /// by a member of staff.
   Future<Map<String, dynamic>> placeOrder(
-      String name, String phone, String address, String coupon) async {
+      String name, String phone, String address, String coupon,
+      {String paymentMethod = 'BANK_TRANSFER'}) async {
     try {
       final result = await Api.db.rpc('place_order', params: {
         'p_name': name,
         'p_phone': phone,
         'p_address': address,
         'p_coupon': coupon,
+        'p_payment_method': paymentMethod,
       });
 
       await loadCart();
@@ -753,6 +834,141 @@ class Shop extends ChangeNotifier {
         'error': Api.message(e, 'Could not place the order. Nothing was charged.'),
       };
     }
+  }
+
+  // ------------------------------------------------------------
+  // Sending a payment receipt.
+  //
+  // The picture goes into a private bucket, in a folder named after the
+  // customer, and the path is then handed to attach_payment_receipt().
+  // That function checks the order is theirs, that the payment has not
+  // already been approved, and that the path is inside their own folder
+  // before it records anything — so none of the three facts this method
+  // asserts are taken on the app's word.
+  //
+  // Uploaded as the bytes that came off the camera. The website shrinks
+  // its uploads through a canvas because a browser has one to hand;
+  // image_picker is asked for the same thing up front instead, with
+  // maxWidth and imageQuality, so a 4MB phone photo arrives as a legible
+  // JPEG well inside the bucket's 5MB limit.
+  // ------------------------------------------------------------
+  Future<String?> sendReceipt(int orderId, Uint8List bytes) async {
+    if (!loggedIn) return 'Please sign in first.';
+
+    final customerId = _customerId;
+    if (customerId == null) return 'Please sign in again.';
+
+    try {
+      final path = '$customerId/order${orderId}_'
+          '${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await Api.db.storage.from('payment-receipts').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+
+      await Api.db.rpc('attach_payment_receipt', params: {
+        'p_order_id': orderId,
+        'p_path': path,
+      });
+    } catch (e) {
+      return Api.message(e, 'Could not upload that receipt.');
+    }
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // Powered by ASUS: the showcase gallery
+  //
+  // Read from rig_gallery, a view that only ever returns approved
+  // submissions — the policy on the table underneath says the same
+  // thing, so a screen that forgot to filter would come back empty
+  // rather than publishing somebody's pending photograph.
+  //
+  // Not fetched with the catalogue. Unlike deals and prebuilt
+  // availability, nothing outside the gallery screen needs this, and it
+  // is the one list here that gets longer without limit.
+  // ------------------------------------------------------------
+  Future<List<RigShowcase>> loadRigGallery() async {
+    try {
+      final results = await Future.wait([
+        Api.db
+            .from('rig_gallery')
+            .select('rig_id,title,description,image_urls,is_asus_verified,'
+                'created_at,builder')
+            .order('created_at', ascending: false),
+        Api.db
+            .from('rig_gallery_parts')
+            .select('rig_id,product_id,product_name,price,brand'),
+      ]);
+
+      final partsFor = <int, List<RigPart>>{};
+      for (final row in results[1]) {
+        final part = RigPart.fromRow(Map<String, dynamic>.from(row as Map));
+        (partsFor[part.rigId] ??= []).add(part);
+      }
+
+      return results[0]
+          .map<RigShowcase>((r) => RigShowcase.fromRow(
+                Map<String, dynamic>.from(r as Map),
+                parts: partsFor[r['rig_id'] as int] ?? const [],
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('Loading the rig gallery: $e');
+      return [];
+    }
+  }
+
+  /// Sends a build in for review.
+  ///
+  /// The photographs go up first, then one call writes the build and its
+  /// tags together — two statements from a phone could land the first and
+  /// lose the second, and a rig with no parts on it is the one case the
+  /// badge rule cannot answer.
+  ///
+  /// The status is not an argument. A submission is PENDING and only
+  /// staff can move it, which is decided on the database's side rather
+  /// than trusted to this method.
+  Future<String?> submitRig({
+    required String title,
+    required String description,
+    required List<Uint8List> photos,
+    required List<int> productIds,
+  }) async {
+    if (!loggedIn) return 'Please sign in first.';
+
+    final customerId = _customerId;
+    if (customerId == null) return 'Please sign in again.';
+    if (photos.isEmpty) return 'Add at least one photo of the build.';
+    if (photos.length > 6) return 'Six photos is the most a build can have.';
+
+    try {
+      final urls = <String>[];
+      for (final bytes in photos) {
+        final stamp = '${DateTime.now().millisecondsSinceEpoch}_'
+            '${Random().nextInt(1 << 32).toRadixString(36)}';
+        final path = '$customerId/rig_$stamp.jpg';
+
+        await Api.db.storage.from('rig-showcases').uploadBinary(
+              path,
+              bytes,
+              fileOptions: const FileOptions(contentType: 'image/jpeg'),
+            );
+        urls.add(Api.db.storage.from('rig-showcases').getPublicUrl(path));
+      }
+
+      await Api.db.rpc('submit_rig_showcase', params: {
+        'p_title': title,
+        'p_description': description,
+        'p_image_urls': urls,
+        'p_product_ids': productIds,
+      });
+    } catch (e) {
+      return Api.message(e, 'Could not send that build.');
+    }
+    return null;
   }
 
   // ------------------------------------------------------------

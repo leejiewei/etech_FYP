@@ -1,0 +1,36 @@
+-- ============================================================
+-- The two rig helpers are internals, not API.
+--
+-- Supabase ships a default privilege on the public schema that hands
+-- EXECUTE to anon and authenticated on every function as it is created,
+-- and it arrives as an explicit grant to those roles rather than as part
+-- of PUBLIC. So both helpers added by 20260908030000_rig_showcases.sql
+-- were reachable at /rest/v1/rpc/ the moment they existed.
+--
+-- This is the same gap 20260828005426_revoke_anon_defaults.sql closed for
+-- cart_add(), place_order() and the admin functions. These two were
+-- created after that file ran and inherited the default again, which is
+-- worth noting: the fix in that migration was a set of statements about
+-- particular functions, not a change to the default, so every function
+-- added since has had to remember this for itself.
+--
+-- What was actually exposed:
+--
+--   refresh_rig_asus_badge()  a trigger function. Called any other way it
+--                             raises, because there is no NEW or OLD to
+--                             read. Nothing leaked.
+--
+--   rig_uses_asus(rig_id)     SECURITY DEFINER, and it answers for any
+--                             rig id including one still waiting for
+--                             approval. Small -- it returns a boolean
+--                             about a build nobody can see yet -- but
+--                             there is no reason for it to be callable at
+--                             all.
+--
+-- The trigger goes on working. It fires as the table's owner rather than
+-- as whoever wrote the row, so revoking EXECUTE from the client roles
+-- does not touch it.
+-- ============================================================
+
+REVOKE EXECUTE ON FUNCTION public.rig_uses_asus(integer)   FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.refresh_rig_asus_badge() FROM public, anon, authenticated;

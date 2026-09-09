@@ -209,9 +209,17 @@ function prebuiltCard(p) {
         <strong>Available upgrades:</strong>
         <p class="prebuilt-upgrades">${escapeHtml(note)}</p>
       </div>` : ""}
-      <p class="prebuilt-price">RM ${(p.price + extra).toFixed(2)}</p>
+      ${/* A deal is on the machine, not on the options bolted to it --
+            the till works the same way -- so the deal price replaces the
+            base and the upgrades are added to it as before. */ ""}
+      <p class="prebuilt-price">RM ${(priceOf(p) + extra).toFixed(2)}</p>
+      ${hasDeal(p)
+        ? `<p class="prebuilt-price-basis">
+             <span class="price-was">RM ${(p.price + extra).toFixed(2)}</span>
+             on deal until ${escapeHtml(dealEndsText(p))}</p>`
+        : ""}
       ${extra > 0
-        ? `<p class="prebuilt-price-basis">RM ${p.price.toFixed(2)}
+        ? `<p class="prebuilt-price-basis">RM ${priceOf(p).toFixed(2)}
              + RM ${extra.toFixed(2)} upgrades</p>`
         : ""}
       <button class="add-btn" ${outOfStock ? "disabled" : ""}

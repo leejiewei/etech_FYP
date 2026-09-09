@@ -20,6 +20,7 @@ class _ShopScreenState extends State<ShopScreen> {
   String _category = 'All';
   String _brand = 'All';
   String _sort = 'default';
+  String _stock = 'all'; // all | in_stock | out_of_stock
   final _searchController = TextEditingController();
 
   // Recording a search waits until the typing stops. Without this, "rtx"
@@ -52,6 +53,14 @@ class _ShopScreenState extends State<ShopScreen> {
     var list = widget.shop.products.where((p) {
       if (_category != 'All' && p.category != _category) return false;
       if (_brand != 'All' && p.brand != _brand) return false;
+      // shop.inStock, not product.inStock: a prebuilt has no stock of its
+      // own, only whatever its scarcest part allows, and the filter has to
+      // agree with the badge the card is about to draw.
+      //
+      // "In stock" keeps the low ones. Somebody filtering for what they can
+      // buy today wants the last two in the box.
+      if (_stock == 'in_stock' && !widget.shop.inStock(p)) return false;
+      if (_stock == 'out_of_stock' && widget.shop.inStock(p)) return false;
       if (_search.trim().isNotEmpty) {
         final term = _search.trim().toLowerCase();
         if (!('${p.name} ${p.brand}').toLowerCase().contains(term)) return false;
@@ -85,6 +94,11 @@ class _ShopScreenState extends State<ShopScreen> {
             tooltip: 'Filter by brand',
             icon: const Icon(Icons.sell_outlined),
             onPressed: _pickBrand,
+          ),
+          IconButton(
+            tooltip: 'Filter by availability',
+            icon: const Icon(Icons.inventory_2_outlined),
+            onPressed: _pickStock,
           ),
           IconButton(
             tooltip: 'Sort',
@@ -137,12 +151,14 @@ class _ShopScreenState extends State<ShopScreen> {
               }).toList(),
             ),
           ),
-          if (_brand != 'All' || _sort != 'default')
+          if (_brand != 'All' || _sort != 'default' || _stock != 'all')
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
               child: Row(children: [
                 if (_brand != 'All')
                   _activeChip(_brand, () => setState(() => _brand = 'All')),
+                if (_stock != 'all')
+                  _activeChip(_stockLabel(_stock), () => setState(() => _stock = 'all')),
                 if (_sort != 'default')
                   _activeChip(_sortLabel(_sort), () => setState(() => _sort = 'default')),
               ]),
@@ -195,6 +211,44 @@ class _ShopScreenState extends State<ShopScreen> {
         'price-high': 'Price: high to low',
       }[key] ??
       key;
+
+  String _stockLabel(String key) => {
+        'in_stock': 'In stock',
+        'out_of_stock': 'Out of stock',
+      }[key] ??
+      key;
+
+  void _pickStock() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Availability',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            ...{
+              'all': 'All products',
+              'in_stock': 'In stock only',
+              'out_of_stock': 'Out of stock only',
+            }.entries.map((e) => ListTile(
+                  title: Text(e.value),
+                  trailing: e.key == _stock
+                      ? const Icon(Icons.check, color: AppTheme.red)
+                      : null,
+                  onTap: () {
+                    setState(() => _stock = e.key);
+                    Navigator.pop(context);
+                  },
+                )),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _pickBrand() {
     showModalBottomSheet(

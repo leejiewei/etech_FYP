@@ -36,6 +36,7 @@ function injectHeader() {
         <li><a href="build.html">Build PC</a></li>
         <li><a href="prebuilt.html">Prebuilt</a></li>
         <li><a href="deals.html">Deals</a></li>
+        <li><a href="rigs.html">Rigs</a></li>
         <li><a href="compare.html">Compare <span class="badge">${compareCount}</span></a></li>
         <li><a href="wishlist.html">Wishlist <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
         <li><a href="cart.html">Cart <span class="badge" id="cart-count">${cartCount}</span></a></li>
@@ -59,6 +60,32 @@ function injectHeader() {
   if (searchBox && params.get("search")) {
     searchBox.value = params.get("search");
   }
+
+  wireMegaItems(header);
+}
+
+// The tiles are ordinary links to shop.html?category=... and they stay
+// ordinary links: on the home page, the cart, anywhere that is not the
+// shop, clicking one navigates as it always did.
+//
+// On the shop page itself that navigation was a page load to change
+// which subset of an already-loaded array gets drawn. shop.js defines
+// applyMegaFilter, nothing else does, so its presence is the test for
+// "we are already where this link points" -- and there the click filters
+// the grid in place and scrolls to it.
+function wireMegaItems(root) {
+  root.querySelectorAll(".mega-item[data-mega-kind]").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      if (typeof applyMegaFilter !== "function") return;
+      // Leave the modified clicks alone -- ctrl/cmd-click and middle-click
+      // mean "open this somewhere else", and they still can.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      e.preventDefault();
+      closeMegaMenus();
+      applyMegaFilter(item.dataset.megaKind, item.dataset.megaValue);
+    });
+  });
 }
 
 // ---------- Mega menus (Brands / Categories) ----------
@@ -73,6 +100,9 @@ function getAllBrands() {
   return brands.sort();
 }
 
+// One name per tile. There used to be a second span beneath it repeating
+// the same brand in capitals -- a caption that had lost its picture. The
+// stylesheet already uppercases .mega-logo, so nothing was lost with it.
 function buildBrandsMenu() {
   const brands = getAllBrands();
 
@@ -87,9 +117,9 @@ function buildBrandsMenu() {
       </div>
       <div class="mega-grid">
         ${brands.map((brand) => `
-          <a class="mega-item" href="shop.html?brand=${encodeURIComponent(brand)}">
+          <a class="mega-item" href="shop.html?brand=${encodeURIComponent(brand)}"
+             data-mega-kind="brand" data-mega-value="${escapeHtml(brand)}">
             <span class="mega-logo">${escapeHtml(brand)}</span>
-            <span class="mega-label">${escapeHtml(brand.toUpperCase())}</span>
           </a>
         `).join("")}
       </div>
@@ -97,31 +127,38 @@ function buildBrandsMenu() {
   `;
 }
 
+// The icons are written as the characters themselves, not as "&#129513;"
+// entities. They were entities once and printed on the page as the literal
+// code, because everything that goes into a tile is put through
+// escapeHtml() on the way -- which is right, and stays -- and escaping an
+// entity turns its ampersand into &amp; so the browser has nothing left to
+// decode. A character needs no decoding, so escaping it changes nothing and
+// the icon survives the trip. This file already writes 💬 and 🤖 the same way.
 function buildCategoriesMenu() {
   // Main categories, then the component sub-types, each with a small icon.
   const mainCategories = [
-    { name: "Components", icon: "&#129513;" },
-    { name: "Case Fans", icon: "&#127788;" },
-    { name: "Accessories", icon: "&#128268;" },
-    { name: "Printers", icon: "&#128424;" },
-    { name: "Monitors", icon: "&#128421;" },
-    { name: "Projectors", icon: "&#128253;" },
-    { name: "Monitor Arms", icon: "&#129470;" },
-    { name: "Networking", icon: "&#128246;" },
-    { name: "Consumables", icon: "&#128196;" },
-    { name: "Laptops", icon: "&#128187;" },
-    { name: "Gaming Gear", icon: "&#127918;" },
+    { name: "Components", icon: "🧩" },
+    { name: "Case Fans", icon: "🌬️" },
+    { name: "Accessories", icon: "🔌" },
+    { name: "Printers", icon: "🖨️" },
+    { name: "Monitors", icon: "🖥️" },
+    { name: "Projectors", icon: "📽️" },
+    { name: "Monitor Arms", icon: "🦾" },
+    { name: "Networking", icon: "📶" },
+    { name: "Consumables", icon: "📄" },
+    { name: "Laptops", icon: "💻" },
+    { name: "Gaming Gear", icon: "🎮" },
   ];
 
   const subCategories = [
-    { name: "CPU", icon: "&#129504;" },
-    { name: "Cooler", icon: "&#127744;" },
-    { name: "Motherboard", icon: "&#128268;" },
-    { name: "RAM", icon: "&#128190;" },
-    { name: "GPU", icon: "&#127918;" },
-    { name: "Storage", icon: "&#128189;" },
-    { name: "PSU", icon: "&#128267;" },
-    { name: "Case", icon: "&#128421;" },
+    { name: "CPU", icon: "🧠" },
+    { name: "Cooler", icon: "🌀" },
+    { name: "Motherboard", icon: "🔌" },
+    { name: "RAM", icon: "💾" },
+    { name: "GPU", icon: "🎮" },
+    { name: "Storage", icon: "💽" },
+    { name: "PSU", icon: "🔋" },
+    { name: "Case", icon: "🖥️" },
   ];
 
   return `
@@ -134,13 +171,15 @@ function buildCategoriesMenu() {
       </div>
       <div class="mega-grid">
         ${mainCategories.map((c) => `
-          <a class="mega-item" href="shop.html?category=${encodeURIComponent(c.name)}">
+          <a class="mega-item" href="shop.html?category=${encodeURIComponent(c.name)}"
+             data-mega-kind="category" data-mega-value="${escapeHtml(c.name)}">
             <span class="mega-icon">${escapeHtml(c.icon)}</span>
             <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
           </a>
         `).join("")}
         ${subCategories.map((c) => `
-          <a class="mega-item" href="shop.html?subcategory=${encodeURIComponent(c.name)}">
+          <a class="mega-item" href="shop.html?subcategory=${encodeURIComponent(c.name)}"
+             data-mega-kind="subcategory" data-mega-value="${escapeHtml(c.name)}">
             <span class="mega-icon">${escapeHtml(c.icon)}</span>
             <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
           </a>
@@ -164,12 +203,16 @@ function toggleMegaMenu(which) {
   tab.classList.toggle("active");
 }
 
+function closeMegaMenus() {
+  document.querySelectorAll(".mega-menu.open").forEach((m) => m.classList.remove("open"));
+  document.querySelectorAll(".mega-tab.active").forEach((t) => t.classList.remove("active"));
+}
+
 // Clicking anywhere outside the menus closes them.
 document.addEventListener("click", (e) => {
   if (!e.target || !e.target.closest) return;
   if (e.target.closest(".mega-bar") || e.target.closest(".mega-menu")) return;
-  document.querySelectorAll(".mega-menu.open").forEach((m) => m.classList.remove("open"));
-  document.querySelectorAll(".mega-tab.active").forEach((t) => t.classList.remove("active"));
+  closeMegaMenus();
 });
 
 function injectFooter() {
@@ -225,7 +268,8 @@ function injectPrivacyNotice() {
     <p>
       This is a student project, and it records which products you open, what
       you search for and what you ask the chatbot &mdash; that record is what
-      the project studies. Checkout is simulated and no card is charged.
+      the project studies. No goods are shipped and there is nothing to pay:
+      the payment details at the checkout are placeholders, not a real account.
       <a href="privacy.html">Read the privacy notice</a>.
     </p>
     <button type="button" class="privacy-notice-ok">I understand</button>
@@ -234,9 +278,14 @@ function injectPrivacyNotice() {
   bar.querySelector(".privacy-notice-ok").addEventListener("click", () => {
     try { localStorage.setItem(PRIVACY_NOTICE_KEY, "1"); } catch (e) { /* fine */ }
     bar.remove();
+    document.body.classList.remove("privacy-notice-open");
   });
 
   document.body.appendChild(bar);
+  // The bar is fixed and covers the foot of the page. The class reserves
+  // the same height at the end of the body so the last row of whatever
+  // is on screen can still be scrolled out from under it.
+  document.body.classList.add("privacy-notice-open");
 }
 
 // Our WhatsApp number. wa.me needs the international format with no

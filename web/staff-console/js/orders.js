@@ -13,6 +13,23 @@
 // passed adminId() from the session; a browser cannot be trusted to say
 // which member of staff it is, so the function reads it from the token
 // instead.
+//
+// ------------------------------------------------------------
+// The payment is a second, separate track.
+//
+// There is no gateway: customers pay from their own banking app and
+// upload a photograph of the receipt, and somebody here decides whether
+// it matches. So each card carries two states -- where the goods are,
+// and whether the money arrived -- and two sets of buttons. Approving a
+// payment on a Pending order moves it to Processing as well, which is
+// what Pending means once the money is in.
+//
+// The receipts live in a private bucket. This page holds no key to it:
+// it asks Storage for a link signed for a few minutes, and Storage
+// decides whether to issue one by asking the same is_admin() every other
+// policy asks. A member of staff who lost their access would find the
+// picture would not load.
+// ------------------------------------------------------------
 // ============================================================
 
 const STAGES = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
@@ -20,15 +37,37 @@ const STAGES = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
 // The next step along for each stage.
 const NEXT = { Pending: "Processing", Processing: "Shipped", Shipped: "Delivered" };
 
+const PAYMENT_STATES = ["PENDING", "APPROVED", "REJECTED"];
+
+const PAYMENT_LABELS = {
+  PENDING:  "Payment not checked",
+  APPROVED: "Payment approved",
+  REJECTED: "Payment rejected",
+};
+
+const PAYMENT_METHOD_LABELS = {
+  QR_CODE:       "DuitNow QR",
+  BANK_TRANSFER: "Bank transfer",
+};
+
+// Long enough to look at the picture, short enough that a link copied
+// out of the page is worthless by the time it leaves the building.
+const RECEIPT_LINK_SECONDS = 300;
+
 adminPage("Orders", "orders", async (content) => {
   const filter = STAGES.includes(params().status) ? params().status : "";
+  // A second filter, on the money rather than the goods. ?pay=PENDING is
+  // the queue somebody works through in the morning.
+  const payFilter = PAYMENT_STATES.includes(params().pay) ? params().pay : "";
 
   let query = sb.from("admin_orders")
     .select("order_id,order_date,status,subtotal,discount,total,coupon_code," +
-            "shipping_name,shipping_phone,shipping_address,customer_name,customer_email")
+            "shipping_name,shipping_phone,shipping_address,customer_name,customer_email," +
+            "payment_method,payment_status,receipt_image_path")
     .order("order_date", { ascending: false })
     .limit(60);
   if (filter !== "") query = query.eq("status", filter);
+  if (payFilter !== "") query = query.eq("payment_status", payFilter);
 
   const [ordersResult, countsResult] = await Promise.all([
     query,
@@ -55,10 +94,17 @@ adminPage("Orders", "orders", async (content) => {
 
   content.innerHTML = `
     <div class="filters">
-      <a href="orders.html" class="btn ${filter === "" ? "" : "grey"}">All (${allCount})</a>
+      <a href="orders.html" class="btn ${filter === "" && payFilter === "" ? "" : "grey"}">All (${allCount})</a>
       ${STAGES.map((s) => `
         <a href="orders.html?status=${encodeURIComponent(s)}" class="btn ${filter === s ? "" : "grey"}">
           ${e(s)} (${counts[s] || 0})
+        </a>`).join("")}
+    </div>
+
+    <div class="filters" style="margin-top:-6px;">
+      ${PAYMENT_STATES.map((s) => `
+        <a href="orders.html?pay=${encodeURIComponent(s)}" class="btn small ${payFilter === s ? "" : "grey"}">
+          ${e(PAYMENT_LABELS[s])}
         </a>`).join("")}
     </div>
 
@@ -67,6 +113,8 @@ adminPage("Orders", "orders", async (content) => {
       : orders.map((o) => orderCard(o, linesFor[o.order_id] || [], historyFor[o.order_id] || [])).join("")}`;
 
   wireOrderActions();
+  wirePaymentActions();
+  wireReceiptLinks();
 });
 
 async function loadLines(ids) {
@@ -157,7 +205,119 @@ function orderCard(o, items, history) {
         </select>
         <button type="button" data-act="set" class="btn small grey">Set</button>
       </div>
+
+      ${paymentBlock(o)}
     </div>`;
+}
+
+// The money half of the card: how they said they would pay, whether it
+// has been checked, the receipt itself, and the two buttons.
+//
+// payment_method is NULL on the orders placed through the old card
+// sandbox, before the shop could take a payment at all. Those get a line
+// saying so rather than an approval queue entry for money that was never
+// asked for.
+function paymentBlock(o) {
+  if (!o.payment_method) {
+    return `
+      <div style="margin-top:12px; font-size:12px; color:#999;">
+        Placed through the card sandbox, before online payment existed.
+      </div>`;
+  }
+
+  const state = o.payment_status;
+  const badge = state === "APPROVED" ? "in" : state === "REJECTED" ? "out" : "low";
+
+  return `
+    <div style="margin-top:14px; border-top:1px solid #eef0f3; padding-top:12px;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span class="badge ${badge}">${e(PAYMENT_LABELS[state] || state)}</span>
+        <span style="font-size:13px; color:#777;">
+          ${e(PAYMENT_METHOD_LABELS[o.payment_method] || o.payment_method)}
+        </span>
+
+        ${o.receipt_image_path
+          ? `<button type="button" class="btn small grey" data-receipt="${e(o.receipt_image_path)}">
+               View receipt
+             </button>`
+          : `<span style="font-size:13px; color:#c0392b;">No receipt sent yet</span>`}
+
+        <span style="flex:1;"></span>
+
+        ${state !== "APPROVED" && o.receipt_image_path ? `
+          <button type="button" data-pay="APPROVED" class="btn small">Approve payment</button>` : ""}
+        ${state !== "REJECTED" && o.receipt_image_path ? `
+          <button type="button" data-pay="REJECTED" class="btn small danger">Reject payment</button>` : ""}
+      </div>
+      <div class="receipt-view" style="margin-top:10px;"></div>
+    </div>`;
+}
+
+// The bucket is private, so there is no URL to put in the page. Storage
+// is asked for one signed for a few minutes at the moment somebody
+// clicks, and it decides whether to issue it by asking is_admin().
+function wireReceiptLinks() {
+  document.querySelectorAll("[data-receipt]").forEach((button) => {
+    button.onclick = async () => {
+      const view = button.closest("[data-order]").querySelector(".receipt-view");
+      button.disabled = true;
+
+      const { data, error } = await sb.storage
+        .from("payment-receipts")
+        .createSignedUrl(button.dataset.receipt, RECEIPT_LINK_SECONDS);
+
+      button.disabled = false;
+
+      if (error || !data) {
+        view.innerHTML =
+          `<div class="error-box">Could not open that receipt: ${e((error && error.message) || "unknown error")}</div>`;
+        return;
+      }
+
+      view.innerHTML = `
+        <a href="${e(data.signedUrl)}" target="_blank" rel="noopener">
+          <img src="${e(data.signedUrl)}" alt="Payment receipt"
+               style="max-width:340px; border:1px solid #e6e8ec; border-radius:6px;" />
+        </a>
+        <div style="font-size:12px; color:#999; margin-top:4px;">
+          Click to open full size. This link expires in five minutes.
+        </div>`;
+    };
+  });
+}
+
+function wirePaymentActions() {
+  document.querySelectorAll("[data-order] button[data-pay]").forEach((button) => {
+    button.onclick = async () => {
+      const card = button.closest("[data-order]");
+      const orderId = Number(card.dataset.order);
+      const note = card.querySelector('[data-field="note"]').value.trim();
+      const status = button.dataset.pay;
+
+      if (status === "REJECTED" &&
+          !confirm("Reject this payment? The customer will be asked to send another receipt.")) {
+        return;
+      }
+
+      button.disabled = true;
+
+      const { error } = await sb.rpc("admin_set_payment_status", {
+        p_order_id: orderId,
+        p_status: status,
+        p_note: note,
+      });
+
+      if (error) {
+        button.disabled = false;
+        alert("Could not update that payment: " + error.message);
+        return;
+      }
+
+      reloadWith(status === "APPROVED"
+        ? `Payment approved for order #${orderId}.`
+        : `Payment rejected for order #${orderId}.`);
+    };
+  });
 }
 
 function wireOrderActions() {

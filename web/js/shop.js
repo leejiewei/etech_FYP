@@ -7,6 +7,7 @@ let currentAttrFilters = {}; // e.g. { socket: "AM4", ramGen: "DDR4" }
 let currentSort = "default";
 let currentBrand = "All";        // set by the BRANDS mega menu
 let currentSubcategory = "All";  // set by the CATEGORIES mega menu (CPU, GPU, ...)
+let currentStock = "all";        // all | in_stock | out_of_stock
 
 function getCategories() {
   const categories = ["All"];
@@ -47,9 +48,14 @@ function renderCategoryButtons() {
     btn.onclick = () => {
       currentCategory = category;
       currentAttrFilters = {}; // reset attribute filters when category changes
+      syncFilterUrl();
       renderCategoryButtons();
       renderAttrFilters();
       renderProductGrid();
+      // The buttons sit above the grid, and choosing one of them used to
+      // change something the shopper could not see -- on a phone the whole
+      // answer was below the fold. Now the answer comes to them.
+      scrollToProducts();
     };
     container.appendChild(btn);
   });
@@ -103,10 +109,25 @@ function renderAttrFilters() {
   });
 }
 
+// "In stock" means there is at least one to sell, so it takes the low
+// ones with it -- a shopper filtering for what they can buy today wants
+// the last two in the box, not only the full shelves.
+//
+// This asks stockOf() rather than product.stock for the same reason the
+// card does: the shop's own eleven builds have no stock of their own,
+// they have however many their scarcest part allows. Reading the column
+// would show every one of them as available regardless of its parts.
+function matchesStockFilter(product) {
+  if (currentStock === "all") return true;
+  const inStock = stockOf(product) !== "out";
+  return currentStock === "in_stock" ? inStock : !inStock;
+}
+
 function matchesFilters(product) {
   if (currentCategory !== "All" && product.category !== currentCategory) return false;
   if (currentBrand !== "All" && product.brand !== currentBrand) return false;
   if (currentSubcategory !== "All" && product.subcategory !== currentSubcategory) return false;
+  if (!matchesStockFilter(product)) return false;
 
   for (const key in currentAttrFilters) {
     if ((product.attrs || {})[key] !== currentAttrFilters[key]) return false;
@@ -168,6 +189,12 @@ function handleSortChange(value) {
   renderProductGrid();
 }
 
+function handleStockChange(value) {
+  currentStock = value;
+  syncFilterUrl();
+  renderProductGrid();
+}
+
 // Shows a little "Brand: Razer  x" chip when you arrive from a mega menu link,
 // so it's obvious why only some products are showing.
 function renderActiveFilterNotice() {
@@ -191,8 +218,75 @@ function renderActiveFilterNotice() {
 function clearMegaFilter() {
   currentBrand = "All";
   currentSubcategory = "All";
+  syncFilterUrl();
   renderActiveFilterNotice();
   renderProductGrid();
+}
+
+// ------------------------------------------------------------
+// Filtering without leaving the page.
+//
+// Every filter here has always been a link: the mega menus point at
+// shop.html?category=Laptops and the page is thrown away and rebuilt to
+// answer them. That is a whole page load -- the header, the product
+// list, the images -- to change which subset of an array is drawn, and
+// on a phone it is a white flash and a jump back to the top.
+//
+// So when the shop page is the page already open, the menus call in
+// here instead and the grid re-renders in place. The links stay real
+// links: ctrl-click still opens a new tab, and every other page in the
+// site still navigates here the old way, because applyMegaFilter simply
+// does not exist there for layout.js to find.
+// ------------------------------------------------------------
+
+// Keeps the address bar honest about what is on screen, so a reload or a
+// pasted link shows the same products. replaceState rather than
+// pushState: these are filters on one page, not places to go Back to.
+function syncFilterUrl() {
+  if (!window.history || !window.history.replaceState) return;
+
+  const params = new URLSearchParams();
+  if (currentCategory !== "All") params.set("category", currentCategory);
+  if (currentBrand !== "All") params.set("brand", currentBrand);
+  if (currentSubcategory !== "All") params.set("subcategory", currentSubcategory);
+  if (currentStock !== "all") params.set("stock", currentStock);
+  if (currentSearch.trim() !== "") params.set("search", currentSearch.trim());
+
+  const query = params.toString();
+  window.history.replaceState(null, "", query ? "?" + query : window.location.pathname);
+}
+
+// Puts the top of the grid where the eye already is. scrollIntoView is
+// asked for smooth here as well as in the stylesheet: the stylesheet
+// covers anchors and this covers the ones we scroll ourselves, and one
+// of the two is redundant on any given browser rather than either being
+// wrong.
+function scrollToProducts() {
+  const anchor = document.getElementById("product-grid-top");
+  if (!anchor || !anchor.scrollIntoView) return;
+  anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Called from layout.js when a mega-menu tile is clicked and this page is
+// already open. kind is "brand", "category" or "subcategory".
+function applyMegaFilter(kind, value) {
+  if (kind === "brand") {
+    currentBrand = value;
+  } else if (kind === "subcategory") {
+    currentSubcategory = value;
+  } else if (kind === "category") {
+    currentCategory = value;
+    currentAttrFilters = {}; // the old category's filters mean nothing here
+  } else {
+    return;
+  }
+
+  syncFilterUrl();
+  renderCategoryButtons();
+  renderAttrFilters();
+  renderActiveFilterNotice();
+  renderProductGrid();
+  scrollToProducts();
 }
 
 onAppReady(() => {
@@ -212,6 +306,13 @@ onAppReady(() => {
     currentSearch = params.get("search");
     const searchInput = document.getElementById("shop-search");
     if (searchInput) searchInput.value = currentSearch;
+  }
+  // ?stock=in_stock, ?stock=out_of_stock. Anything else is ignored and
+  // the page shows everything, which is what a mistyped filter should do.
+  if (params.get("stock") === "in_stock" || params.get("stock") === "out_of_stock") {
+    currentStock = params.get("stock");
+    const stockSelect = document.getElementById("stock-select");
+    if (stockSelect) stockSelect.value = currentStock;
   }
 
   renderCategoryButtons();

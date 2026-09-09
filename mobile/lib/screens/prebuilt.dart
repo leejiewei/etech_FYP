@@ -3,6 +3,7 @@ import '../models/prebuilt.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/deal_price.dart';
 import '../widgets/product_image.dart';
 import 'product_detail.dart';
 
@@ -373,19 +374,20 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      money(p.price + extra),
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.redDark,
-                      ),
+                    // A deal is on the machine, not on the options
+                    // bolted to it -- the till works the same way -- so
+                    // the ticks are added on top of the deal price.
+                    DealPriceText(
+                      product: p,
+                      shop: widget.shop,
+                      size: 19,
+                      extra: extra,
                     ),
                     // The base price stays visible next to the new one,
                     // so nobody has to work out what the ticks did.
                     if (extra > 0)
                       Text(
-                        '${money(p.price)} + ${money(extra)} upgrades',
+                        '${money(widget.shop.priceOf(p))} + ${money(extra)} upgrades',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade600,

@@ -6,9 +6,25 @@
 // database from the basket rows — so editing this page cannot change
 // what anything costs.
 //
-// The card fields are still a mock sandbox: nothing is sent anywhere and
-// no card details are stored.
+// The card sandbox that used to sit at the bottom of this page is gone.
+// It took sixteen digits, sent them nowhere and said so. In its place is
+// what a small shop without a payment gateway actually does: show a
+// DuitNow QR or a bank account, take a photograph of the receipt, and
+// have a member of staff check it against the amount before anything is
+// packed. See js/payment.js for the details themselves.
+//
+// The order is written before the receipt is asked for, and that order
+// is worth explaining. The receipt has to be filed against something,
+// and the customer has to know the exact amount before they can pay it.
+// So the order is placed, its payment_status starts at PENDING, and the
+// confirmation screen is where the money is actually sent. An order with
+// no receipt against it is not a failure -- it is a customer who has not
+// paid yet, which the shop can see and chase.
 // ============================================================
+
+// Set once the order exists, so the receipt upload knows what it is a
+// receipt for.
+let placedOrderId = null;
 
 function renderCheckoutSummary() {
   const listEl = document.getElementById("checkout-items");
@@ -49,13 +65,8 @@ function placeOrder(event) {
   const errorEl = document.getElementById("checkout-error");
   errorEl.textContent = "";
 
-  const cardNumber = document.getElementById("card-number").value.replace(/\s/g, "");
-  if (!/^\d{16}$/.test(cardNumber)) {
-    errorEl.textContent = "Enter a 16-digit mock card number (this is not a real payment).";
-    return;
-  }
-
   const couponField = document.getElementById("checkout-coupon");
+  const method = chosenPaymentMethod();
 
   // place_order() is a function inside the database. It reads the
   // basket, prices it, writes the order and its lines, records a
@@ -63,15 +74,18 @@ function placeOrder(event) {
   // indivisible step, so a failure halfway cannot leave an order with
   // no items in it.
   //
-  // Only the delivery details and the coupon code are sent. Every
-  // price, the discount and the total are worked out down there from
-  // the basket rows, so editing this page cannot change what anything
-  // costs.
+  // Only the delivery details, the coupon code and how they intend to
+  // pay are sent. Every price, the discount and the total are worked out
+  // down there from the basket rows, so editing this page cannot change
+  // what anything costs. Nor can it change whether the payment has been
+  // checked: payment_status starts at PENDING on that side and only a
+  // member of staff can move it.
   sb.rpc("place_order", {
     p_name:    document.getElementById("checkout-name").value.trim(),
     p_phone:   document.getElementById("checkout-phone").value.trim(),
     p_address: document.getElementById("checkout-address").value.trim(),
     p_coupon:  couponField ? couponField.value.trim() : "",
+    p_payment_method: method,
   }).then(({ data, error }) => {
     if (error) {
       errorEl.textContent = dbMessage(error, "Could not place the order. Nothing was charged.");
@@ -79,11 +93,16 @@ function placeOrder(event) {
     }
 
     const discount = Number(data.discount);
+    placedOrderId = data.orderId;
 
     document.getElementById("checkout-form-section").style.display = "none";
     document.getElementById("checkout-confirmation").style.display = "block";
     document.getElementById("confirm-order-id").textContent = data.orderId;
     document.getElementById("confirm-total").textContent = "RM " + Number(data.total).toFixed(2);
+
+    // The same instructions again, because this is the screen somebody
+    // is looking at while their banking app is open.
+    document.getElementById("confirm-pay-details").innerHTML = paymentPanelHtml(method);
 
     const savedEl = document.getElementById("confirm-discount");
     if (savedEl) {
@@ -97,7 +116,72 @@ function placeOrder(event) {
   });
 }
 
+// ------------------------------------------------------------
+// Sending the receipt.
+//
+// The file is shrunk and re-encoded in the browser by photo.js before it
+// goes anywhere -- a 4MB phone photo becomes a legible JPEG a fraction
+// of the size, and drawing it through a canvas strips whatever else was
+// in the original file.
+//
+// It lands in a private bucket, in a folder named after the customer,
+// and the path is then handed to attach_payment_receipt(). That function
+// checks the order is theirs, that the payment has not already been
+// approved, and that the path is inside their own folder before it
+// records anything -- so none of the three facts this page is asserting
+// are taken on the page's word.
+// ------------------------------------------------------------
+function sendReceipt() {
+  const fileInput = document.getElementById("receipt-file");
+  const errorEl = document.getElementById("receipt-error");
+  const doneEl = document.getElementById("receipt-done");
+  const button = document.getElementById("receipt-send");
+
+  errorEl.textContent = "";
+  doneEl.style.display = "none";
+
+  const file = fileInput.files[0];
+  if (!file) {
+    errorEl.textContent = "Choose the receipt photo first.";
+    return;
+  }
+
+  const problem = checkPhoto(file);
+  if (problem) { errorEl.textContent = problem; return; }
+
+  const user = getCurrentUser();
+  if (!user || placedOrderId === null) {
+    errorEl.textContent = "Please sign in and place the order first.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Uploading…";
+
+  uploadReceipt(file, user.id, placedOrderId)
+    .then((path) => sb.rpc("attach_payment_receipt", {
+      p_order_id: placedOrderId,
+      p_path: path,
+    }))
+    .then((result) => {
+      if (result && result.error) throw result.error;
+      fileInput.value = "";
+      doneEl.style.display = "block";
+      doneEl.textContent =
+        "Receipt received. We will check it and move your order on — you can " +
+        "follow it in your order history.";
+      button.textContent = "Send another";
+      button.disabled = false;
+    })
+    .catch((error) => {
+      button.disabled = false;
+      button.textContent = "Upload receipt";
+      errorEl.textContent = dbMessage(error, "Could not upload that receipt.");
+    });
+}
+
 onAppReady(() => {
   renderCheckoutSummary();
   prefillFromProfile();
+  showPaymentPanel(chosenPaymentMethod());
 });

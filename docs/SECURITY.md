@@ -632,3 +632,163 @@ Still outstanding, and not Dashboard work:
 - **The password verification hook** — see item 17.
 - **A spending limit on the Google side** — see item 10. This is now the
   only real bound on the Gemini bill.
+
+---
+
+# Third pass — the six-item feature build, 8 September 2026
+
+Six pieces of work were added: the category emoji and brands fixes, timed
+deals, manual payment verification, the rig showcase, smooth category
+navigation and a stock filter. Four of them touch the database. What
+follows is what that added to the security surface and what was done
+about it.
+
+**These migrations are written but not yet applied.** They sit in
+`supabase/migrations/` as `20260908010000_timed_deals.sql`,
+`20260908020000_manual_payment_verification.sql` and
+`20260908030000_rig_showcases.sql`. Nothing in this section describes the
+live database until they are.
+
+## 28. A deal price the browser could name — prevented, not fixed
+
+The obvious way to build a sale is to let the page work out the reduced
+price and send it to the till. That is the same mistake as letting a
+client name its own total, which item 8 already rules out.
+
+`place_order()` reads the deal itself, from the `deals` table, inside the
+same statement that prices the basket, and takes `LEAST(p.price,
+deal_price)` — so a deal typed in above list price cannot charge more
+than the shelf does either. The browser sends nothing about money. The
+struck-through price on a product card is a *picture* of what the till
+has already decided, not an instruction to it.
+
+The window is checked in the function as well as in the policy, because
+`place_order` is `SECURITY DEFINER` and so is not subject to RLS: a deal
+that ended a second ago is invisible to the shop front by policy and
+uncharged by the till by that explicit `WHERE`.
+
+## 29. Receipts are private, and the bucket is what says so
+
+`payment-receipts` is the first **non-public** bucket in this project. A
+bank transfer receipt carries a name, an account number and an amount;
+`product-images` is public because a product photo on a shop front is
+about as public as a thing gets, and that reasoning does not transfer.
+
+```
+public:             false
+allowed_mime_types: image/jpeg, image/png, image/webp
+file_size_limit:    5242880 (5MB)
+```
+
+Reads are policed as well as writes. Every object goes under a folder
+named after the customer's `customer_id`, and the policies compare that
+folder against `current_customer_id()`:
+
+- `customers add their own receipts` — INSERT, own folder only
+- `customers read their own receipts` — SELECT, own folder only
+- `staff read every receipt` — SELECT, `is_admin()`
+- `staff remove receipts` — DELETE, `is_admin()`
+
+There is no customer UPDATE or DELETE. A rejected receipt is answered
+with another upload and both survive, which is what anybody looking into
+a dispute afterwards would want to find.
+
+The admin console holds no key to the bucket. It asks Storage for a URL
+signed for five minutes at the moment somebody clicks *View receipt*, and
+Storage decides whether to issue one by asking the same `is_admin()`
+every other policy asks.
+
+## 30. Attaching a receipt goes through a function, not an UPDATE
+
+`INSERT`/`UPDATE`/`DELETE` on `orders` are revoked from every client role
+(item 20) and that stays true. A customer needs to write exactly one
+column, so `attach_payment_receipt(order_id, path)` does it and checks
+three things first:
+
+1. the order belongs to the caller — read from the session, not from the
+   argument;
+2. the payment is not already `APPROVED` — a receipt swapped in after the
+   money was checked is the one thing this feature exists to prevent;
+3. the path is inside the caller's own folder — so a valid caller cannot
+   point their order at somebody else's receipt.
+
+`payment_status` is not an argument to `place_order()` and cannot be. It
+takes its `PENDING` default, and only `admin_set_payment_status()` —
+which looks the caller up in `admins` — moves it.
+
+## 31. Item 7 revisited: still no gateway, and now that is the design
+
+Item 7 said checkout was a mock and there was no webhook to verify. The
+mock is gone. What replaced it is not a gateway but a manual process: the
+customer pays from their own banking app and uploads the receipt, and a
+member of staff approves it.
+
+The three rules in item 7 still hold for the day a gateway is added, and
+one of them has been satisfied early: **"paid" is never something a
+client asserts.** The app and the website can say which method the
+customer intends to use. Neither can say the money arrived.
+
+## 32. The rig showcase is moderated, and the ASUS badge is not an opinion
+
+Customer-submitted photographs are the first user-generated content this
+shop publishes, so:
+
+- Nothing is public until staff approve it. `rig_gallery` returns only
+  `status = 'APPROVED'`, the policy on `rig_showcases` says the same, and
+  the gallery page filters nothing itself — a page that forgot would come
+  back empty rather than publish a stranger's photograph.
+- Submitting goes through `submit_rig_showcase()`. The customer id is
+  read from the session; `status` is not an argument; tagged product ids
+  are filtered through a join against `products` so a hand-edited request
+  cannot put a made-up id into the gallery.
+- `is_asus_verified` is written by a trigger from the tagged parts and by
+  nothing else. A badge staff could grant by hand is a badge that can be
+  granted by mistake, and one that would go on claiming *ASUS Certified*
+  after the ASUS board was untagged.
+- Every uploaded photo goes through the same canvas re-encode as a
+  product photo, which destroys anything hidden in the original file
+  (item 6).
+
+**The honest limitation:** `rig-showcases` is a *public* bucket, because
+it is a gallery and signing every image on every page load would be a
+round trip per picture for nothing. So a photograph attached to a
+submission still waiting for approval is reachable by anybody holding its
+URL. Nothing links to it and the names carry a timestamp and a random
+suffix, so it is not discoverable — but it is not secret either. That is
+the right trade for a picture somebody uploaded *in order to have it
+published*, and the wrong one for a bank receipt, which is why that
+bucket is private. Deleting a rejected submission removes its objects,
+and that is a deliberate act on the moderation page rather than an
+automatic one, so a disputed rejection still has its evidence.
+
+## 33. The bank details in the repository are placeholders
+
+`web/js/payment.js` and `mobile/lib/payment_details.dart` carry the
+account the customer is told to pay into. Both currently read
+`PLACEHOLDER BANK — NOT A REAL ACCOUNT` and `0000-0000-0000`.
+
+They are deliberately unmistakable rather than plausible. A realistic
+looking account number in a demo is the kind of thing that gets
+screenshotted, quoted in a report, or paid into by somebody who did not
+read the surrounding page.
+
+**Both files must be filled in before the shop takes a single real
+payment, and they must agree with each other** — two clients quoting two
+different account numbers is worse than either being wrong. The DuitNow
+QR image is also missing: `web/images/duitnow-qr.png` and
+`mobile/assets/images/duitnow-qr.png`. Each client says so on screen
+rather than showing a broken image.
+
+## 34. `orders` gained three columns and one backfill worth stating
+
+`payment_method` is **nullable**, and a NULL means something: that order
+was placed through the old card sandbox, before the shop could be paid at
+all. Filling those in with a method nobody used would be inventing a
+record.
+
+`payment_status` is `NOT NULL DEFAULT 'PENDING'`, and the migration
+**backfills every existing order to `APPROVED`**. That is a deliberate
+statement and not a tidy-up: those orders were worked through to Shipped
+and Delivered on the understanding they were settled, and leaving them at
+the default would open the feature with a queue of historical orders
+waiting for a receipt nobody ever asked for.

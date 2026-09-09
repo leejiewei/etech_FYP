@@ -30,6 +30,14 @@ dependencies:
   # Draws the product illustrations, which are SVG files bundled in assets/
   flutter_svg: ^2.0.16
 
+  # Photographing a bank transfer receipt at the checkout. The shop has no
+  # payment gateway -- customers pay from their own banking app and send
+  # the receipt -- so the one thing the phone genuinely has that the
+  # website does not is a camera pointed at the screen the receipt is on.
+  # Android 13 and up route this through the system photo picker, which
+  # hands over the one chosen file and needs no gallery permission.
+  image_picker: ^1.1.2
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

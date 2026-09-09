@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Powered by ASUS - eTech Computer Accessories</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="section">
+    <h2>Powered by ASUS</h2>
+    <p class="section-sub">
+      Machines our customers built, with the parts they used. Tag an ASUS, ROG or
+      TUF component in yours and it earns the certified badge.
+    </p>
+
+    <div class="filter-bar" id="rig-filters"></div>
+    <p id="rig-empty" style="display:none; text-align:center; color:#888;">
+      No builds have been published yet. Yours could be the first.
+    </p>
+    <div class="rig-grid" id="rig-grid"></div>
+  </section>
+
+  <section class="section" id="rig-submit-section">
+    <h2>Show us yours</h2>
+    <p class="section-sub">
+      Photograph the build, name the parts, and we will put it up once we have
+      had a look.
+    </p>
+
+    <div class="form-page wide" id="rig-form-wrap">
+      <div id="rig-signed-out" style="display:none; text-align:center; color:#777;">
+        Please <a href="login.html">log in</a> to submit a build.
+      </div>
+
+      <form id="rig-form" onsubmit="submitRig(event)" style="display:none;">
+        <label for="rig-title">Give it a name</label>
+        <input type="text" id="rig-title" maxlength="120" required
+          placeholder="e.g. White ROG build, first attempt" />
+
+        <label for="rig-description">Anything you want to say about it (optional)</label>
+        <textarea id="rig-description" rows="3"
+          placeholder="What it is for, what was hard, what you would do differently"></textarea>
+
+        <label for="rig-photos">Photos (up to six)</label>
+        <input type="file" id="rig-photos" accept="image/jpeg,image/png,image/webp" multiple />
+        <p class="form-note">Shrunk in your browser before they are sent, so a phone photo is fine.</p>
+
+        <label for="rig-part-search">Which parts did you use?</label>
+        <input type="text" id="rig-part-search" autocomplete="off"
+          placeholder="Start typing a product name…" oninput="searchRigParts(this.value)" />
+        <div class="rig-part-results" id="rig-part-results"></div>
+        <div class="rig-part-chosen" id="rig-part-chosen"></div>
+        <p class="form-note">
+          Each part you tag becomes a link back to it in the shop. An ASUS, ROG or
+          TUF part earns the certified badge automatically.
+        </p>
+
+        <div class="form-error" id="rig-error"></div>
+        <p id="rig-done" style="display:none; color:#1e8e3e;"></p>
+
+        <button type="submit" id="rig-submit">Submit my build</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <!-- Supabase client, then where the project is, then the connection. -->
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/photo.js"></script>
+  <script src="js/rigs.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

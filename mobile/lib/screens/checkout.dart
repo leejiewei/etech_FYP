@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import '../payment_details.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/payment_panel.dart';
 
 /// Checkout.
 ///
-/// Only the delivery details and an optional coupon are sent. Every price,
-/// the discount and the total are worked out by the server from the basket
-/// in the database, so nothing the phone sends can change what things cost.
+/// Only the delivery details, an optional coupon and how the customer
+/// intends to pay are sent. Every price, the discount and the total are
+/// worked out by the server from the basket in the database, so nothing
+/// the phone sends can change what things cost.
 ///
-/// The card fields are a mock sandbox — nothing is sent anywhere and no
-/// card details are stored.
+/// The card sandbox that used to sit at the bottom of this screen is
+/// gone. It took sixteen digits, sent them nowhere and said so. In its
+/// place is what a small shop without a payment gateway actually does:
+/// show a DuitNow QR or a bank account, take a photograph of the receipt,
+/// and have somebody check it against the amount before anything is
+/// packed.
+///
+/// The order is written before the receipt is asked for, and that order
+/// is deliberate. The receipt has to be filed against something, and the
+/// customer has to know the exact amount before they can pay it. So the
+/// order is placed, its payment_status starts at PENDING, and the
+/// confirmation screen is where the money actually moves. An order with
+/// no receipt against it is not a failure — it is a customer who has not
+/// paid yet, which the shop can see and chase.
 class CheckoutScreen extends StatefulWidget {
   final Shop shop;
   const CheckoutScreen({super.key, required this.shop});
@@ -23,9 +38,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _coupon = TextEditingController();
-  final _card = TextEditingController();
-  final _expiry = TextEditingController();
-  final _cvv = TextEditingController();
+
+  PaymentMethod _method = PaymentMethod.qrCode;
 
   String? _error;
   bool _busy = false;
@@ -42,7 +56,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _address, _coupon, _card, _expiry, _cvv]) {
+    for (final c in [_name, _phone, _address, _coupon]) {
       c.dispose();
     }
     super.dispose();
@@ -51,14 +65,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _submit() async {
     setState(() => _error = null);
 
-    final digits = _card.text.replaceAll(RegExp(r'\s'), '');
-    if (!RegExp(r'^\d{16}$').hasMatch(digits)) {
-      setState(
-        () => _error =
-            'Enter a 16-digit mock card number (this is not a real payment).',
-      );
-      return;
-    }
     if (_name.text.trim().isEmpty || _address.text.trim().isEmpty) {
       setState(() => _error = 'Please fill in your delivery details.');
       return;
@@ -70,6 +76,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _phone.text.trim(),
       _address.text.trim(),
       _coupon.text.trim(),
+      paymentMethod: _method.value,
     );
     if (!mounted) return;
     setState(() {
@@ -175,43 +182,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 14),
             _card_(
-              'Payment (mock sandbox)',
+              'How are you paying?',
               Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4DD),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'This is a simulated payment. Nothing is charged and no card '
-                      'details are stored — please do not enter a real card.',
-                      style: TextStyle(fontSize: 12, color: AppTheme.amber),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      'Pay from your own banking app, then send us the receipt. '
+                      'We check every payment by hand before the order is packed.',
+                      style:
+                          TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
                   ),
-                  _field(
-                    'Card number',
-                    _card,
-                    hint: '4111 1111 1111 1111',
-                    keyboard: TextInputType.number,
+                  // RadioGroup rather than a groupValue on each tile:
+                  // the per-tile form is deprecated, and the group is
+                  // where the chosen value belongs anyway.
+                  RadioGroup<PaymentMethod>(
+                    groupValue: _method,
+                    onChanged: (chosen) =>
+                        setState(() => _method = chosen ?? _method),
+                    child: Column(
+                      children: PaymentMethod.values
+                          .map((m) => RadioListTile<PaymentMethod>(
+                                value: m,
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                activeColor: AppTheme.red,
+                                title: Text(m.label,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                subtitle: Text(m.hint,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600)),
+                              ))
+                          .toList(),
+                    ),
                   ),
-                  Row(
-                    children: [
-                      Expanded(child: _field('Expiry', _expiry, hint: '12/28')),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _field(
-                          'CVV',
-                          _cvv,
-                          hint: '123',
-                          keyboard: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
+                  const SizedBox(height: 8),
+                  PaymentPanel(method: _method),
                 ],
               ),
             ),
@@ -243,7 +253,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Place Order (Simulated)'),
+                    : const Text('Place Order'),
               ),
             ),
             const SizedBox(height: 30),
@@ -258,47 +268,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       title: const Text('Order placed'),
       automaticallyImplyLeading: false,
     ),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, size: 66, color: AppTheme.green),
-            const SizedBox(height: 18),
-            Text(
-              'Order #${_done!['orderId']}',
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if ((_done!['discount'] as num) > 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  'Coupon ${_done!['coupon']} saved you '
-                  '${money(_done!['discount'] as num)}',
-                  style: const TextStyle(color: AppTheme.green, fontSize: 13),
-                ),
-              ),
-            Text(
-              'Total: ${money(_done!['total'] as num)}',
-              style: const TextStyle(fontSize: 17),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'This was a simulated payment — no real money was charged. '
-              'You can follow the order from your account.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 26),
-            ElevatedButton(
-              onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
-              child: const Text('Back to shopping'),
-            ),
-          ],
+    // A list rather than a centred column: the receipt has to be sent
+    // from here, and a keyboard-free camera flow still needs room to
+    // scroll on a short phone.
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Icon(Icons.check_circle, size: 60, color: AppTheme.green),
+        const SizedBox(height: 14),
+        Center(
+          child: Text(
+            'Order #${_done!['orderId']}',
+            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        if ((_done!['discount'] as num) > 0)
+          Center(
+            child: Text(
+              'Coupon ${_done!['coupon']} saved you '
+              '${money(_done!['discount'] as num)}',
+              style: const TextStyle(color: AppTheme.green, fontSize: 13),
+            ),
+          ),
+        Center(
+          child: Text(
+            'Amount to pay: ${money(_done!['total'] as num)}',
+            style: const TextStyle(fontSize: 17),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // The same instructions again, because this is the screen
+        // somebody is looking at while their banking app is open.
+        PaymentPanel(method: _method),
+        const SizedBox(height: 20),
+
+        const Text('Send us your receipt',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Text(
+          'A photo or screenshot of the transfer confirmation. We compare it '
+          'against the amount above, then move your order on. Nothing is '
+          'dispatched until a member of staff has checked it.',
+          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 12),
+        ReceiptUploader(
+          shop: widget.shop,
+          orderId: _done!['orderId'] as int,
+        ),
+
+        const SizedBox(height: 22),
+        Text(
+          'You can also send it later from your order history.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+          child: const Text('Back to shopping'),
+        ),
+      ],
     ),
   );
 

@@ -28,6 +28,10 @@ let productsLoaded = false;
 let prebuiltAvailability = {};
 let prebuiltUpgrades = {};
 
+// Timed deals, keyed by product id. Same shape of promise as the two
+// above: a product with no deal on it is simply not in here.
+let liveDeals = {};
+
 // Slot order used by the PC Builder page.
 const builderSlots = ["CPU", "Cooler", "Motherboard", "RAM", "GPU", "Storage", "PSU", "Case"];
 
@@ -103,11 +107,34 @@ function loadProducts() {
       .eq("is_active", 1)
       .order("prebuilt_id")
       .order("sort_order")),
+    // Timed deals, fetched with the catalogue for the same reason the
+    // prebuilt availability is: a struck-through price has to read the
+    // same on the home page, in the shop grid, in the product modal and
+    // in the basket, not only on the Deals page.
+    //
+    // live_deals is a view, and it is already only the running ones --
+    // the policy on the table hides the rest from the shop front and the
+    // view's own WHERE hides them from a signed-in member of staff. The
+    // browser is not asked to filter anything.
+    //
+    // This one is allowed to fail on its own. Every other request in
+    // this list is the shop -- no products, no site -- but a shop that
+    // cannot read its deals is a shop at list price, which is a worse
+    // day rather than a broken one. It also means the site keeps working
+    // if this JavaScript is deployed before the migration that creates
+    // the view.
+    selectAllRows(() => sb.from("live_deals")
+      .select("deal_id,product_id,discount_price,start_time,end_time"))
+      .catch((error) => {
+        console.error("Loading deals (prices shown will be list prices):", error);
+        return [];
+      }),
   ])
     .then(([productRows, brandRows, categoryRows, attributeRows,
-            availabilityRows, upgradeRows]) => {
+            availabilityRows, upgradeRows, dealRows]) => {
       products = shapeCatalogue(productRows, brandRows, categoryRows, attributeRows);
       shapePrebuilts(availabilityRows, upgradeRows);
+      shapeDeals(dealRows);
     })
     .catch((error) => {
       console.error("Loading the catalogue failed:", error);
@@ -197,6 +224,74 @@ function stockLabel(stock) {
   if (stock === "in") return "In Stock";
   if (stock === "low") return "Low Stock";
   return "Out of Stock";
+}
+
+// ------------------------------------------------------------
+// Timed deals
+//
+// A deal is a price on one product for a stated window. The window is
+// checked twice, and the second check is the one that matters here:
+//
+//   * the database only ever hands over a deal that is running, so a
+//     finished one cannot be drawn by mistake;
+//   * dealFor() checks the end time again on every call, because a page
+//     can be left open. Somebody who opens the shop at 11:58 and is
+//     still looking at it at 12:01 should see the sale end in front of
+//     them, and the till agrees with that -- place_order reads the
+//     window itself and will charge list price the moment it closes.
+//
+// priceOf() is the one function that answers "what does this cost". Ask
+// it rather than reading product.price, the same way stockOf() is asked
+// rather than reading product.stock.
+// ------------------------------------------------------------
+function shapeDeals(dealRows) {
+  liveDeals = {};
+  (dealRows || []).forEach((row) => {
+    liveDeals[row.product_id] = {
+      id:       row.deal_id,
+      price:    Number(row.discount_price),
+      startsAt: row.start_time,
+      endsAt:   row.end_time,
+    };
+  });
+}
+
+function dealFor(product) {
+  if (!product) return null;
+  const deal = liveDeals[product.id];
+  if (!deal) return null;
+  if (new Date(deal.endsAt).getTime() <= Date.now()) return null;
+  // A deal typed in above list price is a slip, not an offer. The till
+  // takes the lower of the two as well.
+  if (!(deal.price < product.price)) return null;
+  return deal;
+}
+
+function priceOf(product) {
+  const deal = dealFor(product);
+  return deal ? deal.price : (product ? product.price : 0);
+}
+
+function hasDeal(product) {
+  return dealFor(product) !== null;
+}
+
+// Milliseconds left, or 0. Kept here so the card, the modal and the
+// Deals page all count down to the same instant.
+function dealTimeLeft(deal) {
+  if (!deal) return 0;
+  return Math.max(0, new Date(deal.endsAt).getTime() - Date.now());
+}
+
+// When a deal ends, written out for somewhere a ticking clock would be
+// noise -- in the shopper's own time zone, because that is the one they
+// will be looking at their phone in.
+function dealEndsText(product) {
+  const deal = dealFor(product);
+  if (!deal) return "";
+  return new Date(deal.endsAt).toLocaleString(undefined, {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 // ------------------------------------------------------------

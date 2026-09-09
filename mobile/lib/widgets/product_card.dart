@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import '../screens/product_detail.dart';
+import 'deal_price.dart';
 import 'product_image.dart';
 
 /// One product in a grid or list.
@@ -86,11 +87,10 @@ class ProductCard extends StatelessWidget {
               label: shop.stockLabelOf(product),
             ),
             const SizedBox(height: 6),
-            Text(money(product.price),
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.redDark)),
+            // shop.priceOf, not product.price: a product with a deal
+            // running shows the old price struck through and the deal
+            // price under it, which is what the checkout will charge.
+            DealPriceText(product: product, shop: shop),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/product_card.dart';
 import 'deals.dart';
+import 'rigs.dart';
 import 'account.dart';
 import 'chat.dart';
 
@@ -64,6 +65,14 @@ class HomeScreen extends StatelessWidget {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => DealsScreen(shop: shop)),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Powered by ASUS',
+            icon: const Icon(Icons.photo_library_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => RigsScreen(shop: shop)),
             ),
           ),
         ],

@@ -49,9 +49,29 @@ class CartScreen extends StatelessWidget {
                                         fontWeight: FontWeight.w600,
                                         height: 1.3)),
                                 const SizedBox(height: 4),
-                                Text(money(item.price),
-                                    style: TextStyle(
-                                        fontSize: 12, color: Colors.grey.shade600)),
+                                // The line's own price, struck through
+                                // when a deal took it down -- the basket
+                                // shows the saving rather than quietly
+                                // showing a smaller number.
+                                if (item.onDeal)
+                                  Row(children: [
+                                    Text(money(item.listPrice),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade500,
+                                          decoration: TextDecoration.lineThrough,
+                                        )),
+                                    const SizedBox(width: 6),
+                                    Text(money(item.price),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.red)),
+                                  ])
+                                else
+                                  Text(money(item.price),
+                                      style: TextStyle(
+                                          fontSize: 12, color: Colors.grey.shade600)),
                                 // Upgrades chosen on the prebuilt card.
                                 // Listed on the line they belong to,
                                 // priced, and removable here -- this is
