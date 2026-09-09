@@ -30,7 +30,26 @@ class PaymentPanel extends StatelessWidget {
     );
   }
 
-  Widget _qr(BuildContext context) => Column(
+  Widget _qr(BuildContext context) {
+    // Reached from an older order that recorded QR_CODE, or if the option
+    // is somehow chosen before the details exist. Tells the customer what
+    // to do instead of showing them our own to-do note.
+    if (!PaymentDetails.duitNowReady) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('DuitNow QR is not available yet',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(
+            'Please pay by bank transfer instead, or contact us and we will '
+            'send you the details.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+          ),
+        ],
+      );
+    }
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Scan to pay',
@@ -58,7 +77,8 @@ class PaymentPanel extends StatelessWidget {
           const SizedBox(height: 6),
           _note(),
         ],
-      );
+    );
+  }
 
   Widget _bank(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,

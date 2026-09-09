@@ -39,7 +39,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _address = TextEditingController();
   final _coupon = TextEditingController();
 
-  PaymentMethod _method = PaymentMethod.qrCode;
+  // Not qrCode unconditionally: the markup equivalent of an unattended
+  // default is how somebody ends up on the one method that cannot be paid.
+  PaymentMethod _method = PaymentDetails.duitNowReady
+      ? PaymentMethod.qrCode
+      : PaymentMethod.bankTransfer;
 
   String? _error;
   bool _busy = false;
@@ -203,20 +207,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         setState(() => _method = chosen ?? _method),
                     child: Column(
                       children: PaymentMethod.values
-                          .map((m) => RadioListTile<PaymentMethod>(
-                                value: m,
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                                activeColor: AppTheme.red,
-                                title: Text(m.label,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600)),
-                                subtitle: Text(m.hint,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600)),
-                              ))
+                          .map((m) {
+                            // Greyed rather than dropped, so the list reads
+                            // as a shop between QR codes rather than one
+                            // that never took DuitNow.
+                            final off = m == PaymentMethod.qrCode &&
+                                !PaymentDetails.duitNowReady;
+                            return RadioListTile<PaymentMethod>(
+                              value: m,
+                              enabled: !off,
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              activeColor: AppTheme.red,
+                              title: Text(m.label,
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: off ? Colors.grey.shade500 : null)),
+                              subtitle: Text(
+                                  off ? 'Unavailable at the moment' : m.hint,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontStyle:
+                                          off ? FontStyle.italic : FontStyle.normal,
+                                      color: Colors.grey.shade600)),
+                            );
+                          })
                           .toList(),
                     ),
                   ),

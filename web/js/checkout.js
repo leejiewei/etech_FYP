@@ -183,5 +183,9 @@ function sendReceipt() {
 onAppReady(() => {
   renderCheckoutSummary();
   prefillFromProfile();
+  // Before the panel is chosen, not after: this may move the selection off
+  // DuitNow, and the panel that ends up on screen has to be the one the
+  // radio actually says.
+  applyPaymentAvailability();
   showPaymentPanel(chosenPaymentMethod());
 });

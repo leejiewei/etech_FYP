@@ -11,29 +11,36 @@
 /// one file per client rather than being typed into each screen.
 ///
 /// ------------------------------------------------------------
-/// THESE ARE PLACEHOLDERS AND MUST BE REPLACED BEFORE THE SHOP TAKES A
-/// REAL PAYMENT.
+/// THE BANK ACCOUNT IS REAL. THE DUITNOW ID IS NOT, YET.
 ///
-/// They are deliberately obvious rather than plausible. A realistic
-/// looking account number in a demo is the kind of thing that gets
-/// screenshotted, quoted in a report, or paid into by somebody who did
-/// not read the surrounding screen — so the fake is written to be
-/// unmistakable. Put the real ones here, drop the QR image into
-/// assets/images/duitnow-qr.png, add it to pubspec.yaml, and delete this
-/// notice. The website's copy in web/js/payment.js has to change with
-/// it: two clients quoting two different account numbers is worse than
-/// either being wrong.
+/// The transfer details below are the shop's actual Maybank account and
+/// match web/js/payment.js exactly — two clients quoting two different
+/// account numbers is worse than either being wrong. The DuitNow entry is
+/// still a placeholder, written to be unmistakable rather than plausible.
+///
+/// Because one method works and the other does not, `duitNowReady` decides
+/// whether the app offers DuitNow at all. To turn it back on: set
+/// duitNowId, drop the image into assets/images/duitnow-qr.png, add it to
+/// pubspec.yaml, and change nothing else here or on the website.
 /// ------------------------------------------------------------
 class PaymentDetails {
-  static const String bankName = 'PLACEHOLDER BANK — NOT A REAL ACCOUNT';
-  static const String accountName =
-      'eTech Computer Accessories (PLACEHOLDER)';
-  static const String accountNumber = '0000-0000-0000';
-  static const String duitNowId = 'PLACEHOLDER — set this in payment_details.dart';
+  static const String duitNowPlaceholder =
+      'PLACEHOLDER — set this in payment_details.dart';
+
+  static const String bankName = 'Maybank';
+  static const String accountName = 'eTech Computer';
+  static const String accountNumber = '557139242697';
+  static const String duitNowId = duitNowPlaceholder;
 
   /// Bundled rather than fetched: the customer is standing at a till with
   /// a banking app open and possibly no signal to spare.
   static const String qrAsset = 'assets/images/duitnow-qr.png';
+
+  /// Whether DuitNow can actually be paid. The website's duitNowReady()
+  /// in web/js/payment.js is the same check against the same values, and
+  /// the two must agree about which methods the shop accepts.
+  static bool get duitNowReady =>
+      duitNowId.trim().isNotEmpty && duitNowId != duitNowPlaceholder;
 }
 
 /// The two ways to pay, as the database spells them.

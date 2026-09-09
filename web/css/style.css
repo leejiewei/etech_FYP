@@ -1952,3 +1952,15 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
      and a future regression will show itself instead of being clipped
      out of sight. */
 }
+
+/* A payment method the shop accepts but cannot take right now. Greyed
+   rather than hidden, so the choice on offer is visibly a temporary
+   state and not a shop that never had DuitNow. */
+.pay-option-off {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pay-option-off small {
+  font-style: italic;
+}

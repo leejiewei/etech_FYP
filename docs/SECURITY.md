@@ -768,23 +768,53 @@ bucket is private. Deleting a rejected submission removes its objects,
 and that is a deliberate act on the moderation page rather than an
 automatic one, so a disputed rejection still has its evidence.
 
-## 33. The bank details in the repository are placeholders
+## 33. The bank account is real now; the DuitNow ID is not
 
-`web/js/payment.js` and `mobile/lib/payment_details.dart` carry the
-account the customer is told to pay into. Both currently read
-`PLACEHOLDER BANK — NOT A REAL ACCOUNT` and `0000-0000-0000`.
+Updated 2026-09-09. `web/js/payment.js` and
+`mobile/lib/payment_details.dart` carry the account the customer is told
+to pay into, and both now hold the shop's actual Maybank account. They
+agree with each other, which matters more than either being right on its
+own: two clients quoting two different account numbers is worse than
+either being wrong.
 
-They are deliberately unmistakable rather than plausible. A realistic
-looking account number in a demo is the kind of thing that gets
-screenshotted, quoted in a report, or paid into by somebody who did not
-read the surrounding page.
+**Money sent to the details on the checkout page now arrives.** That is
+the point of filling them in, and it is also the thing to be deliberate
+about during a beta — a tester who follows the instructions has made a
+real transfer. `web/privacy.html` already tells testers not to send a real
+receipt; if the beta is meant to take no money at all, the checkout copy
+is where to say so, not this file.
 
-**Both files must be filled in before the shop takes a single real
-payment, and they must agree with each other** — two clients quoting two
-different account numbers is worse than either being wrong. The DuitNow
-QR image is also missing: `web/images/duitnow-qr.png` and
-`mobile/assets/images/duitnow-qr.png`. Each client says so on screen
-rather than showing a broken image.
+The DuitNow entry is still a placeholder and is still written to be
+unmistakable rather than plausible, for the original reason: a realistic
+looking identifier in a demo gets screenshotted, quoted in a report, or
+paid into by somebody who did not read the surrounding page.
+
+### Half-filled is its own hazard, so the shop stops offering the half
+
+Leaving DuitNow on the form while it cannot be paid would have been worse
+than either state. It was the **default selected method** on
+`web/checkout.html` and the fallback in `chosenPaymentMethod()`, so a
+tester clicking straight through would have chosen, by default, the one
+method with nowhere to send money — and the panel would have shown them
+our own to-do note as though it were an instruction.
+
+One predicate decides it in each client, `duitNowReady()` in
+`web/js/payment.js` and `PaymentDetails.duitNowReady` in the Dart, both
+checking the same thing: that `duitNowId` is set and is not the
+placeholder. While it is false:
+
+- the DuitNow radio is disabled and reads "Unavailable at the moment",
+  greyed rather than removed, because the shop does accept DuitNow and is
+  between QR codes rather than never having taken it;
+- bank transfer is selected in its place, on both clients;
+- the QR panel — which is still reachable from an older order that
+  recorded `QR_CODE` — tells the customer to pay by transfer instead of
+  showing them the developer note.
+
+**To finish it:** set `duitNowId` in both files and add the image at
+`web/images/duitnow-qr.png` and `mobile/assets/images/duitnow-qr.png`
+(the Dart asset also needs a line in `pubspec.yaml`). Nothing else has to
+change — the option turns itself back on everywhere it appears.
 
 ## 34. `orders` gained three columns and one backfill worth stating
 
