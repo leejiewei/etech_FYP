@@ -52,3 +52,7 @@ service-role*
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
