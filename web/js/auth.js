@@ -332,6 +332,141 @@ function changePassword(currentPassword, newPassword, confirmPassword) {
   });
 }
 
+// ------------------------------------------------------------
+// Forgetting the password.
+//
+// Until now there was no way back into an account whose password had
+// been lost. Nothing stores the password — auth.users holds a bcrypt
+// hash and nothing else — so it cannot be looked up and told to
+// anybody, not by the shop and not by the owner. The only way in is to
+// set a new one, and the only thing that proves the person asking owns
+// the account is that they can read its email.
+//
+// That matters more during the beta than it would later. A tester who
+// registers on the day, mistypes the password they meant to use, and
+// closes the tab is otherwise finished — there is no second account to
+// make with the same address, and no owner who can read the old
+// password back to them.
+//
+// WHY THIS ALWAYS SAYS THE SAME THING
+//
+// The answer is identical whether the address has an account or not,
+// for the reason registerError() gives at length: an honest "no such
+// account" here would hand back exactly the account-enumeration oracle
+// that sign-up was changed to stop giving. So the sentence below is
+// returned for a hit, for a miss, and for most failures, and the real
+// error goes to the console where only the shop can read it.
+//
+// Two limits worth knowing, both of them the project's mail allowance
+// rather than anything in this file:
+//
+//   * Two of these emails an hour, project-wide (auth.rate_limit). Not
+//     per person — two. A beta session where several testers all forget
+//     at once will silently exhaust it, which is why the copy on the
+//     page tells them to ask rather than keep clicking.
+//   * One a minute per address (auth.email.max_frequency), and the link
+//     expires fifteen minutes after it is sent (auth.email.otp_expiry).
+//
+// Returns a message to show the customer either way; there is no error
+// case for them to act on.
+// ------------------------------------------------------------
+const RESET_SENT_MESSAGE =
+  "If that address has an account, a link to set a new password is on its way. " +
+  "It expires in 15 minutes, and it may take a minute to arrive — check the spam folder " +
+  "before asking for another.";
+
+function requestPasswordReset(email) {
+  email = (email || "").trim().toLowerCase();
+
+  // A malformed address is a fact about what was typed, not about who
+  // has an account, so this one stays specific.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return Promise.resolve({ ok: false, message: "That email address does not look right." });
+  }
+
+  // Where the link in the email should land. Built from the page asking
+  // rather than hard-coded, so the same file works on localhost and on
+  // the deployed site without either being written down here. Supabase
+  // will only honour it if the exact URL is in the project's redirect
+  // allow-list; if it is not, the link falls back to the Site URL and
+  // arrives on a page that cannot finish the job.
+  const here = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
+
+  return sb.auth.resetPasswordForEmail(email, { redirectTo: here + "reset-password.html" })
+    .then(({ error }) => {
+      if (error) console.error("Password reset request:", error);
+      // Deliberately the same answer either way. See above.
+      return { ok: true, message: RESET_SENT_MESSAGE };
+    })
+    .catch((error) => {
+      console.error("Password reset request:", error);
+      return { ok: true, message: RESET_SENT_MESSAGE };
+    });
+}
+
+// ------------------------------------------------------------
+// Setting the new password.
+//
+// Called by reset-password.html, and only once that page has satisfied
+// itself that this browser arrived holding a recovery link. That check
+// belongs to the page rather than here because the evidence — the
+// token in the URL — is gone by the time this runs: the Supabase client
+// reads it, turns it into a session, and clears it out of the address
+// bar so it cannot be shoulder-read or left in history.
+//
+// The session that recovery link created is an ordinary one. That is
+// what makes updateUser work without the old password, and it is also
+// why the page must not offer this form to somebody who merely happens
+// to be signed in already — that would be changePassword() with its
+// guard taken off, and an unlocked laptop would be enough to take the
+// account. changePassword() is still the right function for a customer
+// who knows their password and wants a different one.
+//
+// signOut({ scope: "others" }) for the same reason it is in
+// changePassword(): somebody resetting a password they think another
+// person has must actually get that person out, and the recovery
+// session is the one to keep.
+//
+// Returns "" when it worked, or a message to show the customer.
+// ------------------------------------------------------------
+function completePasswordReset(newPassword, confirmPassword) {
+  if (!newPassword) {
+    return Promise.resolve("Please fill in every field.");
+  }
+  if (newPassword.length < 8) {
+    return Promise.resolve("New password must be at least 8 characters.");
+  }
+  if (newPassword !== confirmPassword) {
+    return Promise.resolve("The two passwords do not match.");
+  }
+
+  return sb.auth.updateUser({ password: newPassword }).then(({ error }) => {
+    if (error) {
+      console.error("Password reset:", error);
+      const message = (error.message || "").toLowerCase();
+      // The link having gone stale between opening the page and
+      // submitting it is the likely failure here, and it is the one the
+      // customer can do something about.
+      if (message.includes("expired") || message.includes("invalid") || message.includes("session")) {
+        return "That link has expired. Please ask for a new one.";
+      }
+      if (message.includes("weak") || message.includes("password")) {
+        return "Please choose a stronger password.";
+      }
+      return "Could not set the new password. Please try again.";
+    }
+
+    return sb.auth.signOut({ scope: "others" }).then(
+      () => "",
+      (signOutError) => {
+        console.error("Revoking other sessions:", signOutError);
+        return "Password set, but other devices may still be signed in. " +
+               "Please change it again from your profile once you are in.";
+      }
+    );
+  });
+}
+
 function logoutUser() {
   sb.auth.signOut().finally(() => {
     currentUser = null;

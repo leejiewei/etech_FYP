@@ -754,6 +754,17 @@ footer {
   margin-top: 10px;
 }
 
+.form-ok {
+  color: #1e7a45;
+  background-color: #eaf7ef;
+  border: 1px solid #bfe3cd;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
 .form-note {
   font-size: 12px;
   color: #888;

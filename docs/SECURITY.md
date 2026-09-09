@@ -792,3 +792,63 @@ statement and not a tidy-up: those orders were worked through to Shipped
 and Delivered on the understanding they were settled, and leaving them at
 the default would open the feature with a queue of historical orders
 waiting for a receipt nobody ever asked for.
+
+## 35. There was no way back into a forgotten account — fixed
+
+Items 4, 5 and 12 all tightened the password-reset path: the links expire
+in fifteen minutes, the sender is rate-limited, and the answer gives
+nothing away. What none of them noticed is that **the shop had no reset
+path at all**. `resetPasswordForEmail` was never called anywhere, and
+nothing served the page a recovery link would have landed on. The
+settings were guarding a door that had not been built.
+
+For an ordinary shop that is an inconvenience. For the Objective 1 beta
+it is worse: a tester registers on the day, mistypes the password they
+meant to use, and is finished — the address is taken, so they cannot
+register again, and nobody can read the old password back to them
+because nobody has it. Only a bcrypt hash is stored.
+
+`web/forgot-password.html` asks for the address; `web/reset-password.html`
+is what the emailed link opens. Three things about them are security
+decisions rather than layout:
+
+**The answer is the same for an address that has an account and one that
+does not.** Same sentence, same delay, and most failures are folded into
+it too, with the real error going to the console. Item 5 removed this
+oracle from sign-up; adding it back on a new page would have undone that
+work.
+
+**The page requires evidence of a recovery link, not merely a session.**
+The session a recovery link creates is an ordinary one and is
+indistinguishable afterwards from being logged in normally. A page that
+offered "set a new password, no old password needed" to anyone already
+signed in would be `changePassword()` with its re-authentication guard
+removed, and an unlocked laptop would be enough to take the account. So
+`reset-password.html` reads `type=recovery` out of the URL in a `<head>`
+script that runs *before* the Supabase client — which consumes the token
+and wipes it from the address bar — and keeps only the fact that it was
+there, never the token. Without that flag the form is not shown, however
+the visitor is signed in. Customers who know their password still change
+it from the profile page, which asks for the old one.
+
+**A completed reset revokes every other session**, exactly as item 3 has
+`changePassword()` do, and for the sharper version of the same reason:
+somebody resetting a password is more likely than average to be doing it
+because another person has it.
+
+### What this does not fix
+
+The redirect target must be in the project's allow-list in **Dashboard →
+Authentication → URL Configuration → Redirect URLs**, as
+`https://etech-fyp.vercel.app/reset-password.html`. Until it is, Supabase
+ignores `redirectTo` and sends the link to the Site URL instead, which
+lands on the home page with a session and no way to finish — the exact
+failure this item exists to remove. **This is configuration, not code,
+and it is not done yet.**
+
+The mail allowance is still two an hour for the whole project, not per
+person (item 12). A beta session where several testers forget at once
+will exhaust it, and the later ones will get the reassuring sentence and
+no email. The page says to ask rather than keep pressing, but that is
+wording, not a fix; the fix is project SMTP, which item 21 already says
+is needed and still absent.
