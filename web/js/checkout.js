@@ -196,12 +196,26 @@ function sendReceipt() {
     });
 }
 
+// Waiting for the basket, not just for the catalogue and the session.
+//
+// This page paints its form immediately -- #checkout-form-section has no
+// display:none -- and then renderCheckoutSummary() decides whether to keep
+// it. Reading the basket synchronously here found it empty every time, so
+// a customer with a full cart watched their order details appear and be
+// replaced, about a second later, by "Your cart is empty". The order was
+// fine; nothing had gone wrong with it. This page simply asked before the
+// answer existed.
+//
+// whenCartLoaded() returns the request onAppReady already started in
+// cart.js, so this waits rather than asking again.
 onAppReady(() => {
-  renderCheckoutSummary();
-  prefillFromProfile();
-  // Before the panel is chosen, not after: this may move the selection off
-  // DuitNow, and the panel that ends up on screen has to be the one the
-  // radio actually says.
-  applyPaymentAvailability();
-  showPaymentPanel(chosenPaymentMethod());
+  whenCartLoaded().then(() => {
+    renderCheckoutSummary();
+    prefillFromProfile();
+    // Before the panel is chosen, not after: this may move the selection
+    // off DuitNow, and the panel that ends up on screen has to be the one
+    // the radio actually says.
+    applyPaymentAvailability();
+    showPaymentPanel(chosenPaymentMethod());
+  });
 });

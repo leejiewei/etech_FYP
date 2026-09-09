@@ -106,9 +106,41 @@ function applyCart(rows, upgradeRows) {
   if (document.getElementById("cart-body")) drawCartTable();
 }
 
+// The load that is happening, or has happened. Kept so that a page which
+// cannot draw until the basket has arrived can wait for the one request
+// onAppReady already started, rather than firing a second.
+let cartLoading = null;
+
 function loadCart() {
-  if (!isLoggedIn()) { cartItems = []; cartTotal = 0; updateCartCount(); return Promise.resolve(); }
-  return fetchCart();
+  if (!isLoggedIn()) {
+    cartItems = [];
+    cartTotal = 0;
+    updateCartCount();
+    cartLoading = Promise.resolve();
+    return cartLoading;
+  }
+  cartLoading = fetchCart();
+  return cartLoading;
+}
+
+// ------------------------------------------------------------
+// For a page that needs the basket before it can draw anything.
+//
+// onAppReady waits for three things: the catalogue, the session, and the
+// parsed HTML. It does not wait for the basket, because the basket is a
+// fourth request that most pages only need for the number in the header
+// -- and that number corrects itself when the answer arrives.
+//
+// The checkout cannot work that way. It has to list what is being bought,
+// and reading the basket synchronously in an onAppReady callback found an
+// empty array every time: onAppReady(loadCart) in this file runs first and
+// returns a promise, and the checkout's callback ran in the same tick,
+// before a single row had come back.
+//
+// Returns the load already in flight. Only starts one if nothing has.
+// ------------------------------------------------------------
+function whenCartLoaded() {
+  return cartLoading || loadCart();
 }
 
 function getCart() {
