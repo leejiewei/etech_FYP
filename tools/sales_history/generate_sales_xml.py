@@ -30,10 +30,18 @@
 #
 #   3. Services are in it. Sixteen of them, invented in services.py,
 #      because a computer shop that only sells boxes is not a computer
-#      shop. Service revenue falls across the window too, but not as
-#      steeply as hardware and not in a straight line -- 2023 comes in
-#      slightly above 2022. The repair bench outlives the sales floor,
-#      which is what usually happens to a shrinking retailer.
+#      shop. Service revenue falls with everything else and holds a
+#      steady ~8% of turnover throughout.
+#
+#      That flatness is worth knowing about, because it is not what the
+#      settings ask for. SERVICE_ONLY_SHARE_* below raises the proportion
+#      of repair-only visits from 14% to 22% across the window, on the
+#      usual idea that the repair bench outlives the sales floor. It
+#      barely moves the money: a service costs RM 45-250 against an
+#      average basket near RM 900, so a lot more repair jobs still add up
+#      to very little revenue. Turn those two numbers up hard if the
+#      analysis needs a rising service share; the counts will move long
+#      before the ringgit do.
 #
 #   4. Prices drift. The catalogue price is today's price, so selling a
 #      Ryzen 5 5600 in 2022 at its 2026 price would be wrong in the one
@@ -73,7 +81,7 @@ END = date(2026, 8, 31)
 # fifth of it, every year, for five years. Applied per-month as a smooth
 # exponential rather than a yearly step.
 # ------------------------------------------------------------
-ORDERS_AT_START = 70
+ORDERS_AT_START = 100
 ANNUAL_RETENTION = 0.81
 MONTHLY_DECAY = ANNUAL_RETENTION ** (1.0 / 12.0)
 
@@ -126,6 +134,24 @@ CATEGORY_DEMAND = {
     "Accessory": 0.5, "Screen": 0.4,
 }
 DEFAULT_DEMAND = 1.0
+
+# How much a high price puts people off, as the exponent in
+# weight = demand / price ** PRICE_RESISTANCE.
+#
+# This started at 0.5 -- a plain square root -- and that was too kind to
+# the halo parts. An RM 25,999 RTX 5090 came out only nine times less
+# likely than an RM 300 stick of RAM, so the shop sold seven cards over
+# RM 6,000 in 2025 and none at all in 2024, and RM 64,000 of lumpy
+# revenue landed in one year. It was enough to push 2025 above 2024 and
+# break the decline this dataset is supposed to show.
+#
+# The fix is not a nicer random seed, because the cause is not luck: the
+# RTX 5080/5090 tier only exists from 2025, so the late years get an
+# injection of expensive stock exactly as volume falls. At 0.85 a card
+# that costs eighty times more is about fifty times rarer, which is what
+# a shop this size actually sells -- one or two halo cards a year, not
+# seven.
+PRICE_RESISTANCE = 0.85
 
 CUSTOMER_TYPES = [("INDIVIDUAL", 0.78), ("SME", 0.18), ("SCHOOL", 0.04)]
 
@@ -222,7 +248,8 @@ def available(item, year, month):
 
 def line_weight(item):
     """Cheap things sell more often than dear ones, within a category."""
-    return CATEGORY_DEMAND.get(item["category"], DEFAULT_DEMAND) / math.sqrt(item["price"])
+    return CATEGORY_DEMAND.get(item["category"], DEFAULT_DEMAND) / \
+        (item["price"] ** PRICE_RESISTANCE)
 
 
 def unit_price_in(item, year, rng):
