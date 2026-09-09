@@ -1964,3 +1964,30 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 .pay-option-off small {
   font-style: italic;
 }
+
+/* ---------- WhatsApp as a second way to send a receipt ---------- */
+.or-divider {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  margin: 14px 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.btn-whatsapp {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  background-color: #25d366;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.btn-whatsapp:hover {
+  background-color: #1da851;
+}

@@ -228,6 +228,13 @@ function paymentBlock(o) {
   const state = o.payment_status;
   const badge = state === "APPROVED" ? "in" : state === "REJECTED" ? "out" : "low";
 
+  // Built from the order's current payment status, so the message says
+  // whatever is true at the moment somebody looks at the card. Empty when
+  // the customer left an unusable phone number, and then no button is
+  // drawn -- one that opened a chat with nobody would have staff
+  // believing they had told somebody.
+  const waLink = whatsappLink(o.shipping_phone, paymentMessage(o));
+
   return `
     <div style="margin-top:14px; border-top:1px solid #eef0f3; padding-top:12px;">
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -243,6 +250,12 @@ function paymentBlock(o) {
           : `<span style="font-size:13px; color:#c0392b;">No receipt sent yet</span>`}
 
         <span style="flex:1;"></span>
+
+        ${waLink ? `
+          <a class="btn small grey" href="${e(waLink)}" target="_blank" rel="noopener"
+             title="Opens WhatsApp with a message ready to send. You still have to send it.">
+            WhatsApp customer
+          </a>` : ""}
 
         ${state !== "APPROVED" && o.receipt_image_path ? `
           <button type="button" data-pay="APPROVED" class="btn small">Approve payment</button>` : ""}

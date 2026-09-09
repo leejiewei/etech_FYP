@@ -288,16 +288,13 @@ function injectPrivacyNotice() {
   document.body.classList.add("privacy-notice-open");
 }
 
-// Our WhatsApp number. wa.me needs the international format with no
-// "+", no dashes and no leading zero, so 011-1074 3634 becomes 601110743634
-// (60 = Malaysia, then 11 10743634).
-const WHATSAPP_NUMBER = "601110743634";
-
+// The number itself moved to js/whatsapp.js when the staff console
+// needed it too. This is still the only place the floating button is
+// built; it just no longer owns the number.
 function injectWhatsApp() {
   const btn = document.createElement("a");
   btn.className = "whatsapp-btn";
-  btn.href = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" +
-    encodeURIComponent("Hi, I have a question about a product on eTech.");
+  btn.href = whatsappShopLink("Hi, I have a question about a product on eTech.");
   btn.target = "_blank";
   btn.rel = "noopener";
   btn.title = "Chat with us on WhatsApp";

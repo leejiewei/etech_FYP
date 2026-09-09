@@ -896,3 +896,55 @@ plausible-sounding claim drawn from the wrong source:
 The lesson is the same one this item opens with. `config.toml` describing
 a limit is not evidence the hosted project has that limit, exactly as a
 setting guarding password resets was not evidence a reset path existed.
+
+## 36. WhatsApp, and the difference between composing and sending
+
+Manual payment verification created two moments where somebody wants to
+say something to somebody else: a customer telling the shop they have
+paid, and staff telling a customer whether it was accepted. Both are now
+WhatsApp links, and `web/js/whatsapp.js` holds the number and the rules
+for writing one — loaded by the shop front and the staff console alike,
+the same move `photo.js` made.
+
+**Nothing here sends a message.** A `wa.me` link opens WhatsApp with the
+recipient and the text filled in, and a person presses send. That is
+worth stating plainly because the alternative was considered and
+rejected: sending automatically means the WhatsApp Business Cloud API,
+which needs a verified Meta business account, a message template approved
+in advance by Meta, a server-side access token and a per-conversation
+fee. The token alone would have meant another Edge Function; the approval
+alone would have meant waiting on Meta. Neither is worth it before a beta
+that runs this week.
+
+The operational consequence is the one to remember: **a clicked button is
+not a delivered message.** Staff can open the chat and never press send.
+Nothing in the database records that a customer was contacted, and the
+console must not be read as though it did.
+
+### What is disclosed, and to whom
+
+The staff button puts a customer's phone number and first name into a
+`wa.me` URL, which opens Meta's app or website. Staff already hold that
+number — it is on the order — so the new fact is that it now reaches Meta
+when a member of staff clicks. That is the ordinary consequence of using
+WhatsApp at all, and the shop's floating chat button has been on every
+page since long before this, but it had never been written down.
+
+`web/privacy.html` gains a section saying it: that the number given at
+checkout may be used to message the customer about that order, that a
+human writes and sends it, that WhatsApp is Meta's service under Meta's
+policy, and that a customer can ask to be contacted by email instead. The
+receipt upload on the site does the same job, so nobody has to open a
+WhatsApp conversation to buy anything.
+
+### The number that is not a number
+
+`orders.shipping_phone` is typed into a form by a customer, so it arrives
+as `011-1074 3634`, or `+60 11 1074 3634`, or `0111074 3634`. `wa.me`
+accepts exactly one shape and, given any other, **opens a chat with
+nobody rather than failing** — which would leave staff believing they had
+messaged a customer who never heard from them. `whatsappNumber()`
+normalises the common Malaysian forms and returns an empty string for
+anything under eight digits, and every caller checks it: no usable
+number, no button drawn. Ten cases are covered, including the empty and
+junk ones.

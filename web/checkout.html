@@ -88,6 +88,17 @@
       <p id="receipt-done" style="display:none; color:#1e8e3e;"></p>
       <button type="button" id="receipt-send" onclick="sendReceipt()">Upload receipt</button>
 
+      <!-- The other way people actually do this. Filled in by checkout.js
+           once the order exists, because the message needs its number. -->
+      <p class="or-divider">or</p>
+      <a id="receipt-whatsapp" class="btn-whatsapp" target="_blank" rel="noopener" href="#">
+        Send the receipt on WhatsApp
+      </a>
+      <p class="form-note">
+        Opens a chat with us, with your order number already written.
+        Attach the photo there.
+      </p>
+
       <p class="form-note" style="margin-top: 18px;">
         You can also send it later from your
         <a href="orders.html">order history</a>.
@@ -113,6 +124,7 @@
   <script src="js/advisor.js"></script>
   <script src="js/chatbot.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/whatsapp.js"></script>
   <script src="js/layout.js"></script>
   <script src="js/photo.js"></script>
   <script src="js/payment.js"></script>

@@ -104,6 +104,22 @@ function placeOrder(event) {
     // is looking at while their banking app is open.
     document.getElementById("confirm-pay-details").innerHTML = paymentPanelHtml(method);
 
+    // Sending the receipt over WhatsApp instead of uploading it. Written
+    // here rather than in the markup because the message has to name this
+    // order and its amount, and neither exists until the order is placed.
+    //
+    // wa.me cannot carry an attachment, so this opens the chat with the
+    // words ready and the customer adds the photo. That is one tap more
+    // than the uploader above and is still how most people would rather
+    // do it, so both are offered rather than one replacing the other.
+    const waButton = document.getElementById("receipt-whatsapp");
+    if (waButton) {
+      waButton.href = whatsappShopLink(
+        "Hi eTech, this is my payment receipt for order #" + data.orderId +
+        ", RM " + Number(data.total).toFixed(2) + "."
+      );
+    }
+
     const savedEl = document.getElementById("confirm-discount");
     if (savedEl) {
       savedEl.style.display = discount > 0 ? "block" : "none";
