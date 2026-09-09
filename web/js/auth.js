@@ -360,10 +360,12 @@ function changePassword(currentPassword, newPassword, confirmPassword) {
 // Two limits worth knowing, both of them the project's mail allowance
 // rather than anything in this file:
 //
-//   * Two of these emails an hour, project-wide (auth.rate_limit). Not
-//     per person — two. A beta session where several testers all forget
-//     at once will silently exhaust it, which is why the copy on the
-//     page tells them to ask rather than keep clicking.
+//   * A hundred auth emails an hour, project-wide, counting resends and
+//     every confirmation the shop sends. That is the hosted project's
+//     figure, set alongside custom SMTP on 7 September. Do not read it
+//     out of supabase/config.toml, which still says two: that file
+//     configures a local stack and has never described the deployed
+//     project.
 //   * One a minute per address (auth.email.max_frequency), and the link
 //     expires fifteen minutes after it is sent (auth.email.otp_expiry).
 //

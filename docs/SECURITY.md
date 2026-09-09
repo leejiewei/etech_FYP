@@ -417,7 +417,9 @@ What it buys:
 - Password reset stops being reachable for an unverified address.
 
 **It needs custom SMTP before it is switched on, or the beta cannot
-run.** Supabase's built-in mail service is documented as being for
+run.** *(Done on 2026-09-07 — Gmail SMTP, rate limit 100/hour. The
+paragraphs below are the reasoning as it stood beforehand; see the
+Dashboard configuration section for what was actually set.)* Supabase's built-in mail service is documented as being for
 testing, at a best-effort **two emails per hour**. Objective 1 needs real
 testers signing up over several days; at two an hour the third person in
 any given hour never receives a link and simply cannot register.
@@ -643,11 +645,16 @@ navigation and a stock filter. Four of them touch the database. What
 follows is what that added to the security surface and what was done
 about it.
 
-**These migrations are written but not yet applied.** They sit in
-`supabase/migrations/` as `20260908010000_timed_deals.sql`,
-`20260908020000_manual_payment_verification.sql` and
-`20260908030000_rig_showcases.sql`. Nothing in this section describes the
-live database until they are.
+**APPLIED to the live project on 2026-09-09.** All five migrations behind
+this work are live and verified against the hosted database:
+`20260908010000_timed_deals.sql`,
+`20260908020000_manual_payment_verification.sql`,
+`20260908030000_rig_showcases.sql`,
+`20260908040000_rig_helpers_are_internal.sql` and
+`20260908050000_rig_gallery_carries_its_own_builder_name.sql`. This
+section describes the live database. (It said the opposite while the
+migrations were pending; the deploy that made it true is commit
+`521d0ee`.)
 
 ## 28. A deal price the browser could name — prevented, not fixed
 
@@ -836,19 +843,26 @@ it from the profile page, which asks for the old one.
 somebody resetting a password is more likely than average to be doing it
 because another person has it.
 
-### What this does not fix
+### Verified end to end, and two warnings withdrawn
 
-The redirect target must be in the project's allow-list in **Dashboard →
-Authentication → URL Configuration → Redirect URLs**, as
-`https://etech-fyp.vercel.app/reset-password.html`. Until it is, Supabase
-ignores `redirectTo` and sends the link to the Site URL instead, which
-lands on the home page with a session and no way to finish — the exact
-failure this item exists to remove. **This is configuration, not code,
-and it is not done yet.**
+**Tested on the live site on 2026-09-09**: the email arrives, the link
+opens the form, and the new password works. The flow is complete.
 
-The mail allowance is still two an hour for the whole project, not per
-person (item 12). A beta session where several testers forget at once
-will exhaust it, and the later ones will get the reassuring sentence and
-no email. The page says to ask rather than keep pressing, but that is
-wording, not a fix; the fix is project SMTP, which item 21 already says
-is needed and still absent.
+This item was first written with two cautions attached, and both were
+wrong. They are recorded here rather than deleted, because each was a
+plausible-sounding claim drawn from the wrong source:
+
+- *"The redirect target must be added to the allow-list."* It did not
+  need adding. The allow-list set on 2026-09-07 is
+  `https://etech-fyp.vercel.app/**`, and that wildcard already matches
+  `/reset-password.html`. Nothing was configured to make the flow work.
+- *"The mail allowance is two an hour."* That is the **built-in** mailer's
+  ceiling, and it is the number in `supabase/config.toml` — a file that
+  governs a local stack and says nothing about the hosted project. Custom
+  Gmail SMTP was configured on 2026-09-07 and the auth rate limit raised
+  to **100/hour**. See the *Dashboard configuration* section above, which
+  had already recorded this.
+
+The lesson is the same one this item opens with. `config.toml` describing
+a limit is not evidence the hosted project has that limit, exactly as a
+setting guarding password resets was not evidence a reset path existed.
