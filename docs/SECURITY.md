@@ -41,6 +41,9 @@ Alongside it, and for the same cost: `Content-Security-Policy`,
 `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
 `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`.
 
+`img-src` also allows `blob:`, which every upload on the site needs and
+which this policy originally forgot — see item 37.
+
 The CSP allows `'unsafe-inline'` for scripts. That is not a decision so
 much as a description: eight pages carry an inline `<script>` block and
 six use inline `onclick`/`onchange` handlers, and a CSP without
@@ -948,3 +951,50 @@ normalises the common Malaysian forms and returns an empty string for
 anything under eight digits, and every caller checks it: no usable
 number, no button drawn. Ten cases are covered, including the empty and
 junk ones.
+
+## 37. The CSP forbade the one URL every upload needs — fixed
+
+No photograph could be uploaded anywhere on the site. Not a receipt at
+the checkout, not a receipt from the order history, not a rig for the
+showcase, not a product photo from the staff console. Every one of them
+failed with *"That file is not an image."*, and the file was always an
+image.
+
+`readImage()` in `web/js/photo.js` does what a browser has to do to look
+at a file before sending it: it makes a `blob:` URL for the chosen file
+and points an `<img>` at it. That is also the check that the file really
+is an image — a renamed `.exe` will not decode and the promise rejects,
+which is the job `getimagesize()` used to do in the PHP.
+
+The CSP in `vercel.json` said
+
+```
+img-src 'self' data: https://asawhkjvturznjitsqfk.supabase.co
+```
+
+and a `blob:` URL is none of those three. So the browser refused to load
+the image, `onerror` fired, and the rejection carried the message written
+for a corrupt file. Nothing distinguished the two, because from
+`readImage()`'s side nothing was distinguishable: the image did not load.
+
+The evidence that it was never a file problem is that Supabase never
+heard from anybody. In the whole beta window the edge logs contain not
+one `/storage/` request, and both the `payment-receipts` and
+`rig-showcases` buckets are empty. The upload was dying a step before the
+network, on a policy this project wrote for itself.
+
+`blob:` is now in `img-src`. It is a narrow thing to allow: a `blob:` URL
+names an object the page itself created in this document, it cannot be
+minted by a third party, it is unguessable and dies with the tab. It
+grants no new origin. `connect-src`, `object-src`, `base-uri`,
+`form-action` and `frame-ancestors` are untouched.
+
+Worth naming as a general lesson, because it is the second time this
+project has been bitten by it: a `Content-Security-Policy` fails
+*silently at the feature*, not loudly at deploy. The page loads, the
+button is there, the console entry scrolls past, and the only symptom is
+a wrong error message in a corner of the UI. The smoke tests that were
+run after the last deploy all passed — they checked that pages loaded and
+that the console was clean on load, and this violation only happens once
+somebody chooses a file. A CSP change needs a test that exercises the
+thing the directive governs.
