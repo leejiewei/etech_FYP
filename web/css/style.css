@@ -448,6 +448,109 @@ footer {
   background-color: #f4f5f7;
 }
 
+/* ---------- Notification bell (js/notifications.js) ---------- */
+.notif-menu {
+  position: relative;
+}
+
+.notif-bell {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 17px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.notif-bell .badge[hidden],
+.notif-panel[hidden] {
+  display: none;
+}
+
+/* Opened by a click rather than on hover, like the account menu is,
+   because it holds links to read and not just a list to pass over. */
+.notif-panel {
+  position: absolute;
+  right: -60px;
+  top: 30px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background-color: white;
+  color: #222;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.notif-head {
+  padding: 12px 14px;
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.notif-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.nav-links .notif-item {
+  display: block;
+  padding: 11px 14px;
+  border-bottom: 1px solid #f1f2f4;
+  color: #222;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.nav-links .notif-item:hover {
+  background-color: #f7f8fa;
+  color: #222;
+}
+
+.notif-item strong,
+.notif-item span,
+.notif-item small {
+  display: block;
+}
+
+.notif-item small {
+  color: #999;
+  margin-top: 3px;
+}
+
+.notif-item.unread {
+  background-color: #fdf2f3;
+  border-left: 3px solid var(--red);
+}
+
+.notif-item.notif-payment_rejected strong {
+  color: #c0392b;
+}
+
+.notif-empty {
+  padding: 16px 14px;
+  font-size: 13px;
+  color: #777;
+}
+
+/* max-content because .toast is placed with left: 50%, which on its own
+   caps a toast at half the screen -- a two-sentence message came out as
+   a 200px column on a phone. */
+.notif-toast {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+
+/* The shared .toast link is --red, which all but vanishes on the toast's
+   own dark red once the message runs to several lines. */
+.toast.notif-toast a {
+  color: white;
+  text-decoration: underline;
+}
+
 /* ---------- Mega menu bar (Brands / Categories) ---------- */
 .mega-bar {
   background-color: var(--red-darker);
@@ -1652,6 +1755,12 @@ footer {
 
 .toast.show {
   bottom: 28px;
+}
+
+/* While the privacy notice is up, above it rather than behind it.
+   layout.js measures the notice into the variable. */
+body.privacy-notice-open .toast.show {
+  bottom: calc(var(--privacy-notice-h, 96px) + 16px);
 }
 
 /* Shown if the catalogue can't be fetched (Apache or MySQL not running) */

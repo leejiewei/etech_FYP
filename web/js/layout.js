@@ -24,6 +24,23 @@ function injectHeader() {
        </div>`
     : `<a href="login.html">Login</a> / <a href="register.html">Register</a>`;
 
+  // Messages about the customer's orders -- see js/notifications.js,
+  // which fills the list and the count once the header is on the page.
+  // Only drawn where that file is loaded, so a page without it never
+  // shows a bell that does nothing.
+  const notificationBell = user && typeof startNotifications === "function"
+    ? `<li class="notif-menu" id="notif-menu">
+         <button type="button" class="notif-bell" id="notif-bell"
+                 aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+           🔔<span class="badge" id="notif-count" hidden>0</span>
+         </button>
+         <div class="notif-panel" id="notif-panel" hidden>
+           <div class="notif-head">Notifications</div>
+           <div class="notif-list" id="notif-list"></div>
+         </div>
+       </li>`
+    : "";
+
   header.innerHTML = `
     <nav class="navbar">
       <a href="index.html" class="logo">e<span>Tech</span> <small>Computer Accessories</small></a>
@@ -40,6 +57,7 @@ function injectHeader() {
         <li><a href="compare.html">Compare <span class="badge">${compareCount}</span></a></li>
         <li><a href="wishlist.html">Wishlist <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
         <li><a href="cart.html">Cart <span class="badge" id="cart-count">${cartCount}</span></a></li>
+        ${notificationBell}
         <li>${accountMenu}</li>
       </ul>
     </nav>
@@ -275,10 +293,20 @@ function injectPrivacyNotice() {
     <button type="button" class="privacy-notice-ok">I understand</button>
   `;
 
+  // Toasts -- "added to cart", and the order messages from
+  // notifications.js -- rise from the same edge the bar sits on, and the
+  // bar is higher in the stack. They read this to stop above it instead
+  // of arriving and leaving unseen behind it. Measured rather than a
+  // constant, because the height depends on how the text wraps: on a
+  // 400px phone it is 164px, taller than the whole distance a toast rises.
+  const measureBar = () =>
+    document.body.style.setProperty("--privacy-notice-h", `${bar.offsetHeight}px`);
+
   bar.querySelector(".privacy-notice-ok").addEventListener("click", () => {
     try { localStorage.setItem(PRIVACY_NOTICE_KEY, "1"); } catch (e) { /* fine */ }
     bar.remove();
     document.body.classList.remove("privacy-notice-open");
+    window.removeEventListener("resize", measureBar);
   });
 
   document.body.appendChild(bar);
@@ -286,6 +314,8 @@ function injectPrivacyNotice() {
   // the same height at the end of the body so the last row of whatever
   // is on screen can still be scrolled out from under it.
   document.body.classList.add("privacy-notice-open");
+  measureBar();
+  window.addEventListener("resize", measureBar);
 }
 
 // The number itself moved to js/whatsapp.js when the staff console

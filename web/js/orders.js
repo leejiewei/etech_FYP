@@ -53,7 +53,18 @@ function renderOrders() {
 
       list.innerHTML = orders.map(orderCard).join("");
       orders.forEach(wireReceiptUpload);
+      scrollToLinkedOrder();
     });
+}
+
+// A notification links to orders.html#order-12. The cards are drawn
+// after the page has loaded, so the browser has already looked for that
+// anchor, found nothing and given up -- this is the second look.
+function scrollToLinkedOrder() {
+  const match = /^#order-(\d+)$/.exec(window.location.hash);
+  if (!match) return;
+  const card = document.getElementById(`order-${match[1]}`);
+  if (card) card.scrollIntoView({ block: "start" });
 }
 
 function orderCard(order) {
@@ -61,7 +72,7 @@ function orderCard(order) {
   const colour = ORDER_STATUS_COLOUR[order.status] || "#555";
 
   return `
-    <div class="prebuilt-card" style="margin-bottom: 16px;" data-order="${order.order_id}">
+    <div class="prebuilt-card" style="margin-bottom: 16px;" id="order-${order.order_id}" data-order="${order.order_id}">
       <h3>Order #${order.order_id}</h3>
       <p class="product-category">${escapeHtml(new Date(order.order_date).toLocaleString())}</p>
       <p style="font-weight:bold; color:${colour};">${status}</p>
@@ -188,4 +199,13 @@ onAppReady(() => {
     return;
   }
   renderOrders();
+
+  // Staff just moved one of these orders (js/notifications.js heard it
+  // over Realtime). Reading the orders again is how the card finds out
+  // what changed, rather than this page guessing from the message.
+  document.addEventListener("etech:notification", () => renderOrders());
+
+  // Clicking a notification for another order while already on this page
+  // changes only the hash, which reloads nothing.
+  window.addEventListener("hashchange", scrollToLinkedOrder);
 });

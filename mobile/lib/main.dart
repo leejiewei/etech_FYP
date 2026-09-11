@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'models/notification.dart';
 import 'services/api.dart';
 import 'services/shop.dart';
 import 'theme.dart';
@@ -6,6 +9,7 @@ import 'screens/home.dart';
 import 'screens/shop_screen.dart';
 import 'screens/builder.dart';
 import 'screens/cart.dart';
+import 'screens/orders.dart';
 import 'screens/prebuilt.dart';
 
 void main() async {
@@ -23,13 +27,65 @@ class EtechApp extends StatefulWidget {
   State<EtechApp> createState() => _EtechAppState();
 }
 
-class _EtechAppState extends State<EtechApp> {
+/// Held at the top so a message from the shop can be shown, and its
+/// View button can open the orders, whichever screen is on top at the time.
+final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> _messenger =
+    GlobalKey<ScaffoldMessengerState>();
+
+class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
   final Shop shop = Shop();
+  StreamSubscription<ShopNotification>? _arrivals;
 
   @override
   void initState() {
     super.initState();
     shop.start();
+    _arrivals = shop.notificationArrivals.listen(_showNotification);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _arrivals?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Realtime only delivers while the socket is open, and it is not kept
+  /// open while the phone is locked. Anything staff did in the meantime is
+  /// in the table, so coming back to the app reads the table again.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && shop.loggedIn) {
+      shop.loadNotifications();
+    }
+  }
+
+  void _showNotification(ShopNotification n) {
+    _messenger.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        backgroundColor: n.needsAction ? AppTheme.red : AppTheme.ink,
+        duration: const Duration(seconds: 6),
+        behavior: SnackBarBehavior.floating,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(n.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(n.body),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'VIEW',
+          textColor: Colors.white,
+          onPressed: () => _navigator.currentState?.push(
+            MaterialPageRoute(builder: (_) => OrdersScreen(shop: shop)),
+          ),
+        ),
+      ));
   }
 
   @override
@@ -38,6 +94,8 @@ class _EtechAppState extends State<EtechApp> {
       title: 'eTech Computer Accessories',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
+      navigatorKey: _navigator,
+      scaffoldMessengerKey: _messenger,
       home: MainShell(shop: shop),
     );
   }

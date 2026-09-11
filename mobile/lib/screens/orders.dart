@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
+import '../models/notification.dart';
 import '../payment_details.dart';
 import '../services/shop.dart';
 import '../theme.dart';
@@ -16,11 +19,22 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   late Future<List<Order>> _future;
+  StreamSubscription<ShopNotification>? _arrivals;
 
   @override
   void initState() {
     super.initState();
     _future = widget.shop.loadOrders();
+    // Staff just moved one of these orders. Reading them again is how the
+    // card finds out what changed, rather than guessing from the message.
+    _arrivals = widget.shop.notificationArrivals.listen(
+        (_) => setState(() => _future = widget.shop.loadOrders()));
+  }
+
+  @override
+  void dispose() {
+    _arrivals?.cancel();
+    super.dispose();
   }
 
   static const List<String> _stages = ['Pending', 'Processing', 'Shipped', 'Delivered'];

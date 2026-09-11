@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
+import '../models/notification.dart';
 import '../models/prebuilt.dart';
 import 'api.dart';
 
@@ -432,10 +434,13 @@ class Shop extends ChangeNotifier {
     if (loggedIn) {
       await loadCart();
       await loadWishlist();
+      await loadNotifications();
+      _subscribeToNotifications();
     } else {
       cart = [];
       cartTotal = 0;
       wishlist = [];
+      await _unsubscribeFromNotifications();
       notifyListeners();
     }
   }
@@ -562,6 +567,8 @@ class Shop extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Before signing out, while the channel is still the customer's.
+    await _unsubscribeFromNotifications();
     await Api.db.auth.signOut();
     user = null;
     isAdmin = false;
@@ -777,6 +784,100 @@ class Shop extends ChangeNotifier {
       return Api.message(e, 'Could not save that.');
     }
     return null;
+  }
+
+  // ------------------------------------------------------------
+  // Notifications
+  //
+  // Staff approving a payment, rejecting a receipt or marking an order
+  // Shipped leaves a row in the notifications table, written by the same
+  // database function that moves the order. The app reads the newest
+  // twenty when the customer signs in, and holds a Realtime channel open
+  // so a new one arrives the moment staff press the button — the website
+  // does exactly the same (web/js/notifications.js).
+  //
+  // The policy on the table returns the customer's own rows only, and
+  // Realtime applies that same policy before it hands a row over. The
+  // filter on the channel is not what keeps anyone else's news out; it
+  // only spares the server checking rows that were never ours.
+  //
+  // This is in-app only. A message reaches the phone while the app is
+  // open; an alert on a locked phone would need a push service (Firebase
+  // Cloud Messaging), which the shop does not have.
+  // ------------------------------------------------------------
+  static const int _notificationLimit = 20;
+
+  List<ShopNotification> notifications = [];
+  RealtimeChannel? _notificationChannel;
+  final StreamController<ShopNotification> _arrivals =
+      StreamController<ShopNotification>.broadcast();
+
+  int get unreadNotifications => notifications.where((n) => n.unread).length;
+
+  /// One event per message that arrives while the app is open. The shell
+  /// shows a snack bar from it and the Orders screen reloads on it.
+  Stream<ShopNotification> get notificationArrivals => _arrivals.stream;
+
+  Future<void> loadNotifications() async {
+    try {
+      final rows = await Api.db
+          .from('notifications')
+          .select('notification_id,order_id,kind,title,body,created_at,read_at')
+          .order('created_at', ascending: false)
+          .limit(_notificationLimit);
+      notifications = rows.map<ShopNotification>(ShopNotification.fromRow).toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Loading notifications: $e');
+    }
+  }
+
+  /// Everything unread becomes read. Called when the list is opened.
+  Future<void> markNotificationsRead() async {
+    if (unreadNotifications == 0) return;
+    try {
+      await Api.db.rpc('mark_notifications_read');
+      final now = DateTime.now();
+      for (final n in notifications) {
+        n.readAt ??= now;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Marking notifications read: $e');
+    }
+  }
+
+  void _subscribeToNotifications() {
+    final id = _customerId;
+    if (id == null || _notificationChannel != null) return;
+
+    _notificationChannel = Api.db
+        .channel('notifications-$id')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_id',
+            value: id,
+          ),
+          callback: (payload) {
+            final n = ShopNotification.fromRow(payload.newRecord);
+            if (notifications.any((x) => x.id == n.id)) return;
+            notifications = [n, ...notifications].take(_notificationLimit).toList();
+            notifyListeners();
+            _arrivals.add(n);
+          },
+        )
+        .subscribe();
+  }
+
+  Future<void> _unsubscribeFromNotifications() async {
+    final channel = _notificationChannel;
+    _notificationChannel = null;
+    notifications = [];
+    if (channel != null) await Api.db.removeChannel(channel);
   }
 
   // ------------------------------------------------------------

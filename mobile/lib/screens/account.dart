@@ -3,6 +3,7 @@ import '../config.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import 'login.dart';
+import 'notifications.dart';
 import 'orders.dart';
 import 'wishlist.dart';
 import 'profile_edit.dart';
@@ -11,8 +12,14 @@ class AccountScreen extends StatelessWidget {
   final Shop shop;
   const AccountScreen({super.key, required this.shop});
 
+  // A route of its own, so the AnimatedBuilder round the home screen does
+  // not reach it. Without this one, signing in from here came back to
+  // "Not signed in", and the unread count on Notifications never moved.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      AnimatedBuilder(animation: shop, builder: (context, _) => _page(context));
+
+  Widget _page(BuildContext context) {
     final user = shop.user;
 
     return Scaffold(
@@ -59,6 +66,12 @@ class AccountScreen extends StatelessWidget {
                 'Track what you have ordered',
                 () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => OrdersScreen(shop: shop)))),
+            _tile(context, Icons.notifications_none, 'Notifications',
+                shop.unreadNotifications > 0
+                    ? '${shop.unreadNotifications} new'
+                    : 'Payment and delivery updates',
+                () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => NotificationsScreen(shop: shop)))),
             _tile(context, Icons.favorite_border, 'Wishlist',
                 '${shop.wishlist.length} saved',
                 () => Navigator.push(context,

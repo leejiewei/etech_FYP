@@ -6,6 +6,7 @@ import 'deals.dart';
 import 'rigs.dart';
 import 'account.dart';
 import 'chat.dart';
+import 'notifications.dart';
 
 class HomeScreen extends StatelessWidget {
   final Shop shop;
@@ -51,6 +52,22 @@ class HomeScreen extends StatelessWidget {
           // four shop-facing ranges. Account trades places with it: it is
           // opened once in a while, not browsed, so it sits up here
           // beside Deals.
+          //
+          // The bell is only there for a signed-in customer: the messages
+          // are about their orders, and nobody else has any.
+          if (shop.loggedIn)
+            IconButton(
+              tooltip: 'Notifications',
+              icon: Badge(
+                isLabelVisible: shop.unreadNotifications > 0,
+                label: Text('${shop.unreadNotifications}'),
+                child: const Icon(Icons.notifications_none),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NotificationsScreen(shop: shop)),
+              ),
+            ),
           IconButton(
             tooltip: 'Account',
             icon: const Icon(Icons.person_outline),
