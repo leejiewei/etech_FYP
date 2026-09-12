@@ -40,16 +40,61 @@ plugins {
 //   keyAlias=etech
 //   storeFile=C:/Users/<you>/etech-release.jks
 //
-// Without that file a release build still works and still uses the debug
-// key, because blocking `flutter build apk` outright would be worse than
-// the problem -- but it prints the warning below every time, so it
-// cannot be forgotten quietly the way the TODO was.
+// Without that file a release build STOPS. It used to carry on and merely
+// log a warning, on the reasoning that blocking `flutter build apk`
+// outright would be worse than the problem. That reasoning had a hole in
+// it: `flutter build apk` filters Gradle's warnings out of its own
+// output, so the warning reached nobody building this the way it is
+// actually built, and a 53MB APK signed `CN=Android Debug` came out
+// looking like a clean build. A guard nobody can see is not a guard.
+//
+// Only genuine release packaging is blocked. Configuration, Android
+// Studio's sync and every debug build carry on untouched, because
+// failing those really would be worse than the problem.
+//
+// To build a release APK with the debug key on purpose -- your own
+// phone, a quick size check -- say so and the old warning comes back:
+//
+//   flutter build apk --release -Petech.allowDebugSigning=true
 // ============================================================
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 if (hasReleaseKeystore) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+val allowDebugSigning =
+    (project.findProperty("etech.allowDebugSigning") as String?)?.toBoolean() ?: false
+
+if (!hasReleaseKeystore) {
+    gradle.taskGraph.whenReady {
+        val packagingRelease = allTasks.any { task ->
+            val name = task.name
+            name.endsWith("Release") &&
+                (name.startsWith("assemble") ||
+                    name.startsWith("bundle") ||
+                    name.startsWith("package"))
+        }
+        if (packagingRelease && !allowDebugSigning) {
+            throw GradleException(
+                """
+                eTech: refusing to sign a release build with the public Android debug key.
+
+                There is no mobile/android/key.properties, so this APK would be signed
+                with the keystore that ships inside the Android SDK -- identical on every
+                machine on earth, password "android". Anyone could unpack the APK, point
+                it at their own Supabase project, re-sign it with that same key, and
+                Android would install it over the top as a legitimate update.
+
+                Create a real keystore (the keytool command is in the comment at the top
+                of mobile/android/app/build.gradle.kts), or, if you meant it:
+
+                    flutter build apk --release -Petech.allowDebugSigning=true
+                """.trimIndent()
+            )
+        }
+    }
 }
 
 android {
@@ -90,15 +135,16 @@ android {
 
     buildTypes {
         release {
+            // The guard above has already stopped the build unless there is
+            // a real keystore or the opt-out was passed deliberately.
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {
                 logger.warn(
-                    "eTech: no android/key.properties, so this release APK is signed " +
-                    "with the PUBLIC Android debug key. Anyone can re-sign a modified " +
-                    "copy as this app. Fine while testing on your own phone; create a " +
-                    "real keystore before handing the APK to beta testers -- see the " +
-                    "comment at the top of android/app/build.gradle.kts."
+                    "eTech: signing this release APK with the PUBLIC Android debug " +
+                    "key, because -Petech.allowDebugSigning=true was passed. Anyone " +
+                    "can re-sign a modified copy as this app. Never hand this build " +
+                    "to a beta tester."
                 )
                 signingConfigs.getByName("debug")
             }

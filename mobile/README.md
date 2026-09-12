@@ -30,6 +30,66 @@ Web browser  ─┘
 flutter run
 ```
 
+### The build needs JDK 21, not whatever Android Studio ships with
+
+Android Studio bundles its own JDK and upgrades it without asking. When it
+moved to **Java 25**, every Android build here died with this, and nothing
+else:
+
+```
+* What went wrong:
+25.0.3
+```
+
+That number is the *Java version*, not a dependency. Gradle 8.14.x cannot
+parse Java 25 at all — it only learned it in Gradle 9. The message names no
+file and no task, so it reads like a corrupt dependency and sends you
+hunting through `build.gradle.kts`, where the problem is not.
+
+Both halves of the toolchain have to be pointed at JDK 21, which is what
+AGP 8.x is built against:
+
+```bash
+flutter config --jdk-dir "C:\Users\<you>\.jdks\jbr-21.0.11"
+```
+
+and, for Android Studio's Gradle sync, **File → Settings → Build, Execution,
+Deployment → Build Tools → Gradle → Gradle JDK → 21**. That setting is stored
+in `android/.gradle/config.properties`, which is gitignored, so it is
+per-machine and does not survive a reinstall. If the `25.0.3` error comes
+back after reinstalling Android Studio, this is why.
+
+### Signing a release build
+
+`flutter build apk --release` **stops** unless `android/key.properties`
+exists, because without it the APK would be signed with the public debug
+keystore that ships inside the Android SDK — the same key on every machine,
+password `android`. Anyone could modify such an APK and re-sign it as this
+app.
+
+Create the keystore once, and keep the `.jks` safe — losing it means no
+future build can ever update an installed copy:
+
+```bash
+keytool -genkey -v -keystore %USERPROFILE%\etech-release.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias etech
+```
+
+Then write `mobile/android/key.properties` (gitignored, never commit it):
+
+```properties
+storePassword=<what you typed>
+keyPassword=<what you typed>
+keyAlias=etech
+storeFile=C:/Users/<you>/etech-release.jks
+```
+
+To build a release APK with the debug key deliberately — your own phone, a
+quick size check — say so explicitly. Never hand that build to a tester:
+
+```bash
+flutter build apk --release -Petech.allowDebugSigning=true
+```
+
 ## The server address — the one thing that has to be right
 
 The phone is a separate machine from the one running Apache, so `localhost`

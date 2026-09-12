@@ -514,10 +514,28 @@ re-sign it with the same key, and Android would install it over the top
 as a legitimate update.
 
 Release signing now reads `android/key.properties` (already gitignored
-alongside `*.jks`). Without that file the build still works and still
-uses the debug key, because blocking `flutter build apk` outright would
-be worse than the problem — but it logs a warning every time, so it
-cannot be forgotten silently the way the TODO was.
+alongside `*.jks`). Without that file the build **stops**.
+
+It did not always. The first version of this let the build carry on with
+the debug key and merely logged a warning, reasoning that blocking
+`flutter build apk` outright would be worse than the problem. That was
+wrong, and provably so: `flutter build apk` filters Gradle's warnings out
+of its own output, so the warning reached nobody building this the way it
+is actually built. Verified on 2026-09-12 — a release APK built that
+morning came out signed `CN=Android Debug, O=Android, C=US` with no
+warning shown anywhere, and the same warning appeared immediately when
+`gradlew` was run directly. A guard nobody can see is not a guard.
+
+Only genuine release packaging is refused, from a `taskGraph.whenReady`
+check: configuration, Android Studio's sync and every debug build are
+untouched, because failing those really would be worse than the problem.
+The refusal names the fix and the deliberate opt-out:
+
+    flutter build apk --release -Petech.allowDebugSigning=true
+
+All four paths were re-tested: release without a keystore fails in 4s;
+release with the opt-out builds a 53.0MB APK; `assembleDebug` and an
+IDE-sync-simulated run both succeed.
 
 **You still have to create the keystore.** Both paths were verified with
 a throwaway key, since an untested signing config a week before deploy is
