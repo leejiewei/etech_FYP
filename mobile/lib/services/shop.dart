@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../models/notification.dart';
@@ -576,6 +577,47 @@ class Shop extends ChangeNotifier {
     cartTotal = 0;
     wishlist = [];
     notifyListeners();
+  }
+
+  /// Ask for a "set a new password" email.
+  ///
+  /// The link in that email lands on the *website*, not here. Finishing a
+  /// reset needs the recovery token in the link to reach a Supabase client,
+  /// and the app has no way to receive a link until it registers a deep
+  /// link with Android. web/reset-password.html already does the job, is
+  /// already inside the redirect allow-list, and was tested end to end on
+  /// 9 September, so the app asks for the mail and the website completes it.
+  /// The screen says so plainly rather than leaving somebody waiting for
+  /// something to happen on the phone.
+  ///
+  /// The answer is deliberately the same whether or not the address has an
+  /// account, exactly as web/js/auth.js does it: a different reply for a
+  /// real address turns this box into a way of finding out who is
+  /// registered. Failures are swallowed for the same reason.
+  static const String resetSentMessage =
+      'If that address has an account, a link to set a new password is on its '
+      'way. Open it on the website — it expires in 15 minutes, and it may '
+      'take a minute to arrive, so check the spam folder before asking for '
+      'another.';
+
+  Future<({bool ok, String message})> requestPasswordReset(String email) async {
+    final address = email.trim().toLowerCase();
+
+    // A malformed address is a fact about what was typed, not about who
+    // holds an account, so this one can be answered honestly.
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(address)) {
+      return (ok: false, message: 'That email address does not look right.');
+    }
+
+    try {
+      await Api.db.auth.resetPasswordForEmail(
+        address,
+        redirectTo: '${Config.webOrigin}/reset-password.html',
+      );
+    } catch (_) {
+      // Deliberately ignored. See above.
+    }
+    return (ok: true, message: resetSentMessage);
   }
 
   /// Three columns and no more. That is not politeness — UPDATE on the

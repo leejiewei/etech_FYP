@@ -97,6 +97,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Asks for the reset mail, using whatever is already in the email box.
+  ///
+  /// The reply is shown in the green notice rather than the red one, and it
+  /// is the same reply whether or not the address has an account -- see
+  /// Shop.requestPasswordReset for why. The only red answer here is a
+  /// malformed address, which says nothing about who is registered.
+  Future<void> _resetPassword() async {
+    setState(() {
+      _error = null;
+      _notice = null;
+      _busy = true;
+    });
+
+    final result = await widget.shop.requestPasswordReset(_email.text);
+
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (result.ok) {
+        _notice = result.message;
+      } else {
+        _error = result.message;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,12 +250,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     : Text(_registering ? 'Create account' : 'Sign in'),
               ),
             ),
+            if (!_registering)
+              Center(
+                child: TextButton(
+                  onPressed: _busy ? null : _resetPassword,
+                  child: const Text('Forgot your password?'),
+                ),
+              ),
             const SizedBox(height: 16),
             Center(
               child: TextButton(
                 onPressed: () => setState(() {
                   _registering = !_registering;
                   _error = null;
+                  _notice = null;
                 }),
                 child: Text(
                   _registering
