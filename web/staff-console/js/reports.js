@@ -27,6 +27,11 @@
 const GAMING_CATEGORIES = ["Components", "Case Fans", "Accessories", "Gaming Gear"];
 const CORPORATE_CATEGORIES = ["Printers", "Consumables", "Monitor Arms", "Projectors", "Networking"];
 
+// The sales trend chart is switched off for now -- flip this back to true
+// to bring the "Sales trend" card on this page back. Nothing else on the
+// page depends on it; the twelve-month tiles above it keep working.
+const SHOW_SALES_TREND = false;
+
 // Somebody whose entire history is under this is treated as a student,
 // whatever they bought.
 const STUDENT_CEILING = 3000;
@@ -85,6 +90,7 @@ adminPage("Sales & Customers", "reports", async (content) => {
       </div>
     </div>
 
+    ${!SHOW_SALES_TREND ? "" : `
     <h2>Sales trend</h2>
     <div class="card">
       ${monthly.length === 0
@@ -109,7 +115,7 @@ adminPage("Sales & Customers", "reports", async (content) => {
         <p class="hint" style="margin:14px 0 0;">
           Monthly revenue, cancelled orders excluded.
         </p>`}
-    </div>
+    </div>`}
 
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <div style="flex:1; min-width:340px;">
