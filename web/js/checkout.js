@@ -103,6 +103,12 @@ function placeOrder(event) {
     // The same instructions again, because this is the screen somebody
     // is looking at while their banking app is open.
     document.getElementById("confirm-pay-details").innerHTML = paymentPanelHtml(method);
+    document.getElementById("receipt-limits").textContent = `Accepted: ${PHOTO_LIMITS_TEXT}`;
+    // Say what is wrong with a file as soon as it is chosen, not only
+    // after Upload is pressed.
+    document.getElementById("receipt-file").onchange = (e) => {
+      document.getElementById("receipt-error").textContent = checkPhoto(e.target.files[0]) || "";
+    };
 
     // Sending the receipt over WhatsApp instead of uploading it. Written
     // here rather than in the markup because the message has to name this

@@ -133,7 +133,11 @@ function paymentSection(order) {
       </p>
       ${chased}
       <div class="pay-panel">${paymentPanelHtml(order.payment_method)}</div>
-      <input type="file" class="receipt-file" accept="image/jpeg,image/png,image/webp" />
+      <input type="file" class="receipt-file" accept="image/jpeg,image/png,image/webp"
+             aria-describedby="receipt-limits-${order.order_id}" />
+      <p class="receipt-limits" id="receipt-limits-${order.order_id}">
+        Accepted: ${escapeHtml(PHOTO_LIMITS_TEXT)}
+      </p>
       <div class="form-error receipt-error"></div>
       <p class="receipt-done" style="display:none; color:#1e8e3e;"></p>
       <button type="button" class="receipt-send">
@@ -155,6 +159,9 @@ function wireReceiptUpload(order) {
   const fileInput = card.querySelector(".receipt-file");
   const errorEl = card.querySelector(".receipt-error");
   const doneEl = card.querySelector(".receipt-done");
+
+  // Said as soon as the file is chosen, not only after Upload is pressed.
+  fileInput.onchange = () => { errorEl.textContent = checkPhoto(fileInput.files[0]) || ""; };
 
   button.onclick = () => {
     errorEl.textContent = "";

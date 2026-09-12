@@ -235,6 +235,11 @@ class _ReceiptUploaderState extends State<ReceiptUploader> {
             ),
           ),
         ]),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text('Accepted: ${Shop.receiptLimits}',
+              style: TextStyle(fontSize: 12, color: Colors.black54)),
+        ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),

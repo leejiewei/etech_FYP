@@ -952,21 +952,61 @@ class Shop extends ChangeNotifier {
   // image_picker is asked for the same thing up front instead, with
   // maxWidth and imageQuality, so a 4MB phone photo arrives as a legible
   // JPEG well inside the bucket's 5MB limit.
+  //
+  // The bucket takes JPG, PNG or WEBP up to 5MB and refuses anything
+  // else, but its refusal is a storage error, not a sentence. So the same
+  // two rules are checked here first, and said up front under the upload
+  // buttons (receiptLimits) — the website does the same in js/photo.js.
+  // image_picker does not always hand back a JPEG -- a picture with
+  // transparency can come back as a PNG, and a GIF or HEIC may come back
+  // as it was -- so the type is read from the file's first bytes and sent
+  // as what it is, rather than everything being labelled a JPEG.
   // ------------------------------------------------------------
+  static const int maxReceiptBytes = 5 * 1024 * 1024;
+  static const String receiptLimits = 'JPG, PNG or WEBP, up to 5MB.';
+
+  static const Map<String, String> _receiptExtensions = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+
+  /// Which of the three accepted types [b] is, from its signature bytes,
+  /// or null for anything else (a HEIC or a GIF from the gallery, say).
+  static String? _imageType(Uint8List b) {
+    bool at(int offset, List<int> sig) =>
+        b.length >= offset + sig.length &&
+        List.generate(sig.length, (i) => b[offset + i] == sig[i]).every((ok) => ok);
+
+    if (at(0, [0xFF, 0xD8, 0xFF])) return 'image/jpeg';
+    if (at(0, [0x89, 0x50, 0x4E, 0x47])) return 'image/png';
+    if (at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50])) {
+      return 'image/webp';
+    }
+    return null;
+  }
+
   Future<String?> sendReceipt(int orderId, Uint8List bytes) async {
     if (!loggedIn) return 'Please sign in first.';
 
     final customerId = _customerId;
     if (customerId == null) return 'Please sign in again.';
 
+    final type = _imageType(bytes);
+    if (type == null) return 'That file is not a JPG, PNG or WEBP photo.';
+    if (bytes.length > maxReceiptBytes) {
+      final mb = (bytes.length / (1024 * 1024)).toStringAsFixed(1);
+      return 'That photo is ${mb}MB. The limit is 5MB.';
+    }
+
     try {
       final path = '$customerId/order${orderId}_'
-          '${DateTime.now().millisecondsSinceEpoch}.jpg';
+          '${DateTime.now().millisecondsSinceEpoch}.${_receiptExtensions[type]}';
 
       await Api.db.storage.from('payment-receipts').uploadBinary(
             path,
             bytes,
-            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+            fileOptions: FileOptions(contentType: type),
           );
 
       await Api.db.rpc('attach_payment_receipt', params: {

@@ -47,12 +47,23 @@ const MAX_LARGE_SIDE = 1600;
 // What the file input should accept, and what checkPhoto() enforces.
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+// The same two rules, said to the customer next to the receipt picker --
+// before they choose a file, not only in an error after they have. Built
+// from the limits above so the sentence cannot drift from what is checked.
+const PHOTO_LIMIT_MB = MAX_PHOTO_BYTES / (1024 * 1024);
+const PHOTO_LIMITS_TEXT = `JPG, PNG or WEBP, up to ${PHOTO_LIMIT_MB}MB.`;
+
 // Reads a chosen file and returns a complaint, or null if it is fine.
-// Both pages ask the same two questions, so they ask them here.
+// Both pages ask the same two questions, so they ask them here. The size
+// complaint says how big the file was: "must be under 5MB" alone leaves
+// somebody guessing whether their photo was 5.1MB or 40MB.
 function checkPhoto(file) {
   if (!file) return null;
-  if (file.size > MAX_PHOTO_BYTES) return "Photo must be under 5MB.";
-  if (!PHOTO_TYPES.includes(file.type)) return "Photo must be a JPG, PNG or WEBP.";
+  if (file.size > MAX_PHOTO_BYTES) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    return `That photo is ${mb}MB. The limit is ${PHOTO_LIMIT_MB}MB.`;
+  }
+  if (!PHOTO_TYPES.includes(file.type)) return "That file is not a JPG, PNG or WEBP photo.";
   return null;
 }
 

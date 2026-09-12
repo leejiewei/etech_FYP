@@ -83,7 +83,10 @@
         the amount above, then move your order on. Nothing is dispatched until a
         member of staff has checked it.
       </p>
-      <input type="file" id="receipt-file" accept="image/jpeg,image/png,image/webp" />
+      <input type="file" id="receipt-file" accept="image/jpeg,image/png,image/webp"
+             aria-describedby="receipt-limits" />
+      <!-- Filled from photo.js, where the limits themselves are. -->
+      <p class="receipt-limits" id="receipt-limits"></p>
       <div class="form-error" id="receipt-error"></div>
       <p id="receipt-done" style="display:none; color:#1e8e3e;"></p>
       <button type="button" id="receipt-send" onclick="sendReceipt()">Upload receipt</button>
