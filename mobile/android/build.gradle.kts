@@ -15,6 +15,25 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+allprojects {
+    fun Project.configureAndroid() {
+        extensions.findByName("android")?.let { android ->
+            if (android is com.android.build.gradle.BaseExtension) {
+                android.testOptions.unitTests.isIncludeAndroidResources = false
+            }
+        }
+    }
+
+    if (state.executed) {
+        configureAndroid()
+    } else {
+        afterEvaluate {
+            configureAndroid()
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

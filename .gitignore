@@ -15,6 +15,9 @@ graphify-out/
 .playwright/
 .playwright-cli/
 
+# Android Studio writes its AI assistant's plan files here.
+mobile/android/.artifacts/
+
 # ---------------------------------------------------------------
 # Build output and caches
 #
