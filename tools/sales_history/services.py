@@ -55,7 +55,10 @@ def as_items():
             "type": "SERVICE",
             "name": name,
             "category": "Services",
-            "brand": "eTech",
+            # The shop's own name does not belong in a brand column. A
+            # repair has no manufacturer, so the brand repeats the
+            # category rather than leaving a hole in the cell.
+            "brand": "Services",
             "price": price,
             "margin": margin,
             "launch_year": None,       # a service has no release date

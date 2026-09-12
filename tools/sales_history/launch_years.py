@@ -134,9 +134,64 @@ RULES = [
     (r"Gen\s*3(?!\d)", DEFAULT_LAUNCH_YEAR),
 
     # ---- Networking -----------------------------------------------------
+    #
+    # The WiFi 7 / WiFi 6 rules below never fired on this catalogue, and
+    # that was worth catching: not one router in it says "WiFi 7" in its
+    # name. They say RT-BE58U and Archer BE400, because the generation
+    # lives in the model code. Nine routers were falling through to
+    # DEFAULT_LAUNCH_YEAR and selling in 2022, five of them WiFi 7
+    # hardware that did not exist until 2024.
+    #
+    # The letter pair is the standard: BE is WiFi 7, AX is WiFi 6, AC is
+    # WiFi 5. Kept as its own rule per vendor prefix rather than a bare
+    # \bBE\d, which would also match a product code in another category.
+    (r"\b(?:RT-|Archer\s*|TUF\s*Gaming\s*|Deco\s*)BE[0-9]{2,4}", 2024),
+    (r"\bBE[0-9]{4}\b", 2024),
+    (r"\b(?:RT-|Archer\s*|Deco\s*)AX[0-9]{2,4}", 2020),
+    (r"\bRT-AX[0-9]+", 2020),
+    (r"\bArcher\s*NX[0-9]{3}", 2023),          # 5G CPE, 2023
+    (r"\bTL-MR[0-9]{3}", 2021),
+    (r"\bDeco\s*X10\b", 2022),
     (r"WiFi\s*7(?!\d)", 2024),
     (r"WiFi\s*6E(?!\d)", 2022),
     (r"WiFi\s*6(?!\d)", 2020),
+
+    # ---- Monitors -------------------------------------------------------
+    #
+    # Every one of the 21 monitors in the catalogue is a 2023 model or
+    # newer -- a panel line turns over every couple of years, so a 2026
+    # snapshot holds none of 2022's. Six were dated by the refresh-rate
+    # rule below; the other fifteen fell through to "always stocked" and
+    # were being sold from January 2022, including an RM 649 27" 180Hz
+    # gaming panel and a 34" ultrawide.
+    #
+    # These are model codes with public announcement dates, which is the
+    # same kind of fact as a chipset number, and they are listed one by
+    # one because a monitor's name carries no generation marker to read.
+    (r"\bXG27ACS\b", 2024),
+    (r"\bXV270YM3\b", 2024),
+    (r"\bMP251\b", 2024),
+    (r"\bMD342CQP\b", 2024),
+    (r"\bED270R\b", 2023),
+    (r"\bMB169CK\b", 2023),
+    (r"\bVY249\b", 2023),
+    (r"\bPA279CRV\b", 2023),
+    (r"\bMP225V?\b", 2023),
+    (r"\bMP273\b", 2023),
+    (r"\bG321Q\b", 2023),
+    (r"\bL24-4e\b", 2023),
+    (r"\b532sf\b", 2023),
+
+    # ---- Projectors -----------------------------------------------------
+    (r"\bYaber\b", 2023),
+    (r"\bEB-E24\b", 2021),
+
+    # ---- Coolers with a screen on them ----------------------------------
+    #
+    # A cooler with an LCD or a digital readout on the block is a recent
+    # thing: the first mainstream ones landed in 2023. This dates eight
+    # of the twenty-one unmatched coolers without naming any of them.
+    (r"\b(?:LCD|Digital)\b", 2023),
 
     # ---- Panels ---------------------------------------------------------
     (r"\bOLED\b", 2023),
