@@ -59,3 +59,7 @@ desktop.ini
 # Python bytecode from tools/
 __pycache__/
 *.pyc
+
+# Python environment for the ml/ notebooks (recreate: python -m venv ml/.venv, then pip install -r ml/requirements.txt)
+ml/.venv/
+.ipynb_checkpoints/
