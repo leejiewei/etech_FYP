@@ -208,11 +208,16 @@ async function createDeal(productList) {
   // The pickers give a local wall-clock time with no zone on it. It is
   // converted to a real instant here, so a deal set to end at 23:59 ends
   // at 23:59 where the shop is, not where the reader's browser is.
-  const { error } = await sb.from("deals").insert({
-    product_id: productId,
-    discount_price: dealPrice,
-    start_time: new Date(startsAt).toISOString(),
-    end_time: new Date(endsAt).toISOString(),
+  // Through the function rather than straight into the table, because
+  // creating a deal also messages everyone who was watching the product
+  // -- saved it, or came back to it three times. Both happen in one
+  // transaction, so a deal never goes live with the news half sent, and
+  // the count comes back so staff can see it did something.
+  const { data: alerted, error } = await sb.rpc("admin_create_deal", {
+    p_product_id: productId,
+    p_discount_price: dealPrice,
+    p_start_time: new Date(startsAt).toISOString(),
+    p_end_time: new Date(endsAt).toISOString(),
   });
 
   if (error) {
@@ -222,7 +227,10 @@ async function createDeal(productList) {
     return;
   }
 
-  reloadWith("Deal created.");
+  const told = Number(alerted || 0);
+  reloadWith(told === 0
+    ? "Deal created. Nobody was watching this product yet."
+    : `Deal created. ${told} customer${told === 1 ? "" : "s"} alerted.`);
 }
 
 function wireDealActions() {

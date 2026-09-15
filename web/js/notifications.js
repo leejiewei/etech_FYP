@@ -1,11 +1,17 @@
 // ============================================================
-// Messages from the shop about the customer's own orders.
+// Messages from the shop: how the customer's orders are moving, and
+// when something they were watching has come down in price.
 //
 // Staff approving a payment, rejecting a receipt or marking an order
 // Shipped leaves a row in the notifications table -- the database does
 // that inside the same function that moves the order, so there is no
 // version of events where the order moved and the customer was not told.
 // See supabase/migrations/20260911090000_order_notifications.sql.
+//
+// Putting a product on offer works the same way and for the same reason:
+// admin_create_deal() writes the deal and messages everyone who had
+// saved that product or kept coming back to it, in one transaction. See
+// 20260915120100_telling_the_people_who_were_watching.sql.
 //
 // This file shows those rows in two ways:
 //
@@ -29,7 +35,7 @@ let notificationChannel = null;
 // filter here to get wrong.
 function loadNotifications() {
   return sb.from("notifications")
-    .select("notification_id,order_id,kind,title,body,created_at,read_at")
+    .select("notification_id,order_id,product_id,kind,title,body,created_at,read_at")
     .order("created_at", { ascending: false })
     .limit(NOTIFICATION_LIMIT)
     .then(({ data, error }) => {
@@ -57,14 +63,50 @@ function renderNotifications() {
     : notifications.map(notificationItem).join("");
 }
 
+// Where a message leads. A price drop names a product and opens it, the
+// three order messages name an order and open Order History. Exactly one
+// of the two columns is set, which is what decides between them.
+//
+// The product link points at the shop page as a real destination, so it
+// survives a middle-click into a new tab and a shopper with the panel
+// open on a page that has not finished loading. An ordinary click is
+// caught below and opens the card where the shopper already is instead.
+function notificationHref(n) {
+  if (n.product_id) return `shop.html#product-${n.product_id}`;
+  return n.order_id ? `orders.html#order-${n.order_id}` : "orders.html";
+}
+
 function notificationItem(n) {
-  const href = n.order_id ? `orders.html#order-${n.order_id}` : "orders.html";
+  const product = n.product_id ? ` data-product-id="${Number(n.product_id)}"` : "";
   return `
-    <a class="notif-item ${n.read_at ? "" : "unread"} notif-${escapeHtml(n.kind)}" href="${href}">
+    <a class="notif-item ${n.read_at ? "" : "unread"} notif-${escapeHtml(n.kind)}"
+       href="${notificationHref(n)}"${product}>
       <strong>${escapeHtml(n.title)}</strong>
       <span>${escapeHtml(n.body)}</span>
       <small>${escapeHtml(timeAgo(n.created_at))}</small>
     </a>`;
+}
+
+// A price drop opens the product in the same card a tile on the shop
+// page opens. Every page carrying the bell loads the catalogue and that
+// card with it, so the shopper does not lose the page they were on.
+//
+// Three clicks are left to the href instead: one asking for a new tab,
+// one on a page where the catalogue has not arrived, and one naming a
+// product that is no longer in it -- a delisted product would otherwise
+// open an empty card.
+function openProductFromNotification(event) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+  const link = event.target.closest && event.target.closest("a[data-product-id]");
+  if (!link) return;
+  if (typeof openProductModal !== "function" || typeof getProductById !== "function") return;
+
+  const productId = Number(link.dataset.productId);
+  if (!getProductById(productId)) return;
+
+  event.preventDefault();
+  toggleNotificationPanel(false);
+  openProductModal(productId);
 }
 
 function timeAgo(iso) {
@@ -118,9 +160,9 @@ function receiveNotification(row) {
 function showNotificationToast(n) {
   const toast = document.createElement("div");
   toast.className = "toast notif-toast";
-  const href = n.order_id ? `orders.html#order-${n.order_id}` : "orders.html";
+  const product = n.product_id ? ` data-product-id="${Number(n.product_id)}"` : "";
   toast.innerHTML = `🔔 <strong>${escapeHtml(n.title)}</strong> ${escapeHtml(n.body)}
-    <a href="${href}">View order</a>`;
+    <a href="${notificationHref(n)}"${product}>${n.product_id ? "View product" : "View order"}</a>`;
   document.body.appendChild(toast);
 
   setTimeout(() => toast.classList.add("show"), 100);
@@ -143,6 +185,10 @@ function subscribeToNotifications(customerId) {
 function startNotifications() {
   const user = getCurrentUser();
   if (!user) return;
+
+  // Before the closer below it, so the panel is still on screen and its
+  // link still in the document when this decides what the click meant.
+  document.addEventListener("click", openProductFromNotification);
 
   const bell = document.getElementById("notif-bell");
   if (bell) {

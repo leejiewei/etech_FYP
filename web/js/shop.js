@@ -319,4 +319,22 @@ onAppReady(() => {
   renderAttrFilters();
   renderActiveFilterNotice();
   renderProductGrid();
+  openLinkedProduct();
+  window.addEventListener("hashchange", openLinkedProduct);
 });
+
+// shop.html#product-12 opens that product's card over the grid.
+//
+// A price-drop message links here, and lands on this: the bell opens the
+// card in place on every page that carries it, but not in a new tab, and
+// not before the catalogue has arrived. Either way the shopper ends up
+// looking at the product the message was about.
+//
+// A hash naming something no longer in the catalogue does nothing and
+// leaves the shopper on the full grid, which is the right place to be
+// when the thing they came for has gone.
+function openLinkedProduct() {
+  const match = /^#product-(\d+)$/.exec(window.location.hash);
+  if (!match) return;
+  openProductModal(Number(match[1]));
+}

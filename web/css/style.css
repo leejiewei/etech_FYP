@@ -530,6 +530,13 @@ footer {
   color: #c0392b;
 }
 
+/* The one message that is news rather than an instruction, and the one
+   that leads somewhere other than Order History. Same amber the mobile
+   app gives it. */
+.notif-item.notif-deal_started strong {
+  color: #b4642a;
+}
+
 .notif-empty {
   padding: 16px 14px;
   font-size: 13px;

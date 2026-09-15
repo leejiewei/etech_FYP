@@ -1,14 +1,24 @@
-/// A message from the shop about one of the customer's orders.
+/// A message from the shop about one of the customer's orders, or about a
+/// product they were watching.
 ///
 /// Written by the database at the moment staff approve a payment, reject
-/// a receipt or mark an order Shipped — see
-/// supabase/migrations/20260911090000_order_notifications.sql. The app
+/// a receipt, mark an order Shipped — see
+/// supabase/migrations/20260911090000_order_notifications.sql — or put a
+/// product on offer that this customer had saved or kept coming back to,
+/// see 20260915120100_telling_the_people_who_were_watching.sql. The app
 /// only ever reads these and marks them read.
 class ShopNotification {
   final int id;
+
+  /// Set on the three order messages, NULL on a price drop.
   final int? orderId;
 
-  /// 'payment_approved', 'payment_rejected' or 'order_shipped'.
+  /// Set on a price drop, NULL on the order messages. Exactly one of
+  /// this and [orderId] is set, which is what decides where a tap goes.
+  final int? productId;
+
+  /// 'payment_approved', 'payment_rejected', 'order_shipped' or
+  /// 'deal_started'.
   final String kind;
   final String title;
   final String body;
@@ -18,6 +28,7 @@ class ShopNotification {
   ShopNotification({
     required this.id,
     required this.orderId,
+    this.productId,
     required this.kind,
     required this.title,
     required this.body,
@@ -30,11 +41,16 @@ class ShopNotification {
   /// The one kind where the customer has to do something.
   bool get needsAction => kind == 'payment_rejected';
 
+  /// News rather than an instruction: a product they were watching has
+  /// come down in price.
+  bool get isPriceDrop => kind == 'deal_started';
+
   /// Takes both a row from a select and the `newRecord` Realtime hands
   /// over, which carry the same columns under the same names.
   factory ShopNotification.fromRow(Map<String, dynamic> row) => ShopNotification(
         id: row['notification_id'] as int,
         orderId: row['order_id'] as int?,
+        productId: row['product_id'] as int?,
         kind: row['kind'] ?? '',
         title: row['title'] ?? '',
         body: row['body'] ?? '',
