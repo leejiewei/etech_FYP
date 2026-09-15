@@ -3,8 +3,10 @@ import '../models/notification.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import 'orders.dart';
+import 'product_detail.dart';
 
-/// The messages the shop has sent about the customer's orders.
+/// The messages the shop has sent: how their orders are moving, and when
+/// something they were watching has come down in price.
 ///
 /// Opening this screen is reading them: everything unread is marked read
 /// in the database as it opens. The highlight stays on the new ones
@@ -76,27 +78,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  /// Where a message leads. A price drop names a product and opens it; the
+  /// three order messages name an order and open Order History.
+  ///
+  /// The product is looked up in the catalogue the app already holds, so a
+  /// message about something since delisted falls back to Order History
+  /// rather than opening a screen with nothing on it.
+  void _open(ShopNotification n) {
+    final id = n.productId;
+    if (id != null) {
+      final product = widget.shop.byId(id);
+      if (product != null) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) =>
+                    ProductDetailScreen(product: product, shop: widget.shop)));
+        return;
+      }
+    }
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => OrdersScreen(shop: widget.shop)));
+  }
+
   Widget _tile(ShopNotification n) {
     // Anything that arrives while the screen is open is new too.
     final fresh = _fresh.contains(n.id) || n.unread;
     final colour = n.needsAction
         ? AppTheme.red
-        : n.kind == 'order_shipped'
-            ? const Color(0xFF6A3FB5)
-            : AppTheme.green;
+        : n.isPriceDrop
+            ? const Color(0xFFB4642A)
+            : n.kind == 'order_shipped'
+                ? const Color(0xFF6A3FB5)
+                : AppTheme.green;
     final icon = n.needsAction
         ? Icons.error_outline
-        : n.kind == 'order_shipped'
-            ? Icons.local_shipping_outlined
-            : Icons.check_circle_outline;
+        : n.isPriceDrop
+            ? Icons.sell_outlined
+            : n.kind == 'order_shipped'
+                ? Icons.local_shipping_outlined
+                : Icons.check_circle_outline;
 
     return Material(
       color: fresh ? const Color(0xFFFDF2F3) : Colors.white,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => OrdersScreen(shop: widget.shop))),
+        onTap: () => _open(n),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(

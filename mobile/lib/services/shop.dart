@@ -864,7 +864,7 @@ class Shop extends ChangeNotifier {
     try {
       final rows = await Api.db
           .from('notifications')
-          .select('notification_id,order_id,kind,title,body,created_at,read_at')
+          .select('notification_id,order_id,product_id,kind,title,body,created_at,read_at')
           .order('created_at', ascending: false)
           .limit(_notificationLimit);
       notifications = rows.map<ShopNotification>(ShopNotification.fromRow).toList();
