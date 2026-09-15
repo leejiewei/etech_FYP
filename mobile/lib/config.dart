@@ -23,6 +23,15 @@ class Config {
   static const String supabaseUrl = 'https://asawhkjvturznjitsqfk.supabase.co';
   static const String supabaseKey = 'sb_publishable_hHm6s61BKP01tIR59CoKQg_Jx3NCFDy';
 
+  /// Where the website lives.
+  ///
+  /// The app needs this for exactly one thing: a password reset link has to
+  /// land on a page that can finish the reset, and that page is the
+  /// website's. Supabase only honours a redirect that is in the project's
+  /// allow-list, so this must stay the deployed origin -- the wildcard
+  /// https://etech-fyp.vercel.app/** already covers the page below.
+  static const String webOrigin = 'https://etech-fyp.vercel.app';
+
   /// The drawn illustrations used to be fetched from the website over
   /// HTTP. They are bundled into the app now, so a product picture no
   /// longer depends on a web server being reachable. Only real uploaded

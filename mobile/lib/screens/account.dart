@@ -6,6 +6,7 @@ import 'login.dart';
 import 'notifications.dart';
 import 'orders.dart';
 import 'wishlist.dart';
+import 'privacy.dart';
 import 'profile_edit.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -91,6 +92,14 @@ class AccountScreen extends StatelessWidget {
           if (shop.isAdmin)
             _tile(context, Icons.cloud_done_outlined, 'Connection',
                 'Supabase — nothing to set up', () => _connectionDialog(context)),
+          // Outside the `user != null` block on purpose. Somebody deciding
+          // whether to take part has not signed in yet, and this is the
+          // participant information sheet -- it is no use only to people who
+          // have already handed over their details.
+          _tile(context, Icons.privacy_tip_outlined, 'Privacy Notice',
+              'What this app records, and why',
+              () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
           if (user != null)
             _tile(context, Icons.logout, 'Sign out', '', () async {
               await shop.logout();
