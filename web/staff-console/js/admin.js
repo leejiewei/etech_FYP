@@ -123,6 +123,7 @@ const ADMIN_MENU = [
   ["velocity",   "velocity.html",     "Inventory Velocity"],
   ["alerts",     "alerts.html",       "Stock Alerts"],
   ["reports",    "reports.html",      "Sales &amp; Customers"],
+  ["behaviour",  "behaviour.html",    "Customer Behaviour"],
   ["forecast",   "forecast.html",     "Sales Forecast"],
 ];
 
