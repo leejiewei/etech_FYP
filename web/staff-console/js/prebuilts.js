@@ -83,6 +83,7 @@ adminPage("Prebuilt Parts", "prebuilts", async (content) => {
 
   wireSlotControls(catalogue);
   wirePosterControls();
+  wirePriceControls();
 });
 
 // ------------------------------------------------------------
@@ -157,8 +158,9 @@ function machineCard(machine, slots, availability, productName) {
           <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
             <h2 style="margin:0; font-size:17px;">${e(machine.name)}</h2>
             ${badge}
-            <small style="color:#999;">${e(machine.category)} &middot; ${e(money(machine.price))}</small>
+            <small style="color:#999;">${e(machine.category)}</small>
           </div>
+          ${priceControl(machine)}
           ${complete
             ? blocking
             : `<p class="hint" style="margin:6px 0 0;">
@@ -313,6 +315,108 @@ function wirePosterControls() {
     };
   });
 }
+
+// ------------------------------------------------------------
+// What the machine sells for.
+//
+// A prebuilt's price is a plain column on its product row and is not
+// worked out from the parts underneath it. That is deliberate and is
+// written down in the bill-of-materials migration: a machine is priced as
+// a machine, and the itemised parts are what it is made of rather than
+// what it costs. So this edits products.price directly, the same column
+// and the same way Products > Edit does.
+//
+// Stock is the opposite and must not be touched here. Once every slot on
+// a machine is answered its stock comes from the parts, and typing a
+// stock figure onto a prebuilt would be overwritten by the next
+// recalculation. Only the price is editable on this page.
+//
+// It sits here for the reason the poster uploader does: this is the page
+// where somebody is thinking about a machine. Sending them to find the
+// product row for "E-Tech Inferno Apex" on another page to change its
+// price is how prices go stale.
+// ------------------------------------------------------------
+function priceControl(machine) {
+  return `
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
+      <label style="font-size:13px; color:#555;" for="price-${machine.product_id}">
+        Selling price
+      </label>
+      <span style="font-size:13px; color:#888;">RM</span>
+      <input type="number" id="price-${machine.product_id}" class="machine-price"
+             data-machine="${machine.product_id}"
+             data-was="${num(machine.price).toFixed(2)}"
+             value="${num(machine.price).toFixed(2)}"
+             step="0.01" min="0"
+             style="width:120px; padding:6px 8px; border:1px solid #ccd1d7; border-radius:6px;" />
+      <button class="btn small machine-price-save" data-machine="${machine.product_id}" disabled>
+        Save price
+      </button>
+      <span class="hint machine-price-note" data-machine="${machine.product_id}"
+            style="margin:0;"></span>
+    </div>`;
+}
+
+function wirePriceControls() {
+  document.querySelectorAll("input.machine-price").forEach((input) => {
+    const id = input.dataset.machine;
+    const button = document.querySelector(`button.machine-price-save[data-machine="${id}"]`);
+    const note = document.querySelector(`span.machine-price-note[data-machine="${id}"]`);
+    const was = Number(input.dataset.was);
+
+    // The button is dead until the number in the box is both different
+    // and usable, so it never sends the price it already holds and never
+    // sends a zero.
+    const refresh = () => {
+      const now = Number(input.value);
+      const changed = input.value.trim() !== "" && now.toFixed(2) !== was.toFixed(2);
+      const usable = Number.isFinite(now) && now > 0;
+
+      button.disabled = !(changed && usable);
+      note.textContent = !changed ? ""
+        : !usable ? "A price has to be more than zero."
+          : `was ${money(was)}`;
+      note.style.color = changed && !usable ? "#c0392b" : "#999";
+    };
+
+    input.oninput = refresh;
+    refresh();
+
+    button.onclick = async () => {
+      // Rounded here rather than left to the column. numeric(10,2) would
+      // round 5499.005 on its way in and the box would then disagree with
+      // the row until the next reload.
+      const price = Number(Number(input.value).toFixed(2));
+      if (!(price > 0)) return;
+
+      // A slipped decimal point is the realistic mistake here -- 5499
+      // typed as 549 is a machine sold at a tenth of its price, and
+      // nothing downstream would question it. Anything inside half to
+      // double saves silently; a jump bigger than that is worth one
+      // sentence, and the sentence names both numbers rather than asking
+      // "are you sure".
+      if (was > 0 && (price < was / 2 || price > was * 2)) {
+        const ok = confirm(
+          `Change this machine from ${money(was)} to ${money(price)}?\n\n` +
+          `That is a big jump, so it is worth a second look at the ` +
+          `decimal point.`);
+        if (!ok) return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Saving...";
+      try {
+        await write(sb.from("products").update({ price }).eq("product_id", Number(id)));
+        reloadWith(`Price updated to ${money(price)}.`);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "Save price";
+        alert("Could not save that price: " + (error.message || error));
+      }
+    };
+  });
+}
+
 
 // ------------------------------------------------------------
 // Writing
