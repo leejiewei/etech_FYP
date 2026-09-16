@@ -54,11 +54,12 @@ const SLOT_CATEGORIES = {
 };
 
 adminPage("Prebuilt Parts", "prebuilts", async (content) => {
-  const [machines, slots, availability, catalogue] = await Promise.all([
+  const [machines, slots, availability, catalogue, specs] = await Promise.all([
     loadMachines(),
     loadSlots(),
     loadAvailability(),
     loadCatalogue(),
+    loadSpecs(),
   ]);
 
   const byMachine = {};
@@ -66,6 +67,12 @@ adminPage("Prebuilt Parts", "prebuilts", async (content) => {
 
   const productName = {};
   catalogue.forEach((p) => (productName[p.product_id] = p));
+
+  // The customer-facing spec line for each slot, keyed the same way the
+  // slots are. product_attributes uses the slot name as its attr_key, so
+  // the ssd slot of machine 12 is attribute ('12', 'ssd').
+  const specFor = {};
+  specs.forEach((a) => (specFor[`${a.product_id}:${a.attr_key}`] = a));
 
   const totalPending = slots.filter((s) => !s.component_id && !s.not_stocked).length;
   const done = machines.filter((m) => (availability[m.product_id]?.pending ?? 1) === 0);
@@ -79,11 +86,13 @@ adminPage("Prebuilt Parts", "prebuilts", async (content) => {
     </p>
 
     ${machines.map((m) => machineCard(m, byMachine[m.product_id] || [],
-                                     availability[m.product_id], productName)).join("")}`;
+                                     availability[m.product_id], productName,
+                                     specFor)).join("")}`;
 
   wireSlotControls(catalogue);
   wirePosterControls();
   wirePriceControls();
+  wireSpecControls();
 });
 
 // ------------------------------------------------------------
@@ -104,6 +113,17 @@ async function loadSlots() {
   const { data, error } = await sb.from("prebuilt_components")
     .select("prebuilt_id,slot,spec_text,component_id,qty,not_stocked,note")
     .order("prebuilt_id");
+  if (error) throw error;
+  return data;
+}
+
+async function loadSpecs() {
+  // Only the prebuilt machines' own rows would do, but the table is small
+  // and one unfiltered read is cheaper than eleven filtered ones. The
+  // attribute_id comes back too: it is what tells a save whether there is
+  // a row to update or one to create.
+  const { data, error } = await sb.from("product_attributes")
+    .select("attribute_id,product_id,attr_key,attr_value");
   if (error) throw error;
   return data;
 }
@@ -133,7 +153,7 @@ async function loadCatalogue() {
 // ------------------------------------------------------------
 // Drawing
 // ------------------------------------------------------------
-function machineCard(machine, slots, availability, productName) {
+function machineCard(machine, slots, availability, productName, specFor) {
   const pending = availability?.pending ?? slots.length;
   const complete = pending === 0;
   const derived = availability?.derived_status;
@@ -174,16 +194,17 @@ function machineCard(machine, slots, availability, productName) {
         <thead><tr><th style="width:110px;">Slot</th><th style="width:230px;">Written as</th>
                    <th>Which product</th><th style="width:150px;">Stock</th></tr></thead>
         <tbody>
-          ${slots.map((s) => slotRow(machine, s, productName)).join("")}
+          ${slots.map((s) => slotRow(machine, s, productName, specFor)).join("")}
         </tbody>
       </table>
       </div>
     </div>`;
 }
 
-function slotRow(machine, slot, productName) {
+function slotRow(machine, slot, productName, specFor) {
   const linked = slot.component_id ? productName[slot.component_id] : null;
   const key = `${slot.prebuilt_id}:${slot.slot}`;
+  const spec = specFor[key];
 
   const state = slot.not_stocked
     ? `<span class="badge">Not a stocked part</span>
@@ -197,7 +218,7 @@ function slotRow(machine, slot, productName) {
   return `
     <tr>
       <td><strong>${e(SLOT_LABELS[slot.slot] || slot.slot)}</strong></td>
-      <td><small>${e(slot.spec_text)}</small></td>
+      <td>${specCell(slot, spec, linked, key)}</td>
       <td>
         <select data-slot="${e(key)}"
                 data-current="${slot.component_id ? slot.component_id : ""}"
@@ -315,6 +336,172 @@ function wirePosterControls() {
     };
   });
 }
+
+// ------------------------------------------------------------
+// What the machine is advertised as having.
+//
+// This column used to be a read-only print of prebuilt_components.spec_text
+// and that was the whole of a real bug: changing the part in the next
+// column re-pointed the stock link and nothing else, so a machine whose
+// SSD had been swapped from 256GB to 512GB went on telling customers it
+// had 256GB. The dropdown answers "which catalogue row is this, for
+// stock"; it was never the sentence on the shop page.
+//
+// The sentence lives in product_attributes, keyed by the slot name --
+// ('ssd' on machine 12) -- and that is what the prebuilt card and the
+// product page draw. spec_text is a second copy of the same words for
+// the console's own use. Today all 68 slots agree character for
+// character, which is exactly the state two copies are in right up until
+// they quietly stop agreeing.
+//
+// So this box saves both in one go. There is no path here that writes
+// one without the other.
+//
+// The part's own catalogue name is offered as a fill rather than forced,
+// because the two are deliberately not the same register: the shop says
+// "Hiksemi Wave (P) 512GB" where the catalogue row is "Hiksemi Wave
+// 512GB PCIe Gen 3 NVMe SSD". Overwriting the first with the second
+// would make every machine read like a parts invoice.
+// ------------------------------------------------------------
+function specCell(slot, spec, linked, key) {
+  // A slot with no attribute row is one the shop does not list -- the
+  // extras slot, mostly. It still gets a box; saving creates the row.
+  const text = spec ? spec.attr_value : slot.spec_text;
+
+  // Worth a nudge only when a part is linked and the advertised line
+  // does not mention it. Deliberately a loose test: the two are meant to
+  // read differently, so only a spec that shares no significant word
+  // with the part is called out.
+  const stale = linked && !sharesWording(text, linked.name);
+
+  return `
+    <input type="text" class="spec-text" data-spec="${e(key)}"
+           data-was="${e(text)}"
+           data-attr="${spec ? spec.attribute_id : ""}"
+           value="${e(text)}"
+           style="width:100%; padding:5px 7px; font-size:12px;
+                  border:1px solid ${stale ? "#e0b44a" : "#ccd1d7"}; border-radius:5px;" />
+    <div style="display:flex; gap:6px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+      <button class="btn small spec-save" data-spec="${e(key)}" disabled
+              style="font-size:11px; padding:3px 8px;">Save</button>
+      ${linked ? `
+        <button class="btn small grey spec-fill" data-spec="${e(key)}"
+                data-name="${e(linked.name)}"
+                style="font-size:11px; padding:3px 8px;">Use part's name</button>` : ""}
+      <small class="spec-note" data-spec="${e(key)}" style="color:#999;">${
+        stale ? "Does not mention the linked part" : ""}</small>
+    </div>`;
+}
+
+// Do these two descriptions have any meaningful word in common?
+//
+// Crude on purpose. "512GB" against "Hiksemi Wave 512GB PCIe Gen 3 NVMe
+// SSD" shares a token and passes; "256GB NVMe" against the same string
+// shares only the noise words and does not. Words of three characters or
+// fewer are dropped, along with the handful that appear in every part
+// name and would make everything match.
+const SPEC_NOISE = new Set([
+  "ssd", "nvme", "ram", "gen", "pcie", "the", "and", "with", "series",
+  "gaming", "value", "card", "memory", "drive", "desktop",
+]);
+
+function sharesWording(a, b) {
+  // Capacities first, because they are the whole point. Swapping a 256GB
+  // SSD for a 512GB one leaves the brand and the model line identical --
+  // "Hiksemi Wave (P) 256GB" against "Hiksemi Wave 512GB ... NVMe SSD"
+  // still shares two good words and would sail past a word check. So if
+  // both sides quote a size and no size is common to them, that is a
+  // mismatch whatever else agrees.
+  const sizes = (text) => new Set(
+    (String(text).toLowerCase().match(/\d+\s*(?:gb|tb|mb)\b/g) || [])
+      .map((size) => size.replace(/\s+/g, "")));
+
+  const leftSizes = sizes(a);
+  const rightSizes = sizes(b);
+  if (leftSizes.size > 0 && rightSizes.size > 0) {
+    return [...rightSizes].some((size) => leftSizes.has(size));
+  }
+
+  // No capacity to go on -- a processor, a chassis -- so fall back to
+  // asking whether they have any significant word in common.
+  const words = (text) => new Set(
+    String(text).toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ")
+      .filter((w) => w.length > 3 && !SPEC_NOISE.has(w)));
+
+  const left = words(a);
+  if (left.size === 0) return true;          // nothing to judge on: do not nag
+  return [...words(b)].some((w) => left.has(w));
+}
+
+function wireSpecControls() {
+  document.querySelectorAll("input.spec-text").forEach((input) => {
+    const key = input.dataset.spec;
+    const pick = (sel) => document.querySelector(`${sel}[data-spec="${CSS.escape(key)}"]`);
+    const button = pick("button.spec-save");
+    const fill = pick("button.spec-fill");
+    const note = pick("small.spec-note");
+    const was = input.dataset.was;
+
+    const refresh = () => {
+      const now = input.value.trim();
+      button.disabled = now === "" || now === was;
+    };
+
+    input.oninput = refresh;
+    refresh();
+
+    if (fill) {
+      fill.onclick = () => {
+        input.value = fill.dataset.name;
+        note.textContent = "Not saved yet.";
+        refresh();
+        input.focus();
+      };
+    }
+
+    button.onclick = async () => {
+      const value = input.value.trim();
+      if (value === "" || value === was) return;
+
+      const [prebuiltId, slotName] = key.split(":");
+      button.disabled = true;
+      button.textContent = "Saving...";
+      try {
+        await saveSpec(Number(prebuiltId), slotName, value,
+                       input.dataset.attr ? Number(input.dataset.attr) : null);
+        reloadWith("Spec updated.");
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "Save";
+        alert("Could not save that: " + (error.message || error));
+      }
+    };
+  });
+}
+
+// Both copies, or neither.
+//
+// The customer-facing one goes first because it is the one that matters:
+// if the second write fails, the shop is right and the console is stale,
+// which is the better way round to be wrong. product_attributes has no
+// unique key on (product_id, attr_key), so there is no upsert to lean
+// on -- the row is updated if it exists and created if it does not.
+async function saveSpec(prebuiltId, slotName, value, attributeId) {
+  if (attributeId) {
+    await write(sb.from("product_attributes")
+      .update({ attr_value: value })
+      .eq("attribute_id", attributeId));
+  } else {
+    await write(sb.from("product_attributes")
+      .insert({ product_id: prebuiltId, attr_key: slotName, attr_value: value }));
+  }
+
+  await write(sb.from("prebuilt_components")
+    .update({ spec_text: value })
+    .eq("prebuilt_id", prebuiltId)
+    .eq("slot", slotName));
+}
+
 
 // ------------------------------------------------------------
 // What the machine sells for.
