@@ -93,15 +93,20 @@ class Order {
   final double discount;
   final double total;
   final String? couponCode;
-  final String shippingAddress;
   final List<OrderLine> items;
 
   /// Where the money stands, as distinct from where the goods stand.
   ///
   /// An order can be Pending with the payment approved (paid, not yet
-  /// packed) or Processing with the payment rejected (a blurred receipt
-  /// on an order somebody has already started), so these are separate
-  /// fields and are shown separately.
+  /// put together) or Processing with the payment rejected (a blurred
+  /// receipt on an order somebody has already started), so these are
+  /// separate fields and are shown separately.
+  ///
+  /// [status] runs Pending -> Processing -> Ready -> Collected. Ready
+  /// means it is on the counter waiting; nothing is ever posted, because
+  /// the shop does not deliver. The order's shipping_address column is
+  /// not read here at all — it holds what older orders were placed
+  /// against and is kept for that history alone.
   ///
   /// [paymentMethod] is null on the orders placed before the shop could
   /// take a payment at all, through the old card sandbox. That null means
@@ -118,7 +123,6 @@ class Order {
     required this.discount,
     required this.total,
     this.couponCode,
-    required this.shippingAddress,
     required this.items,
     this.paymentMethod,
     this.paymentStatus = 'PENDING',
@@ -140,7 +144,6 @@ class Order {
         discount: numericOf(row['discount']),
         total: numericOf(row['total']),
         couponCode: row['coupon_code'],
-        shippingAddress: row['shipping_address'] ?? '',
         items: ((row['order_items'] ?? []) as List)
             .map((e) => OrderLine.fromRow(Map<String, dynamic>.from(e)))
             .toList(),

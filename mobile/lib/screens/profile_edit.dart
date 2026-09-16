@@ -87,7 +87,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               maxLines: 3,
               autofillHints: const [AutofillHints.fullStreetAddress],
               decoration: const InputDecoration(
-                labelText: 'Shipping address',
+                // Not "Shipping address" any more. Nothing is shipped;
+                // this is kept as part of the customer's own record.
+                labelText: 'Address',
                 hintText: 'Street, city, postcode, state',
               ),
             ),

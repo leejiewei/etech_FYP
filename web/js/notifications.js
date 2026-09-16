@@ -3,7 +3,7 @@
 // when something they were watching has come down in price.
 //
 // Staff approving a payment, rejecting a receipt or marking an order
-// Shipped leaves a row in the notifications table -- the database does
+// Ready leaves a row in the notifications table -- the database does
 // that inside the same function that moves the order, so there is no
 // version of events where the order moved and the customer was not told.
 // See supabase/migrations/20260911090000_order_notifications.sql.

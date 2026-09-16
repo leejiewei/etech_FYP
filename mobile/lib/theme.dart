@@ -90,9 +90,9 @@ class AppTheme {
 
   static Color statusColour(String status) {
     switch (status) {
-      case 'Delivered':
+      case 'Collected':
         return green;
-      case 'Shipped':
+      case 'Ready':
         return const Color(0xFF6A3FB5);
       case 'Processing':
         return const Color(0xFF2C5D8F);

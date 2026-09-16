@@ -1,6 +1,11 @@
 // ============================================================
 // Orders, and moving them along the stages:
-//   Pending -> Processing -> Shipped -> Delivered
+//   Pending -> Processing -> Ready -> Collected
+//
+// Ready means it is on the counter with the customer's name on it, and
+// pressing it messages them to come in. Collected is somebody having
+// walked out with it. Nothing is ever posted: the shop has a counter,
+// not a courier account.
 //
 // Every change is written to order_status_history, so there is a record
 // of when each order moved and which member of staff moved it. Those two
@@ -32,10 +37,20 @@
 // ------------------------------------------------------------
 // ============================================================
 
-const STAGES = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+const STAGES = ["Pending", "Processing", "Ready", "Collected", "Cancelled"];
 
 // The next step along for each stage.
-const NEXT = { Pending: "Processing", Processing: "Shipped", Shipped: "Delivered" };
+const NEXT = { Pending: "Processing", Processing: "Ready", Ready: "Collected" };
+
+// What the button says, as an instruction rather than a noun. "Move to
+// Ready" is ambiguous about who does what; "Mark ready to collect" is
+// the thing the member of staff is actually asserting, and it is the
+// press that messages the customer.
+const STAGE_ACTION = {
+  Processing: "Start preparing",
+  Ready:      "Mark ready to collect",
+  Collected:  "Mark collected",
+};
 
 const PAYMENT_STATES = ["PENDING", "APPROVED", "REJECTED"];
 
@@ -62,7 +77,7 @@ adminPage("Orders", "orders", async (content) => {
 
   let query = sb.from("admin_orders")
     .select("order_id,order_date,status,subtotal,discount,total,coupon_code," +
-            "shipping_name,shipping_phone,shipping_address,customer_name,customer_email," +
+            "shipping_name,shipping_phone,customer_name,customer_email," +
             "payment_method,payment_status,receipt_image_path")
     .order("order_date", { ascending: false })
     .limit(60);
@@ -175,10 +190,9 @@ function orderCard(o, items, history) {
           </table>
         </div>
         <div style="flex:1; min-width:200px; font-size:13px;">
-          <strong>Deliver to</strong><br />
+          <strong>Collected by</strong><br />
           ${e(o.shipping_name)}<br />
-          ${e(o.shipping_phone)}<br />
-          ${e(o.shipping_address).replace(/\n/g, "<br />")}
+          ${e(o.shipping_phone)}
         </div>
       </div>
 
@@ -196,7 +210,7 @@ function orderCard(o, items, history) {
 
         ${NEXT[o.status] ? `
           <button type="button" data-act="advance" data-to="${e(NEXT[o.status])}" class="btn small">
-            Move to ${e(NEXT[o.status])}
+            ${e(STAGE_ACTION[NEXT[o.status]] || "Move to " + NEXT[o.status])}
           </button>` : ""}
 
         <select data-field="status" style="padding:7px 10px; border:1px solid #ccd1d7; border-radius:6px;">
