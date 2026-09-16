@@ -10,6 +10,7 @@ import '../models/cart_item.dart';
 import '../models/notification.dart';
 import '../models/prebuilt.dart';
 import 'api.dart';
+import 'push.dart';
 
 /// Everything the app knows about the shop, in one place.
 ///
@@ -437,6 +438,10 @@ class Shop extends ChangeNotifier {
       await loadWishlist();
       await loadNotifications();
       _subscribeToNotifications();
+      // This handset now belongs to this customer as far as push is
+      // concerned. Registering on every sign-in, not only on first run,
+      // is what moves a shared phone to whoever is actually using it.
+      await Push.onSignedIn();
     } else {
       cart = [];
       cartTotal = 0;
@@ -568,8 +573,11 @@ class Shop extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    // Before signing out, while the channel is still the customer's.
+    // Both of these run before the session is torn down, while the
+    // channel and the token still belong to this customer. Afterwards
+    // there is no session left to authorise the call with.
     await _unsubscribeFromNotifications();
+    await Push.onSignedOut();
     await Api.db.auth.signOut();
     user = null;
     isAdmin = false;

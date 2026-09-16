@@ -27,6 +27,19 @@ dependencies:
   # named one rather than adding anything new.
   shared_preferences: ^2.5.0
 
+  # Push notifications, so the shop can reach a phone with the app shut.
+  # The in-app bell is a Realtime websocket and dies with the process, so
+  # the customer who wanted telling without opening the app was the one
+  # customer it could not tell. Android will not let an app wake itself;
+  # that means Firebase Cloud Messaging and there is no way round it.
+  #
+  # Both are dormant until somebody runs `flutterfire configure`. Until
+  # then lib/firebase_options.dart holds empty values, Push.ready is
+  # false, and services/push.dart returns from every method without
+  # touching Firebase. The app builds and sells exactly as before.
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+
   # Draws the product illustrations, which are SVG files bundled in assets/
   flutter_svg: ^2.0.16
 
