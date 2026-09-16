@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "851500871224",
+    "project_id": "etech-fyp",
+    "storage_bucket": "etech-fyp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:851500871224:android:77764c04490ab0c7e6c0cd",
+        "android_client_info": {
+          "package_name": "com.etech.etech_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCianHqvEMMnTekLsA8UI7ulb28qH0760"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

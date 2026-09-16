@@ -4,6 +4,12 @@
          permission to use the network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- From Android 13 a notification is not shown until the customer has
+         agreed to them. firebase_messaging merges this permission in on its
+         own, but it is named here as well so that reading this file tells
+         you what the app asks for. Push.init() is what actually prompts. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!--
         usesCleartextTraffic was here for XAMPP, which served the old PHP API
         over plain http. That server is gone: the app now talks only to
@@ -48,6 +54,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Where a push lands if it arrives without naming a channel.
+             The Edge Function always names etech_orders, which MainActivity
+             creates on launch, but a message that somehow does not would
+             otherwise be dropped in silence on Android 8 and up. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="etech_orders" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
