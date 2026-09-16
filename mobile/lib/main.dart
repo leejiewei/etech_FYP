@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'models/notification.dart';
 import 'services/api.dart';
+import 'services/push.dart';
 import 'services/shop.dart';
 import 'theme.dart';
 import 'screens/home.dart';
@@ -17,6 +18,10 @@ void main() async {
   // Connect to Supabase and restore the saved session before anything is
   // drawn, so the app opens already signed in if it was signed in before.
   await Api.init();
+  // Push, if this build has a Firebase project behind it. Does nothing
+  // at all if it does not, which is the state the app ships in until
+  // someone runs `flutterfire configure` -- see services/push.dart.
+  await Push.init();
   runApp(const EtechApp());
 }
 
