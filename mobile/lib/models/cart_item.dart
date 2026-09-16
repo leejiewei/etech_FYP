@@ -95,6 +95,16 @@ class Order {
   final String? couponCode;
   final List<OrderLine> items;
 
+  /// 'PICKUP' or 'DELIVERY'. Null on nothing currently in the database —
+  /// the column is NOT NULL with a default — but read defensively, since
+  /// every helper in fulfilment.dart treats a missing method as a
+  /// collection rather than throwing.
+  final String? fulfilmentMethod;
+
+  /// Only set on a delivery. A collection has no address and the
+  /// database actively drops one sent with it.
+  final String? shippingAddress;
+
   /// Where the money stands, as distinct from where the goods stand.
   ///
   /// An order can be Pending with the payment approved (paid, not yet
@@ -102,11 +112,11 @@ class Order {
   /// receipt on an order somebody has already started), so these are
   /// separate fields and are shown separately.
   ///
-  /// [status] runs Pending -> Processing -> Ready -> Collected. Ready
-  /// means it is on the counter waiting; nothing is ever posted, because
-  /// the shop does not deliver. The order's shipping_address column is
-  /// not read here at all — it holds what older orders were placed
-  /// against and is kept for that history alone.
+  /// [status] runs Pending -> Processing -> Ready -> Collected, and the
+  /// last two are read differently depending on [fulfilmentMethod]:
+  /// "Ready to collect" and "Collected" for a pickup, "Shipped" and
+  /// "Delivered" for a delivery. One ladder, two vocabularies — see
+  /// fulfilment.dart, which is where those words live.
   ///
   /// [paymentMethod] is null on the orders placed before the shop could
   /// take a payment at all, through the old card sandbox. That null means
@@ -124,6 +134,8 @@ class Order {
     required this.total,
     this.couponCode,
     required this.items,
+    this.fulfilmentMethod,
+    this.shippingAddress,
     this.paymentMethod,
     this.paymentStatus = 'PENDING',
     this.receiptPath,
@@ -144,6 +156,8 @@ class Order {
         discount: numericOf(row['discount']),
         total: numericOf(row['total']),
         couponCode: row['coupon_code'],
+        fulfilmentMethod: row['fulfilment_method'],
+        shippingAddress: row['shipping_address'],
         items: ((row['order_items'] ?? []) as List)
             .map((e) => OrderLine.fromRow(Map<String, dynamic>.from(e)))
             .toList(),

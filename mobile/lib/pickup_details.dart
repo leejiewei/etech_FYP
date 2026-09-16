@@ -1,9 +1,10 @@
 /// Where the order is collected.
 ///
-/// eTech does not deliver. An order is paid for in the app, put aside
-/// behind the counter, and picked up by the person who placed it — so the
-/// one thing every screen has to be able to say is where that counter is
-/// and when somebody is standing at it.
+/// Most orders are paid for in the app, put aside behind the counter, and
+/// picked up by the person who placed it. (Delivery is the other option —
+/// see fulfilment.dart.) So the one thing every screen showing a
+/// collection has to be able to say is where that counter is and when
+/// somebody is standing at it.
 ///
 /// These are the same facts the website keeps in web/js/pickup.js, and
 /// they sit in one file per client for the same reason payment_details.dart
@@ -54,13 +55,13 @@ class PickupDetails {
   /// tells somebody where to go; without one it promises a message, which
   /// is a thing the shop can actually keep. It never invents a street.
   static String get notice => ready
-      ? 'We do not deliver. Collect your order from $shopName, $address'
+      ? 'Collect your order from $shopName, $address'
           '${landmark.isEmpty ? '' : ' ($landmark)'}.\n'
           'Open $hours.\n'
           'We will message you when it is ready — please do not come before.'
-      : 'We do not deliver. Your order is put aside for you, and we will '
-          'message the phone number above with the address and the pickup '
-          'time as soon as it is ready.';
+      : 'Your order is put aside for you, and we will message the phone '
+          'number above with the address and the pickup time as soon as it '
+          'is ready.';
 
   /// One line, for an order card, where the whole notice would not fit.
   static String get line => ready

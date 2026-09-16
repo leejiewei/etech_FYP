@@ -26,6 +26,64 @@
 
 const FORECAST_DATA = "data/ml_forecast.json";
 
+// ------------------------------------------------------------
+// The one number somebody came to this page for.
+//
+// Everything below it on the page is a backtest -- the model predicting
+// weeks that already happened, which is how the accuracy figures are
+// earned but is not a forecast of anything. This card is the forecast,
+// refitted on the whole series and run forward, and it is at the top
+// because "what will next month be" is the question, not "how did the
+// model do".
+//
+// It is written to be hard to quote out of context. The band, the week
+// count, the date the data stops and the basis of the year-on-year
+// comparison are all on the card rather than in a footnote, because a
+// single big number lifted into a slide with none of those attached is
+// exactly how a forecast stops being honest.
+// ------------------------------------------------------------
+function nextMonthCard(n) {
+  if (!n) return "";
+
+  // Down is not automatically bad news and up is not automatically good,
+  // so the arrow is coloured by direction and left to speak for itself.
+  // The same month a year earlier, spelled the way monthLabel expects.
+  const lastYear = (Number(n.month.slice(0, 4)) - 1) + n.month.slice(4);
+
+  // Down is not automatically bad news and up is not automatically good,
+  // so the arrow is coloured by direction and left to speak for itself.
+  const change = n.changePct === null || n.changePct === undefined
+    ? ""
+    : `<div style="font-size:13px; color:${n.changePct < 0 ? "#c0392b" : "#1e8e3e"}; margin-top:6px;">
+         ${n.changePct < 0 ? "▼" : "▲"} ${e(Math.abs(n.changePct))}% ${e(n.changeBasis || "per week")}
+         against ${e(monthLabel(lastYear))}
+         (${e(money(n.priorYearPerWeek))} a week, over ${e(n.priorYearWeeks)} weeks)
+       </div>`;
+
+  return `
+    <div class="card" style="border-left:4px solid ${COLOUR_FORECAST};">
+      <div style="font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.04em;">
+        Predicted sales &mdash; ${e(n.label)}
+      </div>
+      <div style="font-size:34px; font-weight:bold; margin:6px 0 2px; color:${COLOUR_FORECAST};">
+        ${e(money(n.revenue))}
+      </div>
+      <div style="font-size:13px; color:#555;">
+        somewhere between <strong>${e(money(n.low))}</strong> and
+        <strong>${e(money(n.high))}</strong>
+        &nbsp;·&nbsp; ${e(money(n.perWeek))} a week across ${e(n.weeks)} weeks
+      </div>
+      ${change}
+      <div class="hint" style="margin:12px 0 0;">
+        The range is this model's own monthly error on months it had never
+        seen (WAPE ${e(pct(n.bandPct))}), not a confidence interval. Fitted on all
+        ${e(n.fittedWeeks)} weeks up to ${e(n.fittedTo)}; a week counts towards the
+        month its Monday falls in, which is why ${e(n.label)} is
+        ${e(n.weeks)} weeks and not four-and-a-bit.
+      </div>
+    </div>`;
+}
+
 const COLOUR_ACTUAL = "#2c5d8f";
 const COLOUR_FORECAST = "#d62839";
 
@@ -62,6 +120,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const weekly = data.forecast || [];
   const segments = data.segments || [];
   const dormant = data.dormant || [];
+  const coming = data.nextMonth || null;
 
   const monthMax = Math.max(0, ...monthly.flatMap((m) => [m.actual, m.forecast]));
   const weekMax = Math.max(0, ...weekly.flatMap((w) => [w.actual, w.forecast]));
@@ -69,6 +128,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
 
   content.innerHTML = `
     ${provenanceBanner(meta)}
+    ${nextMonthCard(coming)}
 
     <div class="tiles">
       <div class="tile">

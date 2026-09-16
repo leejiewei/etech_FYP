@@ -932,7 +932,8 @@ class Shop extends ChangeNotifier {
       final rows = await Api.db
           .from('orders')
           .select('order_id,order_date,status,subtotal,discount,total,'
-              'coupon_code,shipping_name,shipping_phone,'
+              'coupon_code,shipping_name,shipping_phone,shipping_address,'
+              'fulfilment_method,'
               'payment_method,payment_status,receipt_image_path,'
               'order_items(product_id,product_name,unit_price,quantity,line_total)')
           .order('order_date', ascending: false);
@@ -951,16 +952,14 @@ class Shop extends ChangeNotifier {
   /// each product and empties the basket — all as one indivisible step, so
   /// a failure halfway cannot leave an order with no items in it.
   ///
-  /// Only the name, the phone number, the coupon code and how the
-  /// customer intends to pay are sent. There is no address: the shop does
-  /// not deliver, and the order waits at the counter. See
-  /// pickup_details.dart.
+  /// The name, the phone number, how the customer wants to get their
+  /// things, the coupon code and how they intend to pay. The address goes
+  /// with it only for a delivery — a collection has nowhere to send
+  /// anything, and the database drops any address sent with one anyway.
   ///
-  /// p_address is deliberately left out of the call rather than sent
-  /// empty. The argument still exists in the database, defaulted to NULL,
-  /// only so that an APK already installed on somebody's phone keeps
-  /// working — see
-  /// supabase/migrations/20260916120000_pick_up_at_the_shop.sql.
+  /// [fulfilment] is always sent explicitly. The database will infer it
+  /// from the presence of an address if a caller says nothing, but that
+  /// path exists for APKs built before the choice did, not for this one.
   ///
   /// Every price, the discount and the total are worked out down there
   /// from the basket rows, so a modified app cannot change what anything
@@ -968,13 +967,17 @@ class Shop extends ChangeNotifier {
   /// PENDING on that side and can only be moved by a member of staff.
   Future<Map<String, dynamic>> placeOrder(
       String name, String phone, String coupon,
-      {String paymentMethod = 'BANK_TRANSFER'}) async {
+      {String paymentMethod = 'BANK_TRANSFER',
+      String fulfilment = 'PICKUP',
+      String address = ''}) async {
     try {
       final result = await Api.db.rpc('place_order', params: {
         'p_name': name,
         'p_phone': phone,
+        'p_address': fulfilment == 'DELIVERY' ? address : '',
         'p_coupon': coupon,
         'p_payment_method': paymentMethod,
+        'p_fulfilment': fulfilment,
       });
 
       await loadCart();

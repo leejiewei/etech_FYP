@@ -1,9 +1,12 @@
 // ============================================================
 // Checkout.
 //
-// The browser sends only a name, a phone number and an optional coupon.
-// There is no address to send: the shop does not deliver, and an order
-// is collected from the counter. See js/pickup.js.
+// The browser sends a name, a phone number, how the customer wants to
+// get their things, and an optional coupon. The address goes with it only
+// when they asked for delivery -- a collection has nowhere to send
+// anything, and the database drops any address sent with one anyway. See
+// js/fulfilment.js for the two vocabularies and js/pickup.js for where
+// the shop is.
 // Every price, the discount and the total are worked out inside the
 // database from the basket rows — so editing this page cannot change
 // what anything costs.
@@ -59,6 +62,42 @@ function prefillFromProfile() {
   if (!user) return;
   document.getElementById("checkout-name").value = user.name || "";
   document.getElementById("checkout-phone").value = user.phone || "";
+  // Only useful if they pick delivery, but filled in now rather than at
+  // the moment they switch: the profile is already loaded here, and a
+  // field that populates itself as you click a radio button looks like a
+  // glitch.
+  document.getElementById("checkout-address").value = user.address || "";
+}
+
+// Which way they want it. Defaults to collection if the radios are
+// somehow absent, which matches the database's own reading.
+function chosenFulfilment() {
+  const picked = document.querySelector("input[name='fulfilment']:checked");
+  return picked ? picked.value : "PICKUP";
+}
+
+// Swap the half of the form that the choice implies.
+//
+// `required` moves with the field rather than living in the markup. A
+// hidden input carrying required blocks submission with a validation
+// bubble pointing at something nobody can see, which is a page that
+// simply stops working with no explanation.
+function showFulfilment(method) {
+  const delivery = isDelivery(method);
+  const addressBlock = document.getElementById("address-block");
+  const address = document.getElementById("checkout-address");
+  const pickup = document.getElementById("pickup-notice");
+  const phoneNote = document.getElementById("phone-note");
+
+  addressBlock.style.display = delivery ? "block" : "none";
+  address.required = delivery;
+
+  pickup.style.display = delivery ? "none" : "block";
+  pickup.innerHTML = delivery ? "" : pickupNoticeHtml();
+
+  phoneNote.textContent = delivery
+    ? "We message this number about your delivery."
+    : "We message this number when your order is ready to collect.";
 }
 
 function placeOrder(event) {
@@ -68,6 +107,7 @@ function placeOrder(event) {
 
   const couponField = document.getElementById("checkout-coupon");
   const method = chosenPaymentMethod();
+  const fulfilment = chosenFulfilment();
 
   // place_order() is a function inside the database. It reads the
   // basket, prices it, writes the order and its lines, records a
@@ -75,10 +115,10 @@ function placeOrder(event) {
   // indivisible step, so a failure halfway cannot leave an order with
   // no items in it.
   //
-  // Only the name, the phone number, the coupon code and how they intend
-  // to pay are sent. p_address is left off entirely -- the argument still
-  // exists in the database so that an APK already on somebody's phone
-  // keeps working, but this page has nothing to put in it.
+  // Only the details, the coupon code, how they intend to pay and how
+  // they want it are sent. p_address goes up empty for a collection and
+  // is dropped on that side regardless, so a stray address cannot ride
+  // along on an order nobody is delivering.
   //
   // Every price, the discount and the total are worked out
   // down there from the basket rows, so editing this page cannot change
@@ -88,8 +128,11 @@ function placeOrder(event) {
   sb.rpc("place_order", {
     p_name:    document.getElementById("checkout-name").value.trim(),
     p_phone:   document.getElementById("checkout-phone").value.trim(),
+    p_address: fulfilment === "DELIVERY"
+      ? document.getElementById("checkout-address").value.trim() : "",
     p_coupon:  couponField ? couponField.value.trim() : "",
     p_payment_method: method,
+    p_fulfilment: fulfilment,
   }).then(({ data, error }) => {
     if (error) {
       errorEl.textContent = dbMessage(error, "Could not place the order. Nothing was charged.");
@@ -108,9 +151,23 @@ function placeOrder(event) {
     // is looking at while their banking app is open.
     document.getElementById("confirm-pay-details").innerHTML = paymentPanelHtml(method);
 
-    // Where to come and get it, said again on the screen people keep.
+    // Where to come and get it, said again on the screen people keep --
+    // or, for a delivery, what happens next instead. The confirmation is
+    // the screen somebody screenshots, so it has to answer the question
+    // they will have tomorrow.
     const confirmPickup = document.getElementById("confirm-pickup-notice");
-    if (confirmPickup) confirmPickup.innerHTML = pickupNoticeHtml();
+    if (confirmPickup) {
+      confirmPickup.innerHTML = fulfilment === "DELIVERY"
+        ? `<div class="pickup-note">
+             <strong>Delivery</strong>
+             <p>
+               We will send this to the address you gave us once your
+               payment has been checked, and message you when it is on
+               its way.
+             </p>
+           </div>`
+        : pickupNoticeHtml();
+    }
     document.getElementById("receipt-limits").textContent = `Accepted: ${PHOTO_LIMITS_TEXT}`;
     // Say what is wrong with a file as soon as it is chosen, not only
     // after Upload is pressed.
@@ -198,8 +255,8 @@ function sendReceipt() {
       fileInput.value = "";
       doneEl.style.display = "block";
       doneEl.textContent =
-        "Receipt received. We will check it, put your order aside and message " +
-        "you when it is ready to collect — you can follow it in your order history.";
+        "Receipt received. We will check it and move your order on — you can " +
+        "follow it in your order history.";
       button.textContent = "Send another";
       button.disabled = false;
     })
@@ -228,7 +285,8 @@ onAppReady(() => {
     prefillFromProfile();
     // Painted before the form is used, not after it is submitted: where
     // to collect is something to read while deciding, not afterwards.
-    document.getElementById("pickup-notice").innerHTML = pickupNoticeHtml();
+    // This also puts the form into the state its checked radio claims.
+    showFulfilment(chosenFulfilment());
     // Before the panel is chosen, not after: this may move the selection
     // off DuitNow, and the panel that ends up on screen has to be the one
     // the radio actually says.

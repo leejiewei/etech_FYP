@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../fulfilment.dart';
 import '../payment_details.dart';
 import '../pickup_details.dart';
 import '../services/shop.dart';
@@ -7,10 +8,11 @@ import '../widgets/payment_panel.dart';
 
 /// Checkout.
 ///
-/// Only a name, a phone number, an optional coupon and how the customer
-/// intends to pay are sent. There is no address to send: the shop does
-/// not deliver, and an order is collected from the counter. See
-/// pickup_details.dart.
+/// A name, a phone number, how the customer wants to get their things,
+/// an optional coupon and how they intend to pay. The address goes with
+/// it only when they chose delivery — a collection has nowhere to send
+/// anything. See fulfilment.dart for the two vocabularies and
+/// pickup_details.dart for where the shop is.
 ///
 /// Every price, the discount and the total are worked out by the server
 /// from the basket in the database, so nothing the phone sends can change
@@ -41,7 +43,12 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  final _address = TextEditingController();
   final _coupon = TextEditingController();
+
+  // Collection is the default because it is what most orders are, and
+  // because it is the one that needs nothing else typed in.
+  Fulfilment _fulfilment = Fulfilment.pickup;
 
   // Not qrCode unconditionally: the markup equivalent of an unattended
   // default is how somebody ends up on the one method that cannot be paid.
@@ -59,11 +66,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final user = widget.shop.user;
     _name.text = user?['name'] ?? '';
     _phone.text = user?['phone'] ?? '';
+    // Filled now rather than when delivery is picked. The profile is
+    // already loaded here, and a field that populates itself as you tap a
+    // radio button looks like a glitch.
+    _address.text = user?['address'] ?? '';
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _coupon]) {
+    for (final c in [_name, _phone, _address, _coupon]) {
       c.dispose();
     }
     super.dispose();
@@ -72,11 +83,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _submit() async {
     setState(() => _error = null);
 
-    // The phone number has taken the address's place as the field an
-    // order cannot go without. There is nowhere to post anything, and a
-    // number is how the shop tells somebody their order is waiting.
+    // The phone number is required either way: it is how the shop says
+    // the order is on the counter, and how a driver finds the gate.
     if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty) {
       setState(() => _error = 'Please fill in your name and phone number.');
+      return;
+    }
+
+    // The address is required for one method and meaningless for the
+    // other. Checked here as well as in the database so the answer comes
+    // back without a round trip.
+    if (_fulfilment == Fulfilment.delivery && _address.text.trim().isEmpty) {
+      setState(() => _error = 'Please give us an address to deliver to.');
       return;
     }
 
@@ -86,6 +104,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _phone.text.trim(),
       _coupon.text.trim(),
       paymentMethod: _method.value,
+      fulfilment: _fulfilment.value,
+      address: _address.text.trim(),
     );
     if (!mounted) return;
     setState(() {
@@ -160,7 +180,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 14),
             _card_(
-              'Who is collecting',
+              'How would you like to get it?',
+              RadioGroup<Fulfilment>(
+                groupValue: _fulfilment,
+                onChanged: (chosen) =>
+                    setState(() => _fulfilment = chosen ?? _fulfilment),
+                child: Column(
+                  children: Fulfilment.values
+                      .map((f) => RadioListTile<Fulfilment>(
+                            value: f,
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            activeColor: AppTheme.red,
+                            title: Text(f.label,
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600)),
+                            subtitle: Text(f.hint,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600)),
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _card_(
+              'Your details',
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -178,22 +223,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      'We message this number when your order is ready to '
-                      'collect.',
+                      _fulfilment == Fulfilment.delivery
+                          ? 'We message this number about your delivery.'
+                          : 'We message this number when your order is ready '
+                              'to collect.',
                       style: TextStyle(
                           fontSize: 12.5, color: Colors.grey.shade600),
                     ),
                   ),
+                  // Only for a delivery. Absent rather than disabled for a
+                  // collection: a greyed box still reads as something the
+                  // customer was meant to fill in.
+                  if (_fulfilment == Fulfilment.delivery)
+                    _field(
+                      'Delivery address',
+                      _address,
+                      lines: 3,
+                      autofill: const [AutofillHints.fullStreetAddress],
+                    ),
                   _field(
                     'Coupon code (optional)',
                     _coupon,
                     hint: 'e.g. PARTS10',
                     caps: true,
                   ),
-                  // Where the address field used to be. Read before the
-                  // order is placed, not after: whether somebody can get
-                  // to the shop is part of deciding to buy.
-                  _pickupNotice(),
+                  // Read before the order is placed, not after: whether
+                  // somebody can get to the shop is part of deciding to
+                  // buy.
+                  if (_fulfilment == Fulfilment.pickup) _pickupNotice(),
                 ],
               ),
             ),
@@ -206,8 +263,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
                       'Pay from your own banking app, then send us the receipt. '
-                      'We check every payment by hand before we put the order '
-                      'aside for you.',
+                      'We check every payment by hand before we start on your '
+                      'order.',
                       style:
                           TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
@@ -335,8 +392,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SizedBox(height: 16),
 
         // Repeated here on purpose: this is the screen people screenshot
-        // and come back to, and it is the one that has to say where.
-        _pickupNotice(),
+        // and come back to, and it is the one that has to answer the
+        // question they will have tomorrow — which is a different
+        // question depending on how they asked to get it.
+        if (_fulfilment == Fulfilment.pickup)
+          _pickupNotice()
+        else
+          _deliveryNotice(),
         const SizedBox(height: 16),
 
         const Text('Send us your receipt',
@@ -344,8 +406,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SizedBox(height: 6),
         Text(
           'A photo or screenshot of the transfer confirmation. We compare it '
-          'against the amount above, then move your order on. Nothing is set '
-          'aside for collection until a member of staff has checked it.',
+          'against the amount above, then move your order on. Nothing is '
+          'prepared until a member of staff has checked it.',
           style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 12),
@@ -397,6 +459,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SizedBox(height: 6),
         Text(
           PickupDetails.notice,
+          style: TextStyle(
+              fontSize: 12.5, height: 1.45, color: Colors.grey.shade800),
+        ),
+      ],
+    ),
+  );
+
+  /// The delivery equivalent of [_pickupNotice]. Same box, same left
+  /// edge, different promise — and deliberately vague about timing,
+  /// because the shop has not committed to one and this screen must not
+  /// invent it.
+  Widget _deliveryNotice() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: const BoxDecoration(
+      color: Color(0xFFF4F7FB),
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+      border: Border(left: BorderSide(color: Color(0xFF2C5D8F), width: 4)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Delivery',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2C5D8F),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'We will send this to the address you gave us once your payment '
+          'has been checked, and message you when it is on its way.',
           style: TextStyle(
               fontSize: 12.5, height: 1.45, color: Colors.grey.shade800),
         ),

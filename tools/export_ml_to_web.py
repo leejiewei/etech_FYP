@@ -75,6 +75,104 @@ def fit_and_forecast(weekly):
     }, monthly
 
 
+def next_month(weekly, monthly_wape):
+    """What the model expects the coming month to take.
+
+    Everything else in this file is backtesting: fit on the first 80% of the
+    series, predict the last 20%, and report how close it got. That is how you
+    earn the right to quote an accuracy figure, but it is not a forecast --
+    every week it "predicts" already happened.
+
+    This is the forecast. The same Ridge specification is refitted on the whole
+    series, including the test weeks, because when you are actually predicting
+    forward there is no reason to withhold the most recent year from the model.
+    The weeks of the next calendar month are then built out and summed.
+
+    Two things about the number that the page has to say out loud:
+
+      * A week belongs to the month its Monday falls in, which is the same rule
+        the monthly backtest uses. It means a month gets four or five whole
+        weeks and never a fraction of one, so a four-week month is genuinely
+        smaller than a five-week one and the count is reported alongside.
+
+      * The band is the held-out monthly WAPE applied to the point estimate. It
+        is the error this model actually made on months it had never seen, not
+        a confidence interval from the fit, and it is the honest width to put
+        around a single number.
+    """
+    model = Ridge(alpha=1.0).fit(weekly[FEATURES].to_numpy(), weekly.revenue.to_numpy())
+
+    last_week = weekly.weekStart.max()
+    target = last_week.to_period("M") + 1
+
+    weeks, t = [], int(weekly.t.max())
+    week = last_week
+    while True:
+        week = week + pd.Timedelta(days=7)
+        t += 1
+        period = week.to_period("M")
+        if period > target:
+            break
+        if period == target:
+            weeks.append((week, t))
+
+    if not weeks:
+        return None
+
+    rows = []
+    for week, t in weeks:
+        features = {"t": t}
+        for i in range(2, 13):
+            features[f"m_{i}"] = 1 if week.month == i else 0
+        rows.append(features)
+
+    predicted = model.predict(pd.DataFrame(rows)[FEATURES].to_numpy())
+    # A negative week is arithmetic, not a forecast: the shop cannot take less
+    # than nothing, and a linear model extrapolating a quiet January will
+    # happily say so.
+    predicted = np.clip(predicted, 0, None)
+    total = float(predicted.sum())
+
+    # The same month a year earlier, as context. Whether the model is calling
+    # for a better or a worse month than last year is the first question
+    # anybody asks of a single number.
+    #
+    # Compared per week, and that is not fussiness. Because a week belongs to
+    # the month its Monday falls in, September 2026 gets four weeks and
+    # September 2025 got five. Comparing the totals reports a 52% collapse
+    # where the model is really calling for a 40% quieter week -- half the
+    # headline would be the calendar, not the shop.
+    year_before = target - 12
+    prior = weekly[weekly.weekStart.dt.to_period("M") == year_before]
+    prior_total = float(prior.revenue.sum()) if len(prior) else None
+    prior_weeks = int(len(prior))
+
+    per_week = total / len(weeks)
+    prior_per_week = (prior_total / prior_weeks) if prior_weeks else None
+
+    return {
+        "month": str(target),
+        "label": target.strftime("%B %Y"),
+        "weeks": len(weeks),
+        "weekStarts": [w.strftime("%Y-%m-%d") for w, _ in weeks],
+        "revenue": round(total, 0),
+        "low": round(total * (1 - monthly_wape / 100), 0),
+        "high": round(total * (1 + monthly_wape / 100), 0),
+        "bandPct": monthly_wape,
+        "fittedTo": last_week.strftime("%Y-%m-%d"),
+        "fittedWeeks": int(len(weekly)),
+        "perWeek": round(per_week, 0),
+        "priorYear": None if prior_total is None else round(prior_total, 0),
+        "priorYearWeeks": prior_weeks,
+        "priorYearPerWeek": (None if prior_per_week is None
+                             else round(prior_per_week, 0)),
+        # Per week, deliberately. See the note above about the week counts.
+        "changePct": (None if not prior_per_week
+                      else round((per_week - prior_per_week) / prior_per_week * 100, 1)),
+        "changeBasis": "per week",
+    }
+
+
 def segments():
     """Cluster summary from 03_segmentation.ipynb, plus the dormant products."""
     path = PROCESSED / "product_segments.csv"
@@ -106,6 +204,7 @@ def segments():
 def main():
     weekly = load_weekly()
     train, test, predicted, metrics, monthly = fit_and_forecast(weekly)
+    coming = next_month(weekly, metrics["monthlyWAPE"])
     segment_rows, dormant_rows = segments()
 
     # The chart shows the last year of history for context, then the forecast block.
@@ -124,6 +223,7 @@ def main():
             "testTo": test.weekStart.max().strftime("%Y-%m-%d"),
         },
         "metrics": metrics,
+        "nextMonth": coming,
         "history": [{"week": d.strftime("%Y-%m-%d"), "actual": round(v, 0)}
                     for d, v in zip(history.weekStart, history.revenue)],
         "forecast": [{"week": d.strftime("%Y-%m-%d"), "actual": round(a, 0), "forecast": round(f, 0)}
@@ -142,6 +242,10 @@ def main():
     print(f"  {len(payload['history'])} history weeks, {len(payload['forecast'])} forecast weeks, "
           f"{len(payload['monthly'])} months, {len(segment_rows or [])} segments")
     print(f"  weekly WAPE {metrics['weeklyWAPE']}%  monthly WAPE {metrics['monthlyWAPE']}%")
+    if coming:
+        print(f"  next month: {coming['label']} ({coming['weeks']} weeks) "
+              f"RM {coming['revenue']:,.0f} "
+              f"(RM {coming['low']:,.0f} - RM {coming['high']:,.0f})")
 
 
 if __name__ == "__main__":

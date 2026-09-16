@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-09-15",
+    "generated": "2026-09-16",
     "source": "docs/data/etech_sales_2022_2026.xml",
     "synthetic": true,
     "model": "Ridge regression (trend + month seasonality)",
@@ -19,6 +19,29 @@
     "rmse": 16409.0,
     "r2": 0.249,
     "monthlyR2": 0.565
+  },
+  "nextMonth": {
+    "month": "2026-09",
+    "label": "September 2026",
+    "weeks": 4,
+    "weekStarts": [
+      "2026-09-07",
+      "2026-09-14",
+      "2026-09-21",
+      "2026-09-28"
+    ],
+    "revenue": 137650.0,
+    "low": 113699.0,
+    "high": 161601.0,
+    "bandPct": 17.4,
+    "fittedTo": "2026-08-24",
+    "fittedWeeks": 243,
+    "perWeek": 34413.0,
+    "priorYear": 285130.0,
+    "priorYearWeeks": 5,
+    "priorYearPerWeek": 57026.0,
+    "changePct": -39.7,
+    "changeBasis": "per week"
   },
   "history": [
     {
