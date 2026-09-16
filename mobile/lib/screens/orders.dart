@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/notification.dart';
 import '../payment_details.dart';
+import '../pickup_details.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/payment_panel.dart';
@@ -37,7 +38,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.dispose();
   }
 
-  static const List<String> _stages = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+  // The shop has a counter, not a courier account: an order is put
+  // aside and collected. Ready is the stage that messages the customer.
+  static const List<String> _stages = [
+    'Pending',
+    'Processing',
+    'Ready',
+    'Collected'
+  ];
+
+  /// What a stage means to somebody who is not standing behind the
+  /// counter. Only where the bare word is not enough — 'Ready' on its own
+  /// reads as a shrug, where 'Ready to collect' is an instruction.
+  static String _statusLabel(String status) =>
+      status == 'Ready' ? 'Ready to collect' : status;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +119,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   color: AppTheme.statusColour(order.status).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(order.status,
+                child: Text(_statusLabel(order.status),
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -198,15 +212,31 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       color: AppTheme.redDark)),
             ],
           ),
+          _collectionLine(order),
           _paymentSection(order),
         ],
       ),
     );
   }
 
+  /// Where to come and get it — but only while that is still something
+  /// the customer has to do. A cancelled order has nothing waiting, and
+  /// an order already collected would be somebody being told to fetch
+  /// what is in their hands, so both are left alone.
+  Widget _collectionLine(Order order) {
+    if (order.status == 'Cancelled' || order.status == 'Collected') {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(PickupDetails.line,
+          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+    );
+  }
+
   /// Where the money stands, and what the customer can do about it.
   ///
-  /// Kept apart from the delivery stages above deliberately. An order can
+  /// Kept apart from the collection stages above deliberately. An order can
   /// be Pending with the payment approved, or Processing with the payment
   /// rejected, and folding those into one line would hide exactly the
   /// case the customer needs to act on.

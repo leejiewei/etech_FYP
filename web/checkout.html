@@ -25,17 +25,22 @@
       <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
 
       <form onsubmit="placeOrder(event)">
-        <h3>Shipping Details</h3>
+        <h3>Who is collecting</h3>
+        <!-- Name and phone, and nothing else. There is no address field
+             because there is nowhere to send anything: the order waits
+             at the counter and the phone number is how we tell you it is
+             there. See js/pickup.js. -->
         <label for="checkout-name">Full Name</label>
-        <input type="text" id="checkout-name" name="shipping-name" autocomplete="shipping name" required />
+        <input type="text" id="checkout-name" name="name" autocomplete="name" required />
 
         <label for="checkout-phone">Phone Number</label>
-        <input type="tel" id="checkout-phone" name="shipping-tel" autocomplete="shipping tel"
+        <input type="tel" id="checkout-phone" name="tel" autocomplete="tel"
           inputmode="tel" required />
+        <p class="form-note">We message this number when your order is ready to collect.</p>
 
-        <label for="checkout-address">Shipping Address</label>
-        <textarea id="checkout-address" name="shipping-address" autocomplete="shipping street-address"
-          rows="3" required></textarea>
+        <!-- Filled from js/pickup.js, which is where the shop's address
+             and opening hours live. -->
+        <div id="pickup-notice"></div>
 
         <label for="checkout-coupon">Coupon Code (optional)</label>
         <input type="text" id="checkout-coupon" autocomplete="off" autocapitalize="characters"
@@ -44,7 +49,7 @@
         <h3 style="margin-top: 20px;">How are you paying?</h3>
         <p class="form-note">
           Pay from your own banking app, then send us the receipt. We check every
-          payment by hand before the order is packed.
+          payment by hand before we put the order aside for you.
         </p>
 
         <div class="pay-choice">
@@ -77,11 +82,15 @@
 
       <div class="pay-panel" id="confirm-pay-details"></div>
 
+      <!-- Repeated here on purpose: this is the screen people screenshot
+           and come back to, and it is the one that has to say where. -->
+      <div id="confirm-pickup-notice"></div>
+
       <h3 style="margin-top: 22px;">Send us your receipt</h3>
       <p class="form-note">
         A photo or screenshot of the transfer confirmation. We compare it against
-        the amount above, then move your order on. Nothing is dispatched until a
-        member of staff has checked it.
+        the amount above, then move your order on. Nothing is set aside for
+        collection until a member of staff has checked it.
       </p>
       <input type="file" id="receipt-file" accept="image/jpeg,image/png,image/webp"
              aria-describedby="receipt-limits" />
@@ -132,6 +141,7 @@
   <script src="js/notifications.js"></script>
   <script src="js/photo.js"></script>
   <script src="js/payment.js"></script>
+  <script src="js/pickup.js"></script>
   <script src="js/checkout.js"></script>
   <script src="js/app.js"></script>
 </body>

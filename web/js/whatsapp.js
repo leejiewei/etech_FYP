@@ -106,8 +106,8 @@ function paymentMessage(order) {
 
   if (order.payment_status === "APPROVED") {
     return hello + " We have checked your payment and it is confirmed. " +
-           "We are getting your order ready now and will let you know as " +
-           "soon as it is on its way. Thank you!";
+           "We are getting your order ready now and will message you as " +
+           "soon as it is on the counter waiting for you. Thank you!";
   }
 
   if (order.payment_status === "REJECTED") {

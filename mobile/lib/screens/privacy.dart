@@ -54,11 +54,14 @@ class PrivacyScreen extends StatelessWidget {
               'Contact page on the website.'),
 
           _h('What is recorded, and why'),
-          _p('If you create an account, we store your name, email address, '
-              'phone number and delivery address. These are needed to hold '
-              'your basket, show your order history, and address an order. '
-              'Your password is held by Supabase Auth as a hash — the shop '
-              'never sees or stores the password itself.'),
+          _p('If you create an account, we store your name, email address '
+              'and phone number. These are needed to hold your basket, show '
+              'your order history, and tell you when an order is ready to '
+              'collect. Your profile also has an address box you may fill in '
+              'if you want to; the shop does not deliver and nothing is sent '
+              'to it, so leaving it empty changes nothing. Your password is '
+              'held by Supabase Auth as a hash — the shop never sees or '
+              'stores the password itself.'),
           _p('Whether or not you sign in, the app records:'),
           _bullets(const [
             'which products you open, and when;',
@@ -89,10 +92,13 @@ class PrivacyScreen extends StatelessWidget {
               'uninstalling it, ends the old identifier and starts a new one.'),
 
           _h('If you place an order'),
-          _p('An order records the items, the total, and the name, phone '
-              'number and address you type into the delivery form. That is '
-              'kept for as long as the order record exists, because it is the '
-              'order.'),
+          _p('An order records the items, the total, and the name and phone '
+              'number you type at checkout. That is kept for as long as the '
+              'order record exists, because it is the order. No address is '
+              'asked for or recorded: orders are collected from the shop, and '
+              'the phone number is how we tell you yours is ready. Orders '
+              'placed before September 2026 do still carry the delivery '
+              'address that was asked for at the time.'),
           _p('There is no card payment in this app and no payment gateway. '
               'Instead the checkout shows bank details and asks you to upload '
               'a photograph of the transfer receipt, which a member of staff '

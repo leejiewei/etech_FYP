@@ -2,7 +2,7 @@
 /// product they were watching.
 ///
 /// Written by the database at the moment staff approve a payment, reject
-/// a receipt, mark an order Shipped — see
+/// a receipt, mark an order Ready — see
 /// supabase/migrations/20260911090000_order_notifications.sql — or put a
 /// product on offer that this customer had saved or kept coming back to,
 /// see 20260915120100_telling_the_people_who_were_watching.sql. The app
@@ -17,7 +17,7 @@ class ShopNotification {
   /// this and [orderId] is set, which is what decides where a tap goes.
   final int? productId;
 
-  /// 'payment_approved', 'payment_rejected', 'order_shipped' or
+  /// 'payment_approved', 'payment_rejected', 'order_ready' or
   /// 'deal_started'.
   final String kind;
   final String title;

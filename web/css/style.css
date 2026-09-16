@@ -2114,3 +2114,43 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 .btn-whatsapp:hover {
   background-color: #1da851;
 }
+
+
+/* ------------------------------------------------------------
+   The collection notice.
+
+   Where the shipping address field used to be on the checkout page, and
+   again on the confirmation screen. Given a box and a left edge rather
+   than being left as running text, because it is the one thing on that
+   page a customer has to act on later: nothing is posted, and somebody
+   has to physically come and get this.
+
+   Built by pickupNoticeHtml() in js/pickup.js.
+   ------------------------------------------------------------ */
+.pickup-note {
+  margin: 14px 0 18px;
+  padding: 12px 14px;
+  background: #f4f7fb;
+  border-left: 4px solid #2c5d8f;
+  border-radius: 6px;
+}
+
+.pickup-note strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #2c5d8f;
+}
+
+.pickup-note p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.pickup-note p:last-child { margin-bottom: 0; }
+
+.pickup-note .pickup-hours {
+  font-weight: 600;
+  color: #333;
+}

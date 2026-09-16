@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import '../payment_details.dart';
+import '../pickup_details.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/payment_panel.dart';
 
 /// Checkout.
 ///
-/// Only the delivery details, an optional coupon and how the customer
-/// intends to pay are sent. Every price, the discount and the total are
-/// worked out by the server from the basket in the database, so nothing
-/// the phone sends can change what things cost.
+/// Only a name, a phone number, an optional coupon and how the customer
+/// intends to pay are sent. There is no address to send: the shop does
+/// not deliver, and an order is collected from the counter. See
+/// pickup_details.dart.
+///
+/// Every price, the discount and the total are worked out by the server
+/// from the basket in the database, so nothing the phone sends can change
+/// what things cost.
 ///
 /// The card sandbox that used to sit at the bottom of this screen is
 /// gone. It took sixteen digits, sent them nowhere and said so. In its
 /// place is what a small shop without a payment gateway actually does:
 /// show a DuitNow QR or a bank account, take a photograph of the receipt,
-/// and have somebody check it against the amount before anything is
-/// packed.
+/// and have somebody check it against the amount before anything is put
+/// aside.
 ///
 /// The order is written before the receipt is asked for, and that order
 /// is deliberate. The receipt has to be filed against something, and the
@@ -36,7 +41,6 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  final _address = TextEditingController();
   final _coupon = TextEditingController();
 
   // Not qrCode unconditionally: the markup equivalent of an unattended
@@ -55,12 +59,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final user = widget.shop.user;
     _name.text = user?['name'] ?? '';
     _phone.text = user?['phone'] ?? '';
-    _address.text = user?['address'] ?? '';
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _address, _coupon]) {
+    for (final c in [_name, _phone, _coupon]) {
       c.dispose();
     }
     super.dispose();
@@ -69,8 +72,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _submit() async {
     setState(() => _error = null);
 
-    if (_name.text.trim().isEmpty || _address.text.trim().isEmpty) {
-      setState(() => _error = 'Please fill in your delivery details.');
+    // The phone number has taken the address's place as the field an
+    // order cannot go without. There is nowhere to post anything, and a
+    // number is how the shop tells somebody their order is waiting.
+    if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty) {
+      setState(() => _error = 'Please fill in your name and phone number.');
       return;
     }
 
@@ -78,7 +84,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final result = await widget.shop.placeOrder(
       _name.text.trim(),
       _phone.text.trim(),
-      _address.text.trim(),
       _coupon.text.trim(),
       paymentMethod: _method.value,
     );
@@ -155,8 +160,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 14),
             _card_(
-              'Delivery details',
+              'Who is collecting',
               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _field(
                     'Full name',
@@ -169,11 +175,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     keyboard: TextInputType.phone,
                     autofill: const [AutofillHints.telephoneNumber],
                   ),
-                  _field(
-                    'Shipping address',
-                    _address,
-                    lines: 3,
-                    autofill: const [AutofillHints.fullStreetAddress],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'We message this number when your order is ready to '
+                      'collect.',
+                      style: TextStyle(
+                          fontSize: 12.5, color: Colors.grey.shade600),
+                    ),
                   ),
                   _field(
                     'Coupon code (optional)',
@@ -181,6 +190,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     hint: 'e.g. PARTS10',
                     caps: true,
                   ),
+                  // Where the address field used to be. Read before the
+                  // order is placed, not after: whether somebody can get
+                  // to the shop is part of deciding to buy.
+                  _pickupNotice(),
                 ],
               ),
             ),
@@ -193,7 +206,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
                       'Pay from your own banking app, then send us the receipt. '
-                      'We check every payment by hand before the order is packed.',
+                      'We check every payment by hand before we put the order '
+                      'aside for you.',
                       style:
                           TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
@@ -318,15 +332,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         // The same instructions again, because this is the screen
         // somebody is looking at while their banking app is open.
         PaymentPanel(method: _method),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+
+        // Repeated here on purpose: this is the screen people screenshot
+        // and come back to, and it is the one that has to say where.
+        _pickupNotice(),
+        const SizedBox(height: 16),
 
         const Text('Send us your receipt',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           'A photo or screenshot of the transfer confirmation. We compare it '
-          'against the amount above, then move your order on. Nothing is '
-          'dispatched until a member of staff has checked it.',
+          'against the amount above, then move your order on. Nothing is set '
+          'aside for collection until a member of staff has checked it.',
           style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 12),
@@ -345,6 +364,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ElevatedButton(
           onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
           child: const Text('Back to shopping'),
+        ),
+      ],
+    ),
+  );
+
+  /// The collection notice, built from pickup_details.dart.
+  ///
+  /// Given a box and a left edge rather than being left as running text,
+  /// because it is the one thing on this screen the customer has to act
+  /// on later: nothing is posted, and somebody has to physically come and
+  /// get this.
+  Widget _pickupNotice() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: const BoxDecoration(
+      color: Color(0xFFF4F7FB),
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+      border: Border(left: BorderSide(color: Color(0xFF2C5D8F), width: 4)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Collection at the shop',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2C5D8F),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          PickupDetails.notice,
+          style: TextStyle(
+              fontSize: 12.5, height: 1.45, color: Colors.grey.shade800),
         ),
       ],
     ),

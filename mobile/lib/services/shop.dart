@@ -832,7 +832,7 @@ class Shop extends ChangeNotifier {
   // Notifications
   //
   // Staff approving a payment, rejecting a receipt or marking an order
-  // Shipped leaves a row in the notifications table, written by the same
+  // Ready leaves a row in the notifications table, written by the same
   // database function that moves the order. The app reads the newest
   // twenty when the customer signs in, and holds a Realtime channel open
   // so a new one arrives the moment staff press the button — the website
@@ -932,7 +932,7 @@ class Shop extends ChangeNotifier {
       final rows = await Api.db
           .from('orders')
           .select('order_id,order_date,status,subtotal,discount,total,'
-              'coupon_code,shipping_name,shipping_phone,shipping_address,'
+              'coupon_code,shipping_name,shipping_phone,'
               'payment_method,payment_status,receipt_image_path,'
               'order_items(product_id,product_name,unit_price,quantity,line_total)')
           .order('order_date', ascending: false);
@@ -951,20 +951,28 @@ class Shop extends ChangeNotifier {
   /// each product and empties the basket — all as one indivisible step, so
   /// a failure halfway cannot leave an order with no items in it.
   ///
-  /// Only the delivery details, the coupon code and how the customer
-  /// intends to pay are sent. Every price, the discount and the total are
-  /// worked out down there from the basket rows, so a modified app cannot
-  /// change what anything costs — nor whether the payment has been
-  /// checked, which starts at PENDING on that side and can only be moved
-  /// by a member of staff.
+  /// Only the name, the phone number, the coupon code and how the
+  /// customer intends to pay are sent. There is no address: the shop does
+  /// not deliver, and the order waits at the counter. See
+  /// pickup_details.dart.
+  ///
+  /// p_address is deliberately left out of the call rather than sent
+  /// empty. The argument still exists in the database, defaulted to NULL,
+  /// only so that an APK already installed on somebody's phone keeps
+  /// working — see
+  /// supabase/migrations/20260916120000_pick_up_at_the_shop.sql.
+  ///
+  /// Every price, the discount and the total are worked out down there
+  /// from the basket rows, so a modified app cannot change what anything
+  /// costs — nor whether the payment has been checked, which starts at
+  /// PENDING on that side and can only be moved by a member of staff.
   Future<Map<String, dynamic>> placeOrder(
-      String name, String phone, String address, String coupon,
+      String name, String phone, String coupon,
       {String paymentMethod = 'BANK_TRANSFER'}) async {
     try {
       final result = await Api.db.rpc('place_order', params: {
         'p_name': name,
         'p_phone': phone,
-        'p_address': address,
         'p_coupon': coupon,
         'p_payment_method': paymentMethod,
       });

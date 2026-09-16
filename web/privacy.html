@@ -22,7 +22,7 @@
                   padding:16px 18px; margin:24px 0;">
         <strong>This site is a student final-year project.</strong>
         eTech Computer Accessories is being built and tested as university
-        coursework. No goods are shipped, and during the test period you are
+        coursework. No order is really fulfilled, and during the test period you are
         asked not to send any money &mdash; the payment details shown at the
         checkout are placeholders and are not a real account. During the test
         period the site records how it is used, and this page explains exactly
@@ -40,10 +40,12 @@
       <h3>What is recorded, and why</h3>
 
       <p><strong>If you create an account</strong>, we store your name, email
-      address, phone number and delivery address. These are needed to hold your
-      basket, show your order history, and address an order. Your password is
-      held by Supabase Auth as a hash &mdash; the shop never sees or stores the
-      password itself.</p>
+      address and phone number. These are needed to hold your basket, show your
+      order history, and tell you when an order is ready to collect. Your
+      profile also has an address box you may fill in if you want to; the shop
+      does not deliver and nothing is sent to it, so leaving it empty changes
+      nothing. Your password is held by Supabase Auth as a hash &mdash; the shop
+      never sees or stores the password itself.</p>
 
       <p><strong>Whether or not you sign in</strong>, the site records:</p>
       <ul>
@@ -81,9 +83,12 @@
 
       <h3>If you place an order</h3>
       <p>
-        An order records the items, the total, and the name, phone number and
-        address you type into the delivery form. That is kept for as long as the
-        order record exists, because it is the order.
+        An order records the items, the total, and the name and phone number you
+        type at checkout. That is kept for as long as the order record exists,
+        because it is the order. No address is asked for or recorded: orders are
+        collected from the shop, and the phone number is how we tell you yours
+        is ready. Orders placed before September 2026 do still carry the
+        delivery address that was asked for at the time.
       </p>
       <p>
         There is no card payment on this site and no payment gateway. Instead

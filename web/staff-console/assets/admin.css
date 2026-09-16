@@ -134,8 +134,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 
 .status-Pending    { background-color: #fff4dd; color: #96690b; }
 .status-Processing { background-color: #eaf2fb; color: #2c5d8f; }
-.status-Shipped    { background-color: #f0e9fb; color: #6a3fb5; }
-.status-Delivered  { background-color: #e3f8e8; color: #1e8e3e; }
+.status-Ready      { background-color: #f0e9fb; color: #6a3fb5; }
+.status-Collected  { background-color: #e3f8e8; color: #1e8e3e; }
 .status-Cancelled  { background-color: #fde8e8; color: #c0392b; }
 
 /* ---------- filter bar ---------- */

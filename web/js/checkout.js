@@ -1,7 +1,9 @@
 // ============================================================
 // Checkout.
 //
-// The browser sends only the delivery details and an optional coupon.
+// The browser sends only a name, a phone number and an optional coupon.
+// There is no address to send: the shop does not deliver, and an order
+// is collected from the counter. See js/pickup.js.
 // Every price, the discount and the total are worked out inside the
 // database from the basket rows — so editing this page cannot change
 // what anything costs.
@@ -56,7 +58,6 @@ function prefillFromProfile() {
   const user = getCurrentUser();
   if (!user) return;
   document.getElementById("checkout-name").value = user.name || "";
-  document.getElementById("checkout-address").value = user.address || "";
   document.getElementById("checkout-phone").value = user.phone || "";
 }
 
@@ -74,8 +75,12 @@ function placeOrder(event) {
   // indivisible step, so a failure halfway cannot leave an order with
   // no items in it.
   //
-  // Only the delivery details, the coupon code and how they intend to
-  // pay are sent. Every price, the discount and the total are worked out
+  // Only the name, the phone number, the coupon code and how they intend
+  // to pay are sent. p_address is left off entirely -- the argument still
+  // exists in the database so that an APK already on somebody's phone
+  // keeps working, but this page has nothing to put in it.
+  //
+  // Every price, the discount and the total are worked out
   // down there from the basket rows, so editing this page cannot change
   // what anything costs. Nor can it change whether the payment has been
   // checked: payment_status starts at PENDING on that side and only a
@@ -83,7 +88,6 @@ function placeOrder(event) {
   sb.rpc("place_order", {
     p_name:    document.getElementById("checkout-name").value.trim(),
     p_phone:   document.getElementById("checkout-phone").value.trim(),
-    p_address: document.getElementById("checkout-address").value.trim(),
     p_coupon:  couponField ? couponField.value.trim() : "",
     p_payment_method: method,
   }).then(({ data, error }) => {
@@ -103,6 +107,10 @@ function placeOrder(event) {
     // The same instructions again, because this is the screen somebody
     // is looking at while their banking app is open.
     document.getElementById("confirm-pay-details").innerHTML = paymentPanelHtml(method);
+
+    // Where to come and get it, said again on the screen people keep.
+    const confirmPickup = document.getElementById("confirm-pickup-notice");
+    if (confirmPickup) confirmPickup.innerHTML = pickupNoticeHtml();
     document.getElementById("receipt-limits").textContent = `Accepted: ${PHOTO_LIMITS_TEXT}`;
     // Say what is wrong with a file as soon as it is chosen, not only
     // after Upload is pressed.
@@ -190,8 +198,8 @@ function sendReceipt() {
       fileInput.value = "";
       doneEl.style.display = "block";
       doneEl.textContent =
-        "Receipt received. We will check it and move your order on — you can " +
-        "follow it in your order history.";
+        "Receipt received. We will check it, put your order aside and message " +
+        "you when it is ready to collect — you can follow it in your order history.";
       button.textContent = "Send another";
       button.disabled = false;
     })
@@ -218,6 +226,9 @@ onAppReady(() => {
   whenCartLoaded().then(() => {
     renderCheckoutSummary();
     prefillFromProfile();
+    // Painted before the form is used, not after it is submitted: where
+    // to collect is something to read while deciding, not afterwards.
+    document.getElementById("pickup-notice").innerHTML = pickupNoticeHtml();
     // Before the panel is chosen, not after: this may move the selection
     // off DuitNow, and the panel that ends up on screen has to be the one
     // the radio actually says.
