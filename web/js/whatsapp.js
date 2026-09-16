@@ -105,9 +105,13 @@ function paymentMessage(order) {
                 order.order_id + ".";
 
   if (order.payment_status === "APPROVED") {
+    // The good half of the news is the same either way; what happens
+    // next is not, and that is the part the customer is waiting to hear.
     return hello + " We have checked your payment and it is confirmed. " +
            "We are getting your order ready now and will message you as " +
-           "soon as it is on the counter waiting for you. Thank you!";
+           (order.fulfilment_method === "DELIVERY"
+             ? "soon as it is on its way to you. Thank you!"
+             : "soon as it is on the counter waiting for you. Thank you!");
   }
 
   if (order.payment_status === "REJECTED") {

@@ -2,10 +2,16 @@
 // Orders, and moving them along the stages:
 //   Pending -> Processing -> Ready -> Collected
 //
-// Ready means it is on the counter with the customer's name on it, and
-// pressing it messages them to come in. Collected is somebody having
-// walked out with it. Nothing is ever posted: the shop has a counter,
-// not a courier account.
+// Four rungs, and the top two are called different things depending on
+// how the customer asked to get their order. For a collection, Ready
+// means it is on the counter with their name on it and Collected means
+// they walked out with it. For a delivery the same two rungs read
+// Shipped and Delivered. The words come from ../js/fulfilment.js; the
+// button below and the dropdown both use them, so staff never see a
+// stage described in the wrong language for the order in front of them.
+//
+// Pressing the Ready button is what messages the customer either way,
+// and the database picks which of the two messages to send.
 //
 // Every change is written to order_status_history, so there is a record
 // of when each order moved and which member of staff moved it. Those two
@@ -43,14 +49,26 @@ const STAGES = ["Pending", "Processing", "Ready", "Collected", "Cancelled"];
 const NEXT = { Pending: "Processing", Processing: "Ready", Ready: "Collected" };
 
 // What the button says, as an instruction rather than a noun. "Move to
-// Ready" is ambiguous about who does what; "Mark ready to collect" is
-// the thing the member of staff is actually asserting, and it is the
-// press that messages the customer.
+// Ready" is ambiguous about who does what; the phrasing below is the
+// thing the member of staff is actually asserting, and for Ready it is
+// the press that messages the customer.
 const STAGE_ACTION = {
-  Processing: "Start preparing",
-  Ready:      "Mark ready to collect",
-  Collected:  "Mark collected",
+  PICKUP: {
+    Processing: "Start preparing",
+    Ready:      "Mark ready to collect",
+    Collected:  "Mark collected",
+  },
+  DELIVERY: {
+    Processing: "Start preparing",
+    Ready:      "Mark shipped",
+    Collected:  "Mark delivered",
+  },
 };
+
+function stageAction(stage, method) {
+  const words = STAGE_ACTION[method] || STAGE_ACTION.PICKUP;
+  return words[stage] || "Move to " + stageLabel(stage, method);
+}
 
 const PAYMENT_STATES = ["PENDING", "APPROVED", "REJECTED"];
 
@@ -77,7 +95,8 @@ adminPage("Orders", "orders", async (content) => {
 
   let query = sb.from("admin_orders")
     .select("order_id,order_date,status,subtotal,discount,total,coupon_code," +
-            "shipping_name,shipping_phone,customer_name,customer_email," +
+            "shipping_name,shipping_phone,shipping_address,fulfilment_method," +
+            "customer_name,customer_email," +
             "payment_method,payment_status,receipt_image_path")
     .order("order_date", { ascending: false })
     .limit(60);
@@ -162,7 +181,11 @@ function orderCard(o, items, history) {
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
           <h2 style="margin:0;">Order #${o.order_id}
-            <span class="badge status-${e(o.status)}">${e(o.status)}</span>
+            <span class="badge status-${e(o.status)}">${
+              e(stageLabel(o.status, o.fulfilment_method))}</span>
+            <span class="badge ${isDelivery(o.fulfilment_method) ? "low" : "in"}"
+                  style="font-weight:normal;">${
+              e(FULFILMENT_LABELS[o.fulfilment_method] || "Collection")}</span>
           </h2>
           <div style="font-size:13px; color:#888;">
             ${e(when(o.order_date))}
@@ -190,9 +213,12 @@ function orderCard(o, items, history) {
           </table>
         </div>
         <div style="flex:1; min-width:200px; font-size:13px;">
-          <strong>Collected by</strong><br />
+          <strong>${isDelivery(o.fulfilment_method) ? "Deliver to" : "Collected by"}</strong><br />
           ${e(o.shipping_name)}<br />
           ${e(o.shipping_phone)}
+          ${isDelivery(o.fulfilment_method) && o.shipping_address
+            ? "<br />" + e(o.shipping_address).replace(/\n/g, "<br />")
+            : ""}
         </div>
       </div>
 
@@ -200,7 +226,8 @@ function orderCard(o, items, history) {
         <div style="margin-top:12px; font-size:12px; color:#999;">
           <strong>History:</strong>
           ${history.map((h) =>
-            `${e(h.status)} (${e(when(h.changed_at))}${h.staff ? ", " + e(h.staff) : ""})`
+            `${e(stageLabel(h.status, o.fulfilment_method))} (${e(when(h.changed_at))}${
+              h.staff ? ", " + e(h.staff) : ""})`
           ).join(" → ")}
         </div>`}
 
@@ -210,12 +237,13 @@ function orderCard(o, items, history) {
 
         ${NEXT[o.status] ? `
           <button type="button" data-act="advance" data-to="${e(NEXT[o.status])}" class="btn small">
-            ${e(STAGE_ACTION[NEXT[o.status]] || "Move to " + NEXT[o.status])}
+            ${e(stageAction(NEXT[o.status], o.fulfilment_method))}
           </button>` : ""}
 
         <select data-field="status" style="padding:7px 10px; border:1px solid #ccd1d7; border-radius:6px;">
           ${STAGES.map((s) =>
-            `<option value="${e(s)}" ${o.status === s ? "selected" : ""}>${e(s)}</option>`).join("")}
+            `<option value="${e(s)}" ${o.status === s ? "selected" : ""}>${
+              e(stageLabel(s, o.fulfilment_method))}</option>`).join("")}
         </select>
         <button type="button" data-act="set" class="btn small grey">Set</button>
       </div>

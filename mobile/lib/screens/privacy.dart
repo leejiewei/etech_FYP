@@ -56,12 +56,11 @@ class PrivacyScreen extends StatelessWidget {
           _h('What is recorded, and why'),
           _p('If you create an account, we store your name, email address '
               'and phone number. These are needed to hold your basket, show '
-              'your order history, and tell you when an order is ready to '
-              'collect. Your profile also has an address box you may fill in '
-              'if you want to; the shop does not deliver and nothing is sent '
-              'to it, so leaving it empty changes nothing. Your password is '
-              'held by Supabase Auth as a hash — the shop never sees or '
-              'stores the password itself.'),
+              'your order history, and tell you when an order is ready. Your '
+              'profile also has an address box, which is optional — it saves '
+              'typing if you choose delivery, and you can leave it empty and '
+              'collect instead. Your password is held by Supabase Auth as a '
+              'hash — the shop never sees or stores the password itself.'),
           _p('Whether or not you sign in, the app records:'),
           _bullets(const [
             'which products you open, and when;',
@@ -94,11 +93,11 @@ class PrivacyScreen extends StatelessWidget {
           _h('If you place an order'),
           _p('An order records the items, the total, and the name and phone '
               'number you type at checkout. That is kept for as long as the '
-              'order record exists, because it is the order. No address is '
-              'asked for or recorded: orders are collected from the shop, and '
-              'the phone number is how we tell you yours is ready. Orders '
-              'placed before September 2026 do still carry the delivery '
-              'address that was asked for at the time.'),
+              'order record exists, because it is the order.'),
+          _p('An address is recorded only if you choose delivery. If you '
+              'choose to collect, no address is asked for, and any address '
+              'the app happens to send with the order is discarded before it '
+              'is stored — the phone number is how we tell you it is ready.'),
           _p('There is no card payment in this app and no payment gateway. '
               'Instead the checkout shows bank details and asks you to upload '
               'a photograph of the transfer receipt, which a member of staff '

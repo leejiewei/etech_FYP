@@ -41,11 +41,11 @@
 
       <p><strong>If you create an account</strong>, we store your name, email
       address and phone number. These are needed to hold your basket, show your
-      order history, and tell you when an order is ready to collect. Your
-      profile also has an address box you may fill in if you want to; the shop
-      does not deliver and nothing is sent to it, so leaving it empty changes
-      nothing. Your password is held by Supabase Auth as a hash &mdash; the shop
-      never sees or stores the password itself.</p>
+      order history, and tell you when an order is ready. Your profile also has
+      an address box, which is optional &mdash; it saves typing if you choose
+      delivery, and you can leave it empty and collect instead. Your password is
+      held by Supabase Auth as a hash &mdash; the shop never sees or stores the
+      password itself.</p>
 
       <p><strong>Whether or not you sign in</strong>, the site records:</p>
       <ul>
@@ -85,10 +85,13 @@
       <p>
         An order records the items, the total, and the name and phone number you
         type at checkout. That is kept for as long as the order record exists,
-        because it is the order. No address is asked for or recorded: orders are
-        collected from the shop, and the phone number is how we tell you yours
-        is ready. Orders placed before September 2026 do still carry the
-        delivery address that was asked for at the time.
+        because it is the order.
+      </p>
+      <p>
+        <strong>An address is recorded only if you choose delivery.</strong> If
+        you choose to collect, no address is asked for, and any address your
+        browser happens to send with the order is discarded before it is
+        stored &mdash; the phone number is how we tell you it is ready.
       </p>
       <p>
         There is no card payment on this site and no payment gateway. Instead

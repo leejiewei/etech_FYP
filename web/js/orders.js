@@ -16,9 +16,11 @@
 // on an order somebody has already started). Folding those into one line
 // would hide exactly the case the customer needs to act on.
 //
-// The stages are Pending -> Processing -> Ready -> Collected. Ready
-// means it is on the counter waiting; nothing is ever posted, because
-// the shop does not deliver.
+// The stages are Pending -> Processing -> Ready -> Collected, and the
+// last two are read differently depending on how the customer asked to
+// get their things: "Ready to collect" and "Collected" for a pickup,
+// "Shipped" and "Delivered" for a delivery. One ladder, two vocabularies
+// -- see js/fulfilment.js, which is where those words live.
 // ============================================================
 
 // Colour the status so the current stage stands out.
@@ -27,13 +29,8 @@ const ORDER_STATUS_COLOUR = {
   Ready: "#6a3fb5", Collected: "#1e8e3e", Cancelled: "#c0392b",
 };
 
-// What the stage means to somebody who is not standing behind the
-// counter. "Ready" on its own reads as a shrug; "Ready to collect" is an
-// instruction.
-const ORDER_STATUS_LABEL = {
-  Ready: "Ready to collect",
-  Collected: "Collected",
-};
+// The colours are the stage's, not the method's: Ready is the same rung
+// of the same ladder whether it is sitting on a counter or in a van.
 
 function renderOrders() {
   const list = document.getElementById("orders-list");
@@ -46,7 +43,7 @@ function renderOrders() {
   // of theirs.
   sb.from("orders")
     .select("order_id,order_date,status,subtotal,discount,total,coupon_code," +
-            "shipping_name,shipping_phone," +
+            "shipping_name,shipping_phone,shipping_address,fulfilment_method," +
             "payment_method,payment_status,receipt_image_path," +
             "order_items(product_id,product_name,unit_price,quantity,line_total)")
     .order("order_date", { ascending: false })
@@ -80,7 +77,7 @@ function scrollToLinkedOrder() {
 }
 
 function orderCard(order) {
-  const status = escapeHtml(ORDER_STATUS_LABEL[order.status] || order.status);
+  const status = escapeHtml(stageLabel(order.status, order.fulfilment_method));
   const colour = ORDER_STATUS_COLOUR[order.status] || "#555";
 
   return `
@@ -102,13 +99,21 @@ function orderCard(order) {
     </div>`;
 }
 
-// Where to come and get it -- but only while that is still a thing they
-// have to do. A cancelled order has nothing waiting, and an order
-// already collected is somebody being told to fetch what is in their
-// hands, so both are left alone.
+// How it is getting to them -- but only while that is still a thing
+// anybody has to do. A cancelled order has nothing waiting, and an order
+// already collected or delivered is somebody being told to fetch what is
+// in their hands, so both are left alone.
+//
+// A delivery shows the address it is going to, because that is the fact
+// the customer might want to check. A collection shows the shop's.
 function collectionLine(order) {
   if (order.status === "Cancelled" || order.status === "Collected") return "";
-  return `<p class="product-category">${escapeHtml(pickupLineText())}</p>`;
+
+  const text = isDelivery(order.fulfilment_method)
+    ? "Delivering to: " + (order.shipping_address || "the address on your order")
+    : pickupLineText();
+
+  return `<p class="product-category">${escapeHtml(text)}</p>`;
 }
 
 // What the customer needs to know, and to do, about the money.

@@ -25,21 +25,43 @@
       <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
 
       <form onsubmit="placeOrder(event)">
-        <h3>Who is collecting</h3>
-        <!-- Name and phone, and nothing else. There is no address field
-             because there is nowhere to send anything: the order waits
-             at the counter and the phone number is how we tell you it is
-             there. See js/pickup.js. -->
+        <h3>How would you like to get it?</h3>
+        <!-- Asked before the details, because it decides which details
+             are wanted. Collection needs nobody's address; delivery
+             cannot go anywhere without one. -->
+        <div class="pay-choice">
+          <label class="pay-option">
+            <input type="radio" name="fulfilment" value="PICKUP" checked
+              onchange="showFulfilment(this.value)" />
+            <span><strong>Collect at the shop</strong><small>Bukit Jambul, open daily 11am - 8pm</small></span>
+          </label>
+          <label class="pay-option">
+            <input type="radio" name="fulfilment" value="DELIVERY"
+              onchange="showFulfilment(this.value)" />
+            <span><strong>Deliver to me</strong><small>We send it to your address</small></span>
+          </label>
+        </div>
+
+        <h3 style="margin-top: 20px;">Your details</h3>
         <label for="checkout-name">Full Name</label>
         <input type="text" id="checkout-name" name="name" autocomplete="name" required />
 
         <label for="checkout-phone">Phone Number</label>
         <input type="tel" id="checkout-phone" name="tel" autocomplete="tel"
           inputmode="tel" required />
-        <p class="form-note">We message this number when your order is ready to collect.</p>
+        <p class="form-note" id="phone-note">We message this number when your order is ready to collect.</p>
 
-        <!-- Filled from js/pickup.js, which is where the shop's address
-             and opening hours live. -->
+        <!-- Shown only for delivery. `required` is added and removed with
+             it by showFulfilment(), because a hidden required field is a
+             form that refuses to submit and will not say why. -->
+        <div id="address-block" style="display:none;">
+          <label for="checkout-address">Delivery Address</label>
+          <textarea id="checkout-address" name="street-address"
+            autocomplete="street-address" rows="3"></textarea>
+        </div>
+
+        <!-- Shown only for collection. Filled from js/pickup.js, which is
+             where the shop's address and opening hours live. -->
         <div id="pickup-notice"></div>
 
         <label for="checkout-coupon">Coupon Code (optional)</label>
@@ -142,6 +164,7 @@
   <script src="js/photo.js"></script>
   <script src="js/payment.js"></script>
   <script src="js/pickup.js"></script>
+  <script src="js/fulfilment.js"></script>
   <script src="js/checkout.js"></script>
   <script src="js/app.js"></script>
 </body>

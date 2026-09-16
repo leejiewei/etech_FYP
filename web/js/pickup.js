@@ -1,10 +1,11 @@
 // ============================================================
 // Where the order is collected.
 //
-// eTech does not deliver. An order is paid for online, put aside behind
-// the counter, and picked up by the person who placed it — so the one
-// thing every screen has to be able to say is where that counter is and
-// when somebody is standing at it.
+// Most orders are paid for online, put aside behind the counter, and
+// picked up by the person who placed it. (Delivery is the other option —
+// see js/fulfilment.js.) So the one thing every screen showing a
+// collection has to be able to say is where that counter is and when
+// somebody is standing at it.
 //
 // Those are shop facts, not page furniture, so they live here once
 // rather than being typed into the checkout page and again into the
@@ -65,9 +66,9 @@ function pickupNoticeHtml() {
       <div class="pickup-note">
         <strong>Collection at the shop</strong>
         <p>
-          We do not deliver. Your order is put aside for you and we will
-          message the phone number above with the address and the pickup
-          time as soon as it is ready.
+          Your order is put aside for you and we will message the phone
+          number above with the address and the pickup time as soon as it
+          is ready.
         </p>
       </div>`;
   }
@@ -76,7 +77,7 @@ function pickupNoticeHtml() {
     <div class="pickup-note">
       <strong>Collection at the shop</strong>
       <p>
-        We do not deliver. Collect your order from
+        Collect your order from
         <strong>${escapeHtml(PICKUP_DETAILS.shopName)}</strong>,
         ${escapeHtml(PICKUP_DETAILS.address)}${PICKUP_DETAILS.landmark
           ? " (" + escapeHtml(PICKUP_DETAILS.landmark) + ")" : ""}.
@@ -125,8 +126,9 @@ function shopAddressHtml() {
         <a href="${pickupMapsUrl()}" target="_blank" rel="noopener">Open in Google Maps</a>
       </p>
       <p>
-        Orders placed on this site are collected here. We do not deliver —
-        we message you when yours is ready.
+        Orders placed on this site can be collected here, or delivered to
+        you if you would rather — you choose at checkout. Either way we
+        message you when yours is on the move.
       </p>
     </div>`;
 }

@@ -117,7 +117,7 @@ screen.
 | Product | Photo, full specification table, add to cart, wishlist |
 | Build PC | Eight slots with the full compatibility engine |
 | Cart | Quantities, live totals |
-| Checkout | Name and phone for collection, coupon, manual payment |
+| Checkout | Collection or delivery, name and phone, coupon, manual payment |
 | Account | Orders with a progress tracker, wishlist, profile, server settings |
 | Consultant | The AI hardware advisor |
 | Deals | Live coupons, tap to copy the code |

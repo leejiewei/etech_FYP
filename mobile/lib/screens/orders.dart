@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/notification.dart';
+import '../fulfilment.dart';
 import '../payment_details.dart';
 import '../pickup_details.dart';
 import '../services/shop.dart';
@@ -38,20 +39,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.dispose();
   }
 
-  // The shop has a counter, not a courier account: an order is put
-  // aside and collected. Ready is the stage that messages the customer.
-  static const List<String> _stages = [
-    'Pending',
-    'Processing',
-    'Ready',
-    'Collected'
-  ];
-
-  /// What a stage means to somebody who is not standing behind the
-  /// counter. Only where the bare word is not enough — 'Ready' on its own
-  /// reads as a shrug, where 'Ready to collect' is an instruction.
-  static String _statusLabel(String status) =>
-      status == 'Ready' ? 'Ready to collect' : status;
+  // Four rungs whichever way the order is going. What they are called
+  // depends on the order's method, which is fulfilment.dart's job.
+  static const List<String> _stages = fulfilmentStages;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +109,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   color: AppTheme.statusColour(order.status).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(_statusLabel(order.status),
+                child: Text(stageLabel(order.status, order.fulfilmentMethod),
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -168,7 +158,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: _stages
-                  .map((s) => Text(s,
+                  .map((s) => Text(stageLabel(s, order.fulfilmentMethod),
                       style: TextStyle(
                           fontSize: 9,
                           color: _stages.indexOf(s) <= stageIndex
@@ -219,17 +209,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  /// Where to come and get it — but only while that is still something
-  /// the customer has to do. A cancelled order has nothing waiting, and
-  /// an order already collected would be somebody being told to fetch
-  /// what is in their hands, so both are left alone.
+  /// How it is getting to them — but only while that is still something
+  /// anybody has to do. A cancelled order has nothing waiting, and an
+  /// order already collected or delivered would be somebody being told to
+  /// fetch what is in their hands, so both are left alone.
+  ///
+  /// A delivery shows the address it is going to, because that is the
+  /// fact the customer might want to check. A collection shows the
+  /// shop's.
   Widget _collectionLine(Order order) {
     if (order.status == 'Cancelled' || order.status == 'Collected') {
       return const SizedBox.shrink();
     }
+
+    final text = isDelivery(order.fulfilmentMethod)
+        ? 'Delivering to: '
+            '${order.shippingAddress ?? 'the address on your order'}'
+        : PickupDetails.line;
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Text(PickupDetails.line,
+      child: Text(text,
           style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
     );
   }
