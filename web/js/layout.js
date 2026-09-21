@@ -371,7 +371,7 @@ function injectChatbot() {
   wrapper.innerHTML = `
     <button class="chatbot-toggle" onclick="document.getElementById('chatbot-panel').classList.toggle('open')">🤖</button>
     <div class="chatbot-panel" id="chatbot-panel">
-      <div class="chatbot-header">AI Hardware Consultant (demo)</div>
+      <div class="chatbot-header">AI Hardware Consultant</div>
       <div class="chat-log" id="chat-log">
         <div class="chat-bubble bot">Hi! Tell me what the PC is for and your budget and I'll spec the whole
           thing out — try <em>"build a pc for CS2, full HD, budget 4k"</em>.</div>
