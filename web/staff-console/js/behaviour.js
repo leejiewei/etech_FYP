@@ -167,8 +167,3 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
     </p>`;
 });
 
-async function select(query) {
-  const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}

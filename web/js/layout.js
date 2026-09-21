@@ -11,7 +11,6 @@ function injectHeader() {
   const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
   const cartCount = typeof getCart === "function" ? getCart().reduce((s, i) => s + i.qty, 0) : 0;
   const wishlistCount = typeof getWishlist === "function" ? getWishlist().length : 0;
-  const compareCount = typeof getCompareList === "function" ? getCompareList().length : 0;
 
   const accountMenu = user
     ? `<div class="account-menu">
@@ -54,7 +53,6 @@ function injectHeader() {
         <li><a href="prebuilt.html">Prebuilt</a></li>
         <li><a href="deals.html">Deals</a></li>
         <li><a href="rigs.html">Rigs</a></li>
-        <li><a href="compare.html">Compare <span class="badge">${compareCount}</span></a></li>
         <li><a href="wishlist.html">Wishlist <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
         <li><a href="cart.html">Cart <span class="badge" id="cart-count">${cartCount}</span></a></li>
         ${notificationBell}

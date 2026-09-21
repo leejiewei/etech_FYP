@@ -80,12 +80,6 @@ adminPage("Stock Alerts", "alerts", async (content) => {
   wireDiscountButtons();
 });
 
-async function loadScores(days) {
-  const { data, error } = await sb.rpc("admin_product_scores", { p_days: days });
-  if (error) throw error;
-  return data;
-}
-
 async function countWithCosts() {
   const { count: total, error } = await sb.from("admin_products")
     .select("product_id", { count: "exact", head: true })

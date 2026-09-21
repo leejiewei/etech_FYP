@@ -55,13 +55,6 @@ function selectedProduct(slot) {
 
 // Returns the list of parts that are allowed in this slot given what's
 // already been picked elsewhere (this is the "socket-compatibility filter").
-// Some CPUs take either memory type, recorded as "DDR4/DDR5".
-// This says whether a stick of `ramGen` works with a `supported` value.
-function ramGenFits(ramGen, supported) {
-  if (!supported) return true;
-  return supported.split("/").indexOf(ramGen) !== -1;
-}
-
 function eligibleOptions(slot) {
   // Legacy / repair-stock boards are sold in the shop but must never appear
   // in Own Build — we don't carry CPUs for their sockets.

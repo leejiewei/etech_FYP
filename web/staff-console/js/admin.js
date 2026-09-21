@@ -67,6 +67,36 @@ function num(value) {
   return Number(value ?? 0);
 }
 
+// "2026-04" -> "Apr", or "Apr 26" with the year. Built from the string
+// rather than from a Date, so no timezone can shift it into the month
+// next door.
+function monthLabel(month, withYear = false) {
+  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const text = String(month);
+  const name = names[Number(text.slice(5, 7)) - 1];
+  if (!name) return text;
+  return withYear ? `${name} ${text.slice(2, 4)}` : name;
+}
+
+// Runs a Supabase query and hands back its rows, or throws its error.
+async function select(query) {
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+// Every product's scores over the last `days` days, optionally for one
+// category (null means all). Read by the Alerts and Velocity pages.
+async function loadScores(days, categoryId = null) {
+  const { data, error } = await sb.rpc("admin_product_scores", {
+    p_days: days,
+    p_category: categoryId,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // A stored date read back in Malaysian time, which is the zone the
 // dates were recorded in and the zone the shop trades in.
 function when(timestamp, withTime = true) {

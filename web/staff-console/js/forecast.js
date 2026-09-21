@@ -56,7 +56,7 @@ function nextMonthCard(n) {
     ? ""
     : `<div style="font-size:13px; color:${n.changePct < 0 ? "#c0392b" : "#1e8e3e"}; margin-top:6px;">
          ${n.changePct < 0 ? "▼" : "▲"} ${e(Math.abs(n.changePct))}% ${e(n.changeBasis || "per week")}
-         against ${e(monthLabel(lastYear))}
+         against ${e(monthLabel(lastYear, true))}
          (${e(money(n.priorYearPerWeek))} a week, over ${e(n.priorYearWeeks)} weeks)
        </div>`;
 
@@ -167,7 +167,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
                      style="width:46%; background:${COLOUR_FORECAST}; opacity:.85;
                             height:${barHeight(m.forecast, monthMax)}px; border-radius:3px 3px 0 0;"></div>
               </div>
-              <div style="font-size:11px; color:#888; margin-top:6px;">${e(monthLabel(m.month))}</div>
+              <div style="font-size:11px; color:#888; margin-top:6px;">${e(monthLabel(m.month, true))}</div>
               <div style="font-size:10px; color:${m.errorPct >= 0 ? "#b4642a" : "#2c5d8f"};">
                 ${m.errorPct >= 0 ? "+" : ""}${e(m.errorPct)}%
               </div>
@@ -295,13 +295,4 @@ function barHeight(value, max, ceiling = 180) {
 
 function pct(value) {
   return value === null || value === undefined ? "--" : `${value}%`;
-}
-
-// "2026-04" -> "Apr 26". Built from the string rather than from a Date, so no
-// timezone can shift it into the month next door.
-function monthLabel(month) {
-  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const name = names[Number(String(month).slice(5, 7)) - 1];
-  return name ? `${name} ${String(month).slice(2, 4)}` : String(month);
 }
