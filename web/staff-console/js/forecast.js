@@ -1,20 +1,17 @@
 // ============================================================
 // Sales forecast and product segments.
 //
-// Every other page in this console reads Supabase, which holds the live
-// shop: a few dozen real orders across a handful of months. This page
-// does not, and the reason is the same one that removed the old forecast
-// page -- a trend line over that much history is a number with nothing
-// behind it.
+// Every other page in this console reads Supabase, which holds the online
+// shop: a few dozen orders across a handful of months. This page does
+// not, and the reason is the same one that removed the old forecast page
+// -- a trend line over that much history is a number with nothing behind
+// it.
 //
 // What it reads instead is web/staff-console/data/ml_forecast.json,
 // written by tools/export_ml_to_web.py from the models in ml/. Those are
-// fitted on the five-year sales dataset in docs/data/, which is a
-// different body of data from the live shop in every way that matters:
-// far longer, and generated rather than traded. That distinction is not
-// a footnote, so the banner at the top of the page states it plainly and
-// is not dismissible. A forecast whose provenance is unclear is worse
-// than no forecast, which is the lesson the deleted page taught.
+// fitted on the shop's own sales receipts from January 2022 to August
+// 2026 (docs/data/etech_sales_data.xlsx), which reach back far further
+// than the online orders do.
 //
 // Nothing here writes. The page cannot change an order, a price or a
 // stock level, so a wrong model costs a misleading chart and nothing more.
@@ -88,10 +85,10 @@ const COLOUR_ACTUAL = "#2c5d8f";
 const COLOUR_FORECAST = "#d62839";
 
 const SEGMENT_COLOUR = {
-  "Core range": "#2c5d8f",
-  "Fast-moving, low value": "#1e8e3e",
-  "Premium, low volume": "#8a5cf6",
-  "Dormant / discontinued": "#b4642a",
+  "Big-ticket": "#2c5d8f",
+  "Everyday, fast-moving": "#1e8e3e",
+  "Mid-price, slow-moving": "#8a5cf6",
+  "Low-price, slow-moving": "#b4642a",
 };
 
 adminPage("Sales Forecast", "forecast", async (content) => {
@@ -119,7 +116,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const monthly = data.monthly || [];
   const weekly = data.forecast || [];
   const segments = data.segments || [];
-  const dormant = data.dormant || [];
+  const slowest = data.slowest || [];
   const coming = data.nextMonth || null;
 
   const monthMax = Math.max(0, ...monthly.flatMap((m) => [m.actual, m.forecast]));
@@ -127,7 +124,6 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const segMax = Math.max(0, ...segments.map((s) => s.revenue));
 
   content.innerHTML = `
-    ${provenanceBanner(meta)}
     ${nextMonthCard(coming)}
 
     <div class="tiles">
@@ -219,64 +215,39 @@ adminPage("Sales Forecast", "forecast", async (content) => {
                         width:${barWidth(s.revenue, segMax)}%; height:16px; border-radius:4px;"></div>
           </div>
           <div style="font-size:11px; color:#888; margin-top:4px;">
-            typically ${e(money(s.medPrice))}, ${s.medUnits} sold, last sale ${e(s.medRecency)} weeks ago
+            typically ${e(money(s.medPrice))}, ${e(s.medUnitsWk)} sold a week,
+            ${e(s.current)} still in the range
           </div>
         </div>`).join("") + `
         <p class="hint" style="margin:0;">
-          Products grouped by how they behave &mdash; price, how fast they move, and how long since
-          they last sold &mdash; not by category. Grouping is K-Means over the sales dataset.
+          Products grouped by how they behave &mdash; price and how fast they sell while in the
+          range &mdash; not by category. Grouping is K-Means over the shop's receipts since 2022.
         </p>`}
     </div>
 
-    ${dormant.length === 0 ? "" : `
+    ${slowest.length === 0 ? "" : `
     <h2>Worth a second look</h2>
     <div class="table-wrap">
       <table class="data">
-        <thead><tr><th>Product</th><th>Category</th><th class="num">Weeks since last sale</th>
-          <th class="num">Lifetime revenue</th></tr></thead>
+        <thead><tr><th>Product</th><th>Category</th><th class="num">Sold</th>
+          <th class="num">Weeks on sale</th><th class="num">A week</th></tr></thead>
         <tbody>
-        ${dormant.map((d) => `
+        ${slowest.map((d) => `
           <tr>
             <td>${e(shorten(d.name, 52))}</td>
             <td><small style="color:#777;">${e(d.category)}</small></td>
-            <td class="num"><strong style="color:#b4642a;">${e(d.recencyWk)}</strong></td>
-            <td class="num">${e(money(d.revenue))}</td>
+            <td class="num">${e(d.units)}</td>
+            <td class="num">${e(d.weeksOnSale)}</td>
+            <td class="num"><strong style="color:#b4642a;">${e(d.unitsPerWk)}</strong></td>
           </tr>`).join("")}
         </tbody>
       </table>
     </div>
     <p class="hint">
-      The dormant segment, by lifetime revenue. These sold well once and have not sold since,
-      which makes them the clearest candidates for clearing &mdash; in the dataset described above,
-      not in current stock.
+      The slowest sellers in the current range: the products that turn over least often since
+      they were first sold. Worth checking before they are reordered.
     </p>`}`;
 });
-
-// ------------------------------------------------------------
-// The banner.
-//
-// Stated once, at the top, before any number on the page. It is not
-// dismissible and it names the file, because somebody reading a chart of
-// weekly takings will otherwise assume it is the shop's.
-// ------------------------------------------------------------
-function provenanceBanner(meta) {
-  return `
-    <div class="card" style="border-left:4px solid #b4642a; background:#fdf7f0; margin-bottom:22px;">
-      <strong style="color:#b4642a;">This page does not describe the live shop.</strong>
-      <p style="margin:8px 0 0; font-size:13px; color:#555;">
-        These figures come from the five-year sales dataset
-        (<code>${e(meta.source || "docs/data")}</code>), which is
-        <strong>generated data, not trading records</strong>. The model is
-        ${e(meta.model || "a regression")}, fitted on ${e(meta.trainWeeks)} weeks to
-        ${e(meta.trainTo)} and measured against the ${e(meta.testWeeks)} weeks after it.
-        Orders, customers and stock elsewhere in this console are the live shop and are
-        unrelated to anything below.
-      </p>
-      <p style="margin:6px 0 0; font-size:12px; color:#888;">
-        Exported ${e(meta.generated)} by <code>tools/export_ml_to_web.py</code>.
-      </p>
-    </div>`;
-}
 
 function legend() {
   return `

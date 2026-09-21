@@ -1,8 +1,7 @@
 {
   "meta": {
-    "generated": "2026-09-16",
-    "source": "docs/data/etech_sales_2022_2026.xml",
-    "synthetic": true,
+    "generated": "2026-09-21",
+    "source": "docs/data/etech_sales_data.xlsx",
     "model": "Ridge regression (trend + month seasonality)",
     "trainWeeks": 194,
     "testWeeks": 49,
@@ -11,14 +10,14 @@
     "testTo": "2026-08-24"
   },
   "metrics": {
-    "weeklyWAPE": 29.2,
-    "weeklyAccuracy": 70.8,
-    "monthlyWAPE": 17.4,
-    "monthlyAccuracy": 82.6,
-    "mae": 12708.0,
-    "rmse": 16409.0,
-    "r2": 0.249,
-    "monthlyR2": 0.565
+    "weeklyWAPE": 27.8,
+    "weeklyAccuracy": 72.2,
+    "monthlyWAPE": 12.3,
+    "monthlyAccuracy": 87.7,
+    "mae": 29662.0,
+    "rmse": 36788.0,
+    "r2": 0.206,
+    "monthlyR2": 0.589
   },
   "nextMonth": {
     "month": "2026-09",
@@ -30,636 +29,646 @@
       "2026-09-21",
       "2026-09-28"
     ],
-    "revenue": 137650.0,
-    "low": 113699.0,
-    "high": 161601.0,
-    "bandPct": 17.4,
+    "revenue": 384653.0,
+    "low": 337341.0,
+    "high": 431966.0,
+    "bandPct": 12.3,
     "fittedTo": "2026-08-24",
     "fittedWeeks": 243,
-    "perWeek": 34413.0,
-    "priorYear": 285130.0,
+    "perWeek": 96163.0,
+    "priorYear": 477799.0,
     "priorYearWeeks": 5,
-    "priorYearPerWeek": 57026.0,
-    "changePct": -39.7,
+    "priorYearPerWeek": 95560.0,
+    "changePct": 0.6,
     "changeBasis": "per week"
   },
   "history": [
     {
       "week": "2024-09-23",
-      "actual": 78276.0
+      "actual": 143873.0
     },
     {
       "week": "2024-09-30",
-      "actual": 60678.0
+      "actual": 136372.0
     },
     {
       "week": "2024-10-07",
-      "actual": 64859.0
+      "actual": 172835.0
     },
     {
       "week": "2024-10-14",
-      "actual": 47928.0
+      "actual": 110005.0
     },
     {
       "week": "2024-10-21",
-      "actual": 62021.0
+      "actual": 137268.0
     },
     {
       "week": "2024-10-28",
-      "actual": 97022.0
+      "actual": 132557.0
     },
     {
       "week": "2024-11-04",
-      "actual": 75189.0
+      "actual": 223007.0
     },
     {
       "week": "2024-11-11",
-      "actual": 108217.0
+      "actual": 137065.0
     },
     {
       "week": "2024-11-18",
-      "actual": 76113.0
+      "actual": 181051.0
     },
     {
       "week": "2024-11-25",
-      "actual": 75219.0
+      "actual": 200765.0
     },
     {
       "week": "2024-12-02",
-      "actual": 78747.0
+      "actual": 159810.0
     },
     {
       "week": "2024-12-09",
-      "actual": 74874.0
+      "actual": 135873.0
     },
     {
       "week": "2024-12-16",
-      "actual": 81014.0
+      "actual": 165249.0
     },
     {
       "week": "2024-12-23",
-      "actual": 69280.0
+      "actual": 110940.0
     },
     {
       "week": "2024-12-30",
-      "actual": 48180.0
+      "actual": 103017.0
     },
     {
       "week": "2025-01-06",
-      "actual": 82482.0
+      "actual": 52248.0
     },
     {
       "week": "2025-01-13",
-      "actual": 61136.0
+      "actual": 71247.0
     },
     {
       "week": "2025-01-20",
-      "actual": 53952.0
+      "actual": 71136.0
     },
     {
       "week": "2025-01-27",
-      "actual": 54284.0
+      "actual": 76181.0
     },
     {
       "week": "2025-02-03",
-      "actual": 27624.0
+      "actual": 103072.0
     },
     {
       "week": "2025-02-10",
-      "actual": 39605.0
+      "actual": 121576.0
     },
     {
       "week": "2025-02-17",
-      "actual": 48362.0
+      "actual": 91922.0
     },
     {
       "week": "2025-02-24",
-      "actual": 39132.0
+      "actual": 105739.0
     },
     {
       "week": "2025-03-03",
-      "actual": 47150.0
+      "actual": 73448.0
     },
     {
       "week": "2025-03-10",
-      "actual": 49571.0
+      "actual": 79816.0
     },
     {
       "week": "2025-03-17",
-      "actual": 57056.0
+      "actual": 108856.0
     },
     {
       "week": "2025-03-24",
-      "actual": 46890.0
+      "actual": 122709.0
     },
     {
       "week": "2025-03-31",
-      "actual": 62205.0
+      "actual": 76655.0
     },
     {
       "week": "2025-04-07",
-      "actual": 65738.0
+      "actual": 119859.0
     },
     {
       "week": "2025-04-14",
-      "actual": 53515.0
+      "actual": 73103.0
     },
     {
       "week": "2025-04-21",
-      "actual": 42903.0
+      "actual": 163651.0
     },
     {
       "week": "2025-04-28",
-      "actual": 78268.0
+      "actual": 77879.0
     },
     {
       "week": "2025-05-05",
-      "actual": 37804.0
+      "actual": 150250.0
     },
     {
       "week": "2025-05-12",
-      "actual": 72512.0
+      "actual": 101516.0
     },
     {
       "week": "2025-05-19",
-      "actual": 70667.0
+      "actual": 125100.0
     },
     {
       "week": "2025-05-26",
-      "actual": 34728.0
+      "actual": 115275.0
     },
     {
       "week": "2025-06-02",
-      "actual": 70573.0
+      "actual": 96037.0
     },
     {
       "week": "2025-06-09",
-      "actual": 93029.0
+      "actual": 109562.0
     },
     {
       "week": "2025-06-16",
-      "actual": 58176.0
+      "actual": 81210.0
     },
     {
       "week": "2025-06-23",
-      "actual": 56753.0
+      "actual": 167671.0
     },
     {
       "week": "2025-06-30",
-      "actual": 58667.0
+      "actual": 169304.0
     },
     {
       "week": "2025-07-07",
-      "actual": 47455.0
+      "actual": 91759.0
     },
     {
       "week": "2025-07-14",
-      "actual": 49294.0
+      "actual": 111089.0
     },
     {
       "week": "2025-07-21",
-      "actual": 37427.0
+      "actual": 104559.0
     },
     {
       "week": "2025-07-28",
-      "actual": 42339.0
+      "actual": 141165.0
     },
     {
       "week": "2025-08-04",
-      "actual": 38850.0
+      "actual": 149534.0
     },
     {
       "week": "2025-08-11",
-      "actual": 54246.0
+      "actual": 77315.0
     },
     {
       "week": "2025-08-18",
-      "actual": 47569.0
+      "actual": 92828.0
     },
     {
       "week": "2025-08-25",
-      "actual": 25721.0
+      "actual": 105220.0
     },
     {
       "week": "2025-09-01",
-      "actual": 31328.0
+      "actual": 87688.0
     },
     {
       "week": "2025-09-08",
-      "actual": 40165.0
+      "actual": 139897.0
     },
     {
       "week": "2025-09-15",
-      "actual": 59586.0
+      "actual": 90438.0
     }
   ],
   "forecast": [
     {
       "week": "2025-09-22",
-      "actual": 82334.0,
-      "forecast": 44870.0
+      "actual": 53446.0,
+      "forecast": 111180.0
     },
     {
       "week": "2025-09-29",
-      "actual": 71716.0,
-      "forecast": 56114.0
+      "actual": 106330.0,
+      "forecast": 135134.0
     },
     {
       "week": "2025-10-06",
-      "actual": 76144.0,
-      "forecast": 55848.0
+      "actual": 67586.0,
+      "forecast": 134859.0
     },
     {
       "week": "2025-10-13",
-      "actual": 56587.0,
-      "forecast": 55583.0
+      "actual": 198026.0,
+      "forecast": 134585.0
     },
     {
       "week": "2025-10-20",
-      "actual": 42999.0,
-      "forecast": 55317.0
+      "actual": 166544.0,
+      "forecast": 134310.0
     },
     {
       "week": "2025-10-27",
-      "actual": 70119.0,
-      "forecast": 55051.0
+      "actual": 100785.0,
+      "forecast": 134035.0
     },
     {
       "week": "2025-11-03",
-      "actual": 65729.0,
-      "forecast": 56864.0
+      "actual": 214505.0,
+      "forecast": 151237.0
     },
     {
       "week": "2025-11-10",
-      "actual": 51122.0,
-      "forecast": 56598.0
+      "actual": 118124.0,
+      "forecast": 150963.0
     },
     {
       "week": "2025-11-17",
-      "actual": 51643.0,
-      "forecast": 56333.0
+      "actual": 127352.0,
+      "forecast": 150688.0
     },
     {
       "week": "2025-11-24",
-      "actual": 23325.0,
-      "forecast": 56067.0
+      "actual": 209994.0,
+      "forecast": 150413.0
     },
     {
       "week": "2025-12-01",
-      "actual": 64931.0,
-      "forecast": 63677.0
+      "actual": 98024.0,
+      "forecast": 116024.0
     },
     {
       "week": "2025-12-08",
-      "actual": 70702.0,
-      "forecast": 63411.0
+      "actual": 136475.0,
+      "forecast": 115749.0
     },
     {
       "week": "2025-12-15",
-      "actual": 46258.0,
-      "forecast": 63145.0
+      "actual": 92201.0,
+      "forecast": 115474.0
     },
     {
       "week": "2025-12-22",
-      "actual": 69640.0,
-      "forecast": 62880.0
+      "actual": 120413.0,
+      "forecast": 115199.0
     },
     {
       "week": "2025-12-29",
-      "actual": 30341.0,
-      "forecast": 44957.0
+      "actual": 95253.0,
+      "forecast": 88362.0
     },
     {
       "week": "2026-01-05",
-      "actual": 75053.0,
-      "forecast": 44691.0
+      "actual": 40630.0,
+      "forecast": 88087.0
     },
     {
       "week": "2026-01-12",
-      "actual": 47267.0,
-      "forecast": 44426.0
+      "actual": 63957.0,
+      "forecast": 87812.0
     },
     {
       "week": "2026-01-19",
-      "actual": 73175.0,
-      "forecast": 44160.0
+      "actual": 50853.0,
+      "forecast": 87538.0
     },
     {
       "week": "2026-01-26",
-      "actual": 43707.0,
-      "forecast": 43894.0
+      "actual": 84321.0,
+      "forecast": 87263.0
     },
     {
       "week": "2026-02-02",
-      "actual": 53507.0,
-      "forecast": 27936.0
+      "actual": 62785.0,
+      "forecast": 92035.0
     },
     {
       "week": "2026-02-09",
-      "actual": 35329.0,
-      "forecast": 27670.0
+      "actual": 169304.0,
+      "forecast": 91760.0
     },
     {
       "week": "2026-02-16",
-      "actual": 32167.0,
-      "forecast": 27405.0
+      "actual": 123147.0,
+      "forecast": 91485.0
     },
     {
       "week": "2026-02-23",
-      "actual": 14345.0,
-      "forecast": 27139.0
+      "actual": 110771.0,
+      "forecast": 91211.0
     },
     {
       "week": "2026-03-02",
-      "actual": 30986.0,
-      "forecast": 30277.0
+      "actual": 73203.0,
+      "forecast": 75892.0
     },
     {
       "week": "2026-03-09",
-      "actual": 44259.0,
-      "forecast": 30011.0
+      "actual": 77735.0,
+      "forecast": 75618.0
     },
     {
       "week": "2026-03-16",
-      "actual": 30413.0,
-      "forecast": 29745.0
+      "actual": 70401.0,
+      "forecast": 75343.0
     },
     {
       "week": "2026-03-23",
-      "actual": 16383.0,
-      "forecast": 29479.0
+      "actual": 131661.0,
+      "forecast": 75068.0
     },
     {
       "week": "2026-03-30",
-      "actual": 19143.0,
-      "forecast": 43064.0
+      "actual": 164902.0,
+      "forecast": 79191.0
     },
     {
       "week": "2026-04-06",
-      "actual": 12119.0,
-      "forecast": 42799.0
+      "actual": 123073.0,
+      "forecast": 78916.0
     },
     {
       "week": "2026-04-13",
-      "actual": 18901.0,
-      "forecast": 42533.0
+      "actual": 64431.0,
+      "forecast": 78642.0
     },
     {
       "week": "2026-04-20",
-      "actual": 48348.0,
-      "forecast": 42267.0
+      "actual": 79553.0,
+      "forecast": 78367.0
     },
     {
       "week": "2026-04-27",
-      "actual": 36657.0,
-      "forecast": 42001.0
+      "actual": 75883.0,
+      "forecast": 78092.0
     },
     {
       "week": "2026-05-04",
-      "actual": 33103.0,
-      "forecast": 38081.0
+      "actual": 121159.0,
+      "forecast": 105512.0
     },
     {
       "week": "2026-05-11",
-      "actual": 26601.0,
-      "forecast": 37815.0
+      "actual": 120306.0,
+      "forecast": 105238.0
     },
     {
       "week": "2026-05-18",
-      "actual": 48653.0,
-      "forecast": 37549.0
+      "actual": 48394.0,
+      "forecast": 104963.0
     },
     {
       "week": "2026-05-25",
-      "actual": 56949.0,
-      "forecast": 37283.0
+      "actual": 118310.0,
+      "forecast": 104688.0
     },
     {
       "week": "2026-06-01",
-      "actual": 41028.0,
-      "forecast": 41871.0
+      "actual": 95928.0,
+      "forecast": 91405.0
     },
     {
       "week": "2026-06-08",
-      "actual": 42842.0,
-      "forecast": 41605.0
+      "actual": 121800.0,
+      "forecast": 91130.0
     },
     {
       "week": "2026-06-15",
-      "actual": 26853.0,
-      "forecast": 41339.0
+      "actual": 128358.0,
+      "forecast": 90855.0
     },
     {
       "week": "2026-06-22",
-      "actual": 32528.0,
-      "forecast": 41074.0
+      "actual": 59569.0,
+      "forecast": 90581.0
     },
     {
       "week": "2026-06-29",
-      "actual": 17184.0,
-      "forecast": 27917.0
+      "actual": 119704.0,
+      "forecast": 102786.0
     },
     {
       "week": "2026-07-06",
-      "actual": 38502.0,
-      "forecast": 27651.0
+      "actual": 69297.0,
+      "forecast": 102512.0
     },
     {
       "week": "2026-07-13",
-      "actual": 56868.0,
-      "forecast": 27386.0
+      "actual": 165416.0,
+      "forecast": 102237.0
     },
     {
       "week": "2026-07-20",
-      "actual": 31910.0,
-      "forecast": 27120.0
+      "actual": 105927.0,
+      "forecast": 101962.0
     },
     {
       "week": "2026-07-27",
-      "actual": 14040.0,
-      "forecast": 26854.0
+      "actual": 118872.0,
+      "forecast": 101687.0
     },
     {
       "week": "2026-08-03",
-      "actual": 32620.0,
-      "forecast": 27845.0
+      "actual": 52353.0,
+      "forecast": 96743.0
     },
     {
       "week": "2026-08-10",
-      "actual": 65960.0,
-      "forecast": 27579.0
+      "actual": 116061.0,
+      "forecast": 96468.0
     },
     {
       "week": "2026-08-17",
-      "actual": 28115.0,
-      "forecast": 27314.0
+      "actual": 79376.0,
+      "forecast": 96194.0
     },
     {
       "week": "2026-08-24",
-      "actual": 33138.0,
-      "forecast": 27048.0
+      "actual": 110828.0,
+      "forecast": 95919.0
     }
   ],
   "monthly": [
     {
       "month": "2025-10",
-      "actual": 245849.0,
-      "forecast": 221800.0,
-      "errorPct": -9.8
+      "actual": 532941.0,
+      "forecast": 537789.0,
+      "errorPct": 0.9
     },
     {
       "month": "2025-11",
-      "actual": 191819.0,
-      "forecast": 225862.0,
-      "errorPct": 17.7
+      "actual": 669975.0,
+      "forecast": 603301.0,
+      "errorPct": -10.0
     },
     {
       "month": "2025-12",
-      "actual": 281872.0,
-      "forecast": 298070.0,
-      "errorPct": 5.7
+      "actual": 542366.0,
+      "forecast": 550808.0,
+      "errorPct": 1.6
     },
     {
       "month": "2026-01",
-      "actual": 239202.0,
-      "forecast": 177171.0,
-      "errorPct": -25.9
+      "actual": 239761.0,
+      "forecast": 350700.0,
+      "errorPct": 46.3
     },
     {
       "month": "2026-02",
-      "actual": 135348.0,
-      "forecast": 110150.0,
-      "errorPct": -18.6
+      "actual": 466007.0,
+      "forecast": 366491.0,
+      "errorPct": -21.4
     },
     {
       "month": "2026-03",
-      "actual": 141185.0,
-      "forecast": 162576.0,
-      "errorPct": 15.2
+      "actual": 517902.0,
+      "forecast": 381112.0,
+      "errorPct": -26.4
     },
     {
       "month": "2026-04",
-      "actual": 116024.0,
-      "forecast": 169600.0,
-      "errorPct": 46.2
+      "actual": 342940.0,
+      "forecast": 314017.0,
+      "errorPct": -8.4
     },
     {
       "month": "2026-05",
-      "actual": 165305.0,
-      "forecast": 150728.0,
-      "errorPct": -8.8
+      "actual": 408169.0,
+      "forecast": 420401.0,
+      "errorPct": 3.0
     },
     {
       "month": "2026-06",
-      "actual": 160435.0,
-      "forecast": 193806.0,
-      "errorPct": 20.8
+      "actual": 525359.0,
+      "forecast": 466758.0,
+      "errorPct": -11.2
     },
     {
       "month": "2026-07",
-      "actual": 141320.0,
-      "forecast": 109011.0,
-      "errorPct": -22.9
+      "actual": 459512.0,
+      "forecast": 408398.0,
+      "errorPct": -11.1
     }
   ],
   "segments": [
     {
-      "segment": "Core range",
-      "skus": 182,
-      "revenue": 8499744.0,
-      "revShare": 52.2,
-      "medPrice": 434.0,
-      "medUnits": 76,
-      "medRecency": 7.0
+      "segment": "Big-ticket",
+      "skus": 41,
+      "revenue": 29333591.0,
+      "revShare": 93.2,
+      "medPrice": 4071.0,
+      "medUnitsWk": 0.9,
+      "current": 21
     },
     {
-      "segment": "Fast-moving, low value",
-      "skus": 95,
-      "revenue": 3278800.0,
-      "revShare": 20.1,
-      "medPrice": 70.0,
-      "medUnits": 369,
-      "medRecency": 2.0
+      "segment": "Mid-price, slow-moving",
+      "skus": 43,
+      "revenue": 1487135.0,
+      "revShare": 4.7,
+      "medPrice": 623.0,
+      "medUnitsWk": 0.5,
+      "current": 25
     },
     {
-      "segment": "Premium, low volume",
-      "skus": 122,
-      "revenue": 2965420.0,
-      "revShare": 18.2,
-      "medPrice": 2568.0,
-      "medUnits": 10,
-      "medRecency": 16.0
+      "segment": "Everyday, fast-moving",
+      "skus": 36,
+      "revenue": 587988.0,
+      "revShare": 1.9,
+      "medPrice": 122.0,
+      "medUnitsWk": 0.9,
+      "current": 17
     },
     {
-      "segment": "Dormant / discontinued",
-      "skus": 48,
-      "revenue": 1545134.0,
-      "revShare": 9.5,
-      "medPrice": 1252.0,
-      "medUnits": 16,
-      "medRecency": 140.0
+      "segment": "Low-price, slow-moving",
+      "skus": 23,
+      "revenue": 50077.0,
+      "revShare": 0.2,
+      "medPrice": 86.0,
+      "medUnitsWk": 0.3,
+      "current": 17
     }
   ],
-  "dormant": [
+  "slowest": [
     {
-      "name": "HP Pavilion Desktop TP01-2020d Ryzen 5 5600G",
-      "category": "Branded Desktops",
-      "revenue": 123225.0,
-      "recencyWk": 143.0
+      "name": "NZXT Internal USB Hub - 4 ports",
+      "category": "IT Accessories",
+      "units": 1,
+      "weeksOnSale": 20.0,
+      "unitsPerWk": 0.05
     },
     {
-      "name": "HP Victus 16-d1178TX i5-12500H RTX 3050",
-      "category": "Laptops",
-      "revenue": 95167.0,
-      "recencyWk": 89.0
+      "name": "TP-Link Deco X10 (2-unit pack)",
+      "category": "IT Accessories",
+      "units": 1,
+      "weeksOnSale": 13.0,
+      "unitsPerWk": 0.07
     },
     {
-      "name": "Acer Aspire 3 A315-58 i3-1115G4 8GB",
-      "category": "Laptops",
-      "revenue": 85757.0,
-      "recencyWk": 141.0
+      "name": "Deepcool RGB 200 Pro",
+      "category": "IT Accessories",
+      "units": 1,
+      "weeksOnSale": 11.0,
+      "unitsPerWk": 0.09
     },
     {
-      "name": "Asus TUF Gaming F15 FX506HF i5-11400H RTX 2050",
-      "category": "Laptops",
-      "revenue": 85709.0,
-      "recencyWk": 109.0
+      "name": "Slev ASQ Vortex Forward ARGB 120mm (White)",
+      "category": "IT Accessories",
+      "units": 2,
+      "weeksOnSale": 12.0,
+      "unitsPerWk": 0.16
     },
     {
-      "name": "E-Tech Titan i7-12700 RTX 3050",
-      "category": "Prebuilt Gaming PCs",
-      "revenue": 80121.0,
-      "recencyWk": 219.0
+      "name": "Tecware Orbis LED Strip",
+      "category": "IT Accessories",
+      "units": 6,
+      "weeksOnSale": 33.0,
+      "unitsPerWk": 0.18
     },
     {
-      "name": "Lenovo IdeaCentre 3 07ADA05 Ryzen 3 3250U",
-      "category": "Branded Desktops",
-      "revenue": 79052.0,
-      "recencyWk": 143.0
+      "name": "Canon G2010",
+      "category": "Printer",
+      "units": 6,
+      "weeksOnSale": 31.0,
+      "unitsPerWk": 0.19
     },
     {
-      "name": "Asus ExpertCenter D500SC i5-11400",
-      "category": "Branded Desktops",
-      "revenue": 78081.0,
-      "recencyWk": 142.0
+      "name": "Epson EcoTank L3350",
+      "category": "Printer",
+      "units": 6,
+      "weeksOnSale": 27.0,
+      "unitsPerWk": 0.22
     },
     {
-      "name": "Asus Zenbook 14 UX425EA i5-1135G7 16GB",
-      "category": "Laptops",
-      "revenue": 76014.0,
-      "recencyWk": 141.0
+      "name": "Slev ARGB Flexible Light Board V2 Kit",
+      "category": "IT Accessories",
+      "units": 8,
+      "weeksOnSale": 33.0,
+      "unitsPerWk": 0.24
     },
     {
-      "name": "Acer Swift 3 SF314-511 i5-1135G7 16GB",
-      "category": "Laptops",
-      "revenue": 72610.0,
-      "recencyWk": 140.0
+      "name": "Canon E470",
+      "category": "Printer",
+      "units": 8,
+      "weeksOnSale": 31.0,
+      "unitsPerWk": 0.26
     },
     {
-      "name": "Lenovo IdeaPad 3 15ITL6 i5-1135G7 8GB",
-      "category": "Laptops",
-      "revenue": 66522.0,
-      "recencyWk": 148.0
+      "name": "Epson L14150 (A3)",
+      "category": "Printer",
+      "units": 8,
+      "weeksOnSale": 31.0,
+      "unitsPerWk": 0.26
     }
   ]
 }

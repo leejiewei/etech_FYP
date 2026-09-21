@@ -13,11 +13,10 @@
 // drawn with a straight face is worse than no number at all. What is
 // left here is counting, which is true whatever the row count.
 //
-// Forecast.html is not that page come back. It forecasts a different
-// body of data -- the five-year sales dataset in docs/data/, generated
-// rather than traded -- and says so in a banner above every number on
-// it. It does not read Supabase and makes no claim about the live shop,
-// which is the only reason it can carry a projected line at all.
+// Forecast.html is not that page come back. It forecasts from the
+// shop's own sales receipts since January 2022 (docs/data/), not from
+// the online orders in Supabase, and that longer history is the only
+// reason it can carry a projected line at all.
 //
 // Four aggregates feed this page, and all four are views. A GROUP BY is
 // not something a browser can send, and that is a feature rather than an
