@@ -76,12 +76,6 @@ function perfOf(product, key) {
   return row && row[key] ? row[key] : 0;
 }
 
-// Some CPUs accept either memory type, recorded as "DDR4/DDR5".
-function ramGenWorks(ramGen, supported) {
-  if (!supported) return true;
-  return supported.split("/").indexOf(ramGen) !== -1;
-}
-
 // ------------------------------------------------------------
 // STEP 1 — read the customer's sentence
 // ------------------------------------------------------------
@@ -232,7 +226,7 @@ function assembleBuild(cpu, gpu) {
   // RAM: right generation for the board, not repair-only stock, and not a
   // kit we've found doesn't work with this processor.
   const ram = cheapest(buildable(getProductsBySubcategory("RAM")).filter((r) =>
-    ramGenWorks(r.attrs.ramGen, mobo.attrs.ramGen) &&
+    ramGenFits(r.attrs.ramGen, mobo.attrs.ramGen) &&
     (r.attrs.incompatibleSockets || []).indexOf(cpu.attrs.socket) === -1));
   if (!ram) return null;
 
@@ -288,7 +282,7 @@ function spendLeftover(build, budget, target) {
 
   // Best memory kit that suits this board and processor.
   const kits = buildable(getProductsBySubcategory("RAM"))
-    .filter((r) => ramGenWorks(r.attrs.ramGen, mobo.attrs.ramGen) &&
+    .filter((r) => ramGenFits(r.attrs.ramGen, mobo.attrs.ramGen) &&
                    (r.attrs.incompatibleSockets || []).indexOf(cpu.attrs.socket) === -1 &&
                    capacityGB(r) <= maxRamGB)
     .sort((a, b) => b.price - a.price);

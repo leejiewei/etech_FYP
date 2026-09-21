@@ -203,20 +203,6 @@ adminPage("Sales & Customers", "reports", async (content) => {
     </div>`;
 });
 
-async function select(query) {
-  const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}
-
-// "2026-04" -> "Apr". Built from the string rather than from a Date, so
-// no timezone can shift it into the month next door.
-function monthLabel(month) {
-  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return names[Number(month.slice(5, 7)) - 1] || month;
-}
-
 // ------------------------------------------------------------
 // Segmentation.
 //

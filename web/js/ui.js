@@ -102,7 +102,6 @@ function buildProductCard(product) {
   const stock = stockOf(product);
   const stockClass = "stock-" + stock; // stock-in / stock-low / stock-out
   const heartFilled = typeof isInWishlist === "function" && isInWishlist(product.id);
-  const comparing = typeof isInCompare === "function" && isInCompare(product.id);
   const outOfStock = stock === "out";
 
   card.innerHTML = `
@@ -119,10 +118,6 @@ function buildProductCard(product) {
     <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
       ${outOfStock ? "Out of Stock" : "Add to Cart"}
     </button>
-    <label class="compare-check">
-      <input type="checkbox" ${comparing ? "checked" : ""} onchange="toggleCompare(${product.id})" />
-      Compare
-    </label>
   `;
 
   // The picture and the name both open the detail modal. The picture has
@@ -214,8 +209,8 @@ function productModalContent(product) {
   const outOfStock = stock === "out";
   const saved = typeof isInWishlist === "function" && isInWishlist(product.id);
 
-  // The same specs the compare table shows, through the same label
-  // function, so a spec is never named one thing here and another there.
+  // The same label function the shop filters use, so a spec is never
+  // named one thing here and another there.
   const specKeys = Object.keys(product.attrs || {});
   const specRows = specKeys.map((key) => {
     const value = product.attrs[key];

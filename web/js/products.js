@@ -154,6 +154,15 @@ const ARRAY_SPECS = ["sockets", "supportedFormFactors", "incompatibleSockets"];
 const NUMBER_SPECS = ["tdp", "coolerRating", "power", "length", "wattage",
                       "maxGpuLength", "pcieGen", "cores", "threads"];
 
+// Some CPUs and boards accept either memory type, recorded as "DDR4/DDR5".
+// Says whether a stick of `ramGen` works with a `supported` value. Shared
+// by the PC Builder and the chat advisor; the app's Compatibility.ramGenFits
+// is the same rule.
+function ramGenFits(ramGen, supported) {
+  if (!supported) return true;
+  return supported.split("/").indexOf(ramGen) !== -1;
+}
+
 function shapeCatalogue(productRows, brandRows, categoryRows, attributeRows) {
   const brandName = new Map(brandRows.map((b) => [b.brand_id, b.name]));
   const category  = new Map(categoryRows.map((c) => [c.category_id, c]));
@@ -375,7 +384,7 @@ function machineAccessories(productId) {
 }
 
 // Turns an attrs key into something readable, e.g. "screenSize" -> "Screen Size".
-// Used by the shop filters and the compare table.
+// Used by the shop filters and the product detail modal.
 function attrLabel(key) {
   const labels = {
     socket: "Socket",

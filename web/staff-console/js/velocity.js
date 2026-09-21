@@ -145,15 +145,6 @@ adminPage("Inventory Velocity", "velocity", async (content) => {
   });
 });
 
-async function loadScores(days, categoryId) {
-  const { data, error } = await sb.rpc("admin_product_scores", {
-    p_days: days,
-    p_category: categoryId,
-  });
-  if (error) throw error;
-  return data;
-}
-
 // ------------------------------------------------------------
 // Working out the tiers.
 //

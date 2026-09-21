@@ -196,18 +196,6 @@ a {
   flex-shrink: 0;
 }
 
-/* Image at the top of each compare-table column */
-.compare-img {
-  width: 100%;
-  max-width: 130px;
-  height: 90px;
-  object-fit: contain;
-  background-color: #fafbfc;
-  border: 1px solid #e8eaed;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
 /* Thumbnail beside each PC Builder slot */
 .slot-img {
   width: 46px;
@@ -682,7 +670,7 @@ footer {
   color: white;
 }
 
-/* ---------- Product card additions (wishlist / stock / compare) ---------- */
+/* ---------- Product card additions (wishlist / stock) ---------- */
 .product-card {
   position: relative;
 }
@@ -731,16 +719,8 @@ footer {
   cursor: not-allowed;
 }
 
-.compare-check {
-  display: block;
-  font-size: 12px;
-  margin-top: 8px;
-  color: #555;
-}
-
 #no-results,
-#wishlist-empty,
-#compare-empty {
+#wishlist-empty {
   text-align: center;
   color: #777;
   padding: 40px;
@@ -786,26 +766,6 @@ footer {
 .filter-hint {
   font-size: 13px;
   color: #999;
-}
-
-/* ---------- Compare table ---------- */
-.compare-table {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  background-color: white;
-  border-collapse: collapse;
-}
-
-.compare-table th,
-.compare-table td {
-  border: 1px solid #eee;
-  padding: 12px;
-  text-align: center;
-}
-
-.compare-table th {
-  background-color: #f4f5f7;
 }
 
 /* ---------- Auth / form pages ---------- */
@@ -2020,7 +1980,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
    The single worst offender was .nav-links. The navbar itself already
    carried flex-wrap, but its <ul> did not, so eight links -- Shop,
-   Build PC, Prebuilt, Deals, Compare, Wishlist, Cart, Account -- sat in
+   Build PC, Prebuilt, Deals, Rigs, Wishlist, Cart, Account -- sat in
    one unbreakable 575px row and dragged the document out to that width.
 
    The links wrap onto two or three rows here rather than folding into a
@@ -2057,12 +2017,11 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   .hero p { font-size: 16px; }
 
   /* Tables are the one thing that genuinely cannot fit: the cart has six
-     columns and Compare has one per product. Let them scroll inside
+     columns. Let it scroll inside
      their own box rather than taking the page with them -- a sideways
      drag on a price table is expected, a sideways drag on the whole shop
      is not. */
-  .cart-table,
-  .compare-table {
+  .cart-table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
