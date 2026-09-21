@@ -1,13 +1,12 @@
 """
 Exports the Objective 2 model results into a JSON file the staff console reads.
 
-The admin pages otherwise talk to Supabase, which holds the live shop: a few
-dozen real orders over a handful of months. The models in ml/ are fitted on the
-five-year sales dataset in docs/data/, which is a different body of data
-entirely -- far longer, and generated rather than traded. Pointing a model
-fitted on one at the other would produce a number with nothing behind it, so
-the forecast page reads this file instead and says on its face which dataset it
-is describing.
+The admin pages otherwise talk to Supabase, which holds the online shop: a few
+dozen orders over a handful of months. The models in ml/ are fitted on the
+shop's own sales receipts, Jan 2022 - Aug 2026 (docs/data/etech_sales_data.xlsx),
+which reach back far further than the online orders do. A trend over the online
+orders alone would be a number with nothing behind it, so the forecast page
+reads this file instead.
 
 Run after re-executing ml/02_forecasting.ipynb or ml/03_segmentation.ipynb:
 
@@ -174,7 +173,7 @@ def next_month(weekly, monthly_wape):
 
 
 def segments():
-    """Cluster summary from 03_segmentation.ipynb, plus the dormant products."""
+    """Cluster summary from 03_segmentation.ipynb, plus the slowest current sellers."""
     path = PROCESSED / "product_segments.csv"
     if not path.exists():
         return None, []
@@ -183,29 +182,31 @@ def segments():
     total = seg.revenue.sum()
     summary = (seg.groupby("segment")
                   .agg(skus=("sku", "size"), revenue=("revenue", "sum"),
-                       medPrice=("avg_price", "median"), medUnits=("units", "median"),
-                       medRecency=("recency_wk", "median"))
+                       medPrice=("avg_price", "median"), medUnitsWk=("units_per_wk", "median"),
+                       current=("status", lambda s: int((s == "Current range").sum())))
                   .sort_values("revenue", ascending=False).reset_index())
     summary["revShare"] = summary.revenue / total * 100
 
     rows = [{"segment": r.segment, "skus": int(r.skus), "revenue": round(r.revenue, 0),
              "revShare": round(r.revShare, 1), "medPrice": round(r.medPrice, 0),
-             "medUnits": int(r.medUnits), "medRecency": round(r.medRecency, 0)}
+             "medUnitsWk": round(r.medUnitsWk, 1), "current": int(r.current)}
             for r in summary.itertuples()]
 
-    dormant = (seg[seg.segment.str.startswith("Dormant")]
-               .nlargest(10, "revenue")[["name", "category", "revenue", "recency_wk"]])
-    dormant_rows = [{"name": r.name, "category": r.category,
-                     "revenue": round(r.revenue, 0), "recencyWk": round(r.recency_wk, 0)}
-                    for r in dormant.itertuples()]
-    return rows, dormant_rows
+    # The products in the current range that turn over least often -- the ones
+    # worth a second look before reordering.
+    slowest = (seg[seg.status == "Current range"]
+               .nsmallest(10, "units_per_wk")[["name", "category", "units", "weeks_on_sale", "units_per_wk"]])
+    slowest_rows = [{"name": r.name, "category": r.category, "units": int(r.units),
+                     "weeksOnSale": round(r.weeks_on_sale, 0), "unitsPerWk": round(r.units_per_wk, 2)}
+                    for r in slowest.itertuples()]
+    return rows, slowest_rows
 
 
 def main():
     weekly = load_weekly()
     train, test, predicted, metrics, monthly = fit_and_forecast(weekly)
     coming = next_month(weekly, metrics["monthlyWAPE"])
-    segment_rows, dormant_rows = segments()
+    segment_rows, slowest_rows = segments()
 
     # The chart shows the last year of history for context, then the forecast block.
     history = train.tail(52)
@@ -213,8 +214,7 @@ def main():
     payload = {
         "meta": {
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-            "source": "docs/data/etech_sales_2022_2026.xml",
-            "synthetic": True,
+            "source": "docs/data/etech_sales_data.xlsx",
             "model": "Ridge regression (trend + month seasonality)",
             "trainWeeks": int(len(train)),
             "testWeeks": int(len(test)),
@@ -232,7 +232,7 @@ def main():
                      "errorPct": round((r.forecast - r.actual) / r.actual * 100, 1)}
                     for m, r in monthly.iterrows()],
         "segments": segment_rows,
-        "dormant": dormant_rows,
+        "slowest": slowest_rows,
     }
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
