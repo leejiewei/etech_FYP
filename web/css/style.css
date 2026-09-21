@@ -626,12 +626,14 @@ footer {
   min-width: 280px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1px;
-  background-color: #333; /* shows through as the thin grid lines */
+  /* The thin grid lines are drawn by each tile (below), not by a grey
+     background showing through the gaps -- that turned the empty cells
+     of a short last row into a grey block. */
 }
 
 .mega-item {
   background-color: #1c1c1e;
+  box-shadow: inset -1px -1px 0 #333;
   padding: 24px 10px;
   text-align: center;
   display: flex;
@@ -657,7 +659,15 @@ footer {
 }
 
 .mega-icon {
-  font-size: 30px;
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.mega-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .mega-label {
