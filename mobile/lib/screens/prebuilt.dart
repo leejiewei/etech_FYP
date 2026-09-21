@@ -13,14 +13,14 @@ import 'product_detail.dart';
 /// 2026 brought in nineteen real desktops; the app never did, so those
 /// machines were reachable on a phone only by finding them among the 389
 /// products in the Shop tab. This is the same page, built the same way:
-/// the children of the "Desktops" category, gathered into the four ranges
-/// the shop sells against.
+/// the shop's desktops -- Desktops, Branded PC and All-in-One PC --
+/// gathered into the four ranges the shop sells against.
 ///
 /// The grouping is deliberately written out rather than derived from the
 /// catalogue, and matches PREBUILT_GROUPS in web/js/prebuilt.js. Two
 /// reasons: the chips appear in the order the shop thinks in rather than
-/// whatever order the rows arrive, and a sub-category added under Desktops
-/// later cannot silently become a fifth chip -- it has to be named here
+/// whatever order the rows arrive, and a category added later cannot
+/// silently become a fifth chip -- it has to be named here
 /// first. The cost is that this list and the website's have to be changed
 /// together.
 class PrebuiltScreen extends StatefulWidget {
@@ -32,9 +32,12 @@ class PrebuiltScreen extends StatefulWidget {
 }
 
 class _PrebuiltScreenState extends State<PrebuiltScreen> {
-  static const String _parentCategory = 'Desktops';
-
-  /// The four ranges, and which catalogue sub-categories feed each.
+  /// The four ranges, and which catalogue categories feed each. A machine
+  /// is matched by its most specific category name -- its sub-category if
+  /// it has one, otherwise its category -- because Branded PC and
+  /// All-in-One PC stopped being sub-categories of Desktops on
+  /// 21 September 2026. The old names stay listed so the screen works on
+  /// either side of that rename.
   ///
   /// Office is one range covering two sub-categories. They are the same
   /// kind of machine to a customer -- an E-Tech office tower -- and what
@@ -43,8 +46,8 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
   static const Map<String, List<String>> _groups = {
     'Gaming': ['Prebuilt Gaming PCs'],
     'Office': ['Office PC Series', 'Custom Office CO1'],
-    'Branded': ['Branded Desktops'],
-    'AIO PC': ['AIO Desktops'],
+    'Branded': ['Branded PC', 'Branded Desktops'],
+    'AIO PC': ['All-in-One PC', 'AIO Desktops'],
   };
 
   /// The order specs are listed in. A machine shows the ones it has and
@@ -82,7 +85,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
   /// in which case this screen does not show it.
   String? _groupOf(Product p) {
     for (final entry in _groups.entries) {
-      if (entry.value.contains(p.subcategory)) return entry.key;
+      if (entry.value.contains(p.subcategory ?? p.category)) return entry.key;
     }
     return null;
   }
@@ -90,7 +93,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
   List<Product> get _machines {
     final list =
         widget.shop.products
-            .where((p) => p.category == _parentCategory && _groupOf(p) != null)
+            .where((p) => _groupOf(p) != null)
             .toList()
           ..sort((a, b) => a.id.compareTo(b.id));
     if (_filter == 'All') return list;
@@ -127,7 +130,6 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
         // Only ranges that have something in them: a chip that finds
         // nothing when tapped is worse than no chip at all.
         final stocked = widget.shop.products
-            .where((p) => p.category == _parentCategory)
             .map(_groupOf)
             .whereType<String>()
             .toSet();

@@ -163,6 +163,8 @@ function buildCategoriesMenu() {
     { name: "Networking", icon: "📶" },
     { name: "Consumables", icon: "📄" },
     { name: "Laptops", icon: "💻" },
+    { name: "Branded PC", icon: "🖥️" },
+    { name: "All-in-One PC", icon: "🖥️" },
     { name: "Gaming Gear", icon: "🎮" },
   ];
 
