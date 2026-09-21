@@ -7,14 +7,18 @@
 // 12 August 2026 when the RigWorks record brought in nineteen actual
 // desktops. The page was still showing the placeholders.
 //
-// It now reads the catalogue like every other page. The machines here are
-// the children of the "Desktops" category, gathered into the four ranges
-// the shop actually sells against:
+// It now reads the catalogue like every other page, gathering the
+// machines into the four ranges the shop actually sells against:
 //
-//   Gaming    5   Prebuilt Gaming PCs -- the E-Tech gaming builds
-//   Office    6   Office PC Series + Custom Office CO1
-//   Branded   4   Branded Desktops -- Asus and Lenovo towers
-//   AIO PC    4   AIO Desktops -- the HP all-in-ones
+//   Gaming    5   Desktops > Prebuilt Gaming PCs -- the E-Tech gaming builds
+//   Office    6   Desktops > Office PC Series + Custom Office CO1
+//   Branded   4   Branded PC -- Asus and Lenovo towers
+//   AIO PC    4   All-in-One PC -- the HP all-in-ones
+//
+// Branded PC and All-in-One PC were sub-categories of Desktops until
+// 21 September 2026, when they became categories of their own. A range
+// is therefore matched by the machine's most specific category name --
+// its sub-category if it has one, otherwise its category.
 //
 // The two office ranges are one chip rather than two. They are the same
 // kind of machine to a customer -- an E-Tech office tower -- and the
@@ -42,18 +46,17 @@ const PREBUILT_SPEC_ORDER = [
   "psu", "cooler", "chassis", "colour", "sku",
 ];
 
-const PREBUILT_PARENT_CATEGORY = "Desktops";
-
-// The four ranges, and which catalogue sub-categories feed each. Written
+// The four ranges, and which catalogue categories feed each. Written
 // out rather than derived from the data so the order on the page is the
-// order the shop thinks in, and so a sub-category added under Desktops
-// later does not silently appear as a fifth chip -- it has to be named
-// here first.
+// order the shop thinks in, and so a category added later does not
+// silently appear as a fifth chip -- it has to be named here first.
+// The old names stay listed so the page works on either side of the
+// 21 September rename.
 const PREBUILT_GROUPS = [
-  { label: "Gaming",  subcategories: ["Prebuilt Gaming PCs"] },
-  { label: "Office",  subcategories: ["Office PC Series", "Custom Office CO1"] },
-  { label: "Branded", subcategories: ["Branded Desktops"] },
-  { label: "AIO PC",  subcategories: ["AIO Desktops"] },
+  { label: "Gaming",  categories: ["Prebuilt Gaming PCs"] },
+  { label: "Office",  categories: ["Office PC Series", "Custom Office CO1"] },
+  { label: "Branded", categories: ["Branded PC", "Branded Desktops"] },
+  { label: "AIO PC",  categories: ["All-in-One PC", "AIO Desktops"] },
 ];
 
 let currentUseCaseFilter = "All";
@@ -71,14 +74,14 @@ function chosenFor(productId) {
 // Which of the four a machine belongs to, or null if it belongs to none
 // -- in which case it is not a machine this page shows.
 function prebuiltGroup(product) {
-  const group = PREBUILT_GROUPS.find((g) =>
-    g.subcategories.includes(product.subcategory));
+  const name = product.subcategory || product.category;
+  const group = PREBUILT_GROUPS.find((g) => g.categories.includes(name));
   return group ? group.label : null;
 }
 
 function getPrebuilts() {
   return products
-    .filter((p) => p.category === PREBUILT_PARENT_CATEGORY && prebuiltGroup(p))
+    .filter((p) => prebuiltGroup(p))
     .sort((a, b) => a.id - b.id);
 }
 

@@ -138,6 +138,11 @@ async function loadAvailability() {
   return byId;
 }
 
+// Whole machines, which are never a part of another machine. Branded PC
+// and All-in-One PC left Desktops to become categories of their own on
+// 21 September 2026; the old names cover the moment before the rename.
+const MACHINE_CATEGORIES = ["Desktops", "Branded PC", "All-in-One PC"];
+
 async function loadCatalogue() {
   // Everything a slot could point at: active products that are not
   // themselves complete machines. Fetched once and reused by every
@@ -147,7 +152,7 @@ async function loadCatalogue() {
     .eq("is_active", 1)
     .order("name");
   if (error) throw error;
-  return data.filter((p) => (p.parent_category || p.category) !== "Desktops");
+  return data.filter((p) => !MACHINE_CATEGORIES.includes(p.parent_category || p.category));
 }
 
 // ------------------------------------------------------------
