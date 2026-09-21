@@ -14,11 +14,14 @@
 // -- wishlist first, then anyone at or above the view threshold below.
 // The number in the "Watching" tile is what that deal would reach.
 //
-// Everything comes from admin_customer_activity, one row per customer
-// per product. Signed-out browsing is not in it: events.customer_id is
-// NULL for a visitor with no account, and a uuid is not somebody staff
-// can act on. When that visitor signs in, claim_anon_activity stitches
-// the history onto the account and it appears here.
+// Signed-in customers come from admin_customer_activity, one row per
+// customer per product. Signed-out browsing is read from events as well,
+// the way Inventory Velocity counts it, and shown as "Guest shopper":
+// one row per browser (anon_id) per product. A guest has no name and
+// cannot be messaged, so a deal never reaches one -- but the interest is
+// real, and leaving it out hid most of the shop's browsing. When a guest
+// signs in, claim_anon_activity moves their rows onto the account and
+// they turn into a named customer here.
 //
 // Nothing on this page writes, and nothing here scores or labels a
 // person. It is counting, and the counts are the customer's own actions.
@@ -34,10 +37,22 @@ const WATCHING_VIEWS = 3;
 const RECENT_DAYS = 60;
 
 adminPage("Customer Behaviour", "behaviour", async (content) => {
-  const rows = await select(sb.from("admin_customer_activity")
-    .select("customer_id,customer_name,customer_email,product_id,product_name,category," +
-            "price,views,cart_adds,purchases,first_view,last_seen,in_wishlist,wishlisted_at,deal_price")
-    .order("last_seen", { ascending: false }));
+  const [named, guestViews, deals] = await Promise.all([
+    select(sb.from("admin_customer_activity")
+      .select("customer_id,customer_name,customer_email,product_id,product_name,category," +
+              "price,views,cart_adds,purchases,first_view,last_seen,in_wishlist,wishlisted_at,deal_price")
+      .order("last_seen", { ascending: false })),
+    select(sb.from("events")
+      .select("anon_id,product_id,created_at,products(name,price,categories(name))")
+      .is("customer_id", null)
+      .eq("event_type", "view")),
+    select(sb.from("deals").select("product_id,discount_price")
+      .eq("is_active", 1)
+      .lte("start_time", new Date().toISOString())
+      .gt("end_time", new Date().toISOString())),
+  ]);
+
+  const rows = named.concat(guestRows(guestViews, liveDealPrices(deals)));
 
   const since = Date.now() - RECENT_DAYS * 86400000;
   const recent = rows.filter((r) => new Date(r.last_seen).getTime() >= since);
@@ -46,7 +61,8 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
   const watching = rows.filter((r) => r.in_wishlist || Number(r.views) >= WATCHING_VIEWS);
   const unserved = watching.filter((r) => r.deal_price === null && Number(r.purchases) === 0);
 
-  const customers = new Set(rows.map((r) => r.customer_id)).size;
+  const customers = new Set(named.map((r) => r.customer_id)).size;
+  const guests = new Set(rows.filter((r) => r.guest).map((r) => r.customer_id)).size;
   const totalViews = rows.reduce((t, r) => t + Number(r.views), 0);
 
   // Most-wanted products: the watchers, grouped by product.
@@ -55,14 +71,16 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
     let p = byProduct.get(r.product_id);
     if (!p) {
       p = { name: r.product_name, category: r.category, price: r.price,
-            deal: r.deal_price, saved: 0, viewers: 0, views: 0 };
+            deal: r.deal_price, saved: 0, viewers: 0, guests: 0, views: 0 };
       byProduct.set(r.product_id, p);
     }
-    if (r.in_wishlist) p.saved++; else p.viewers++;
+    if (r.guest) p.guests++;
+    else if (r.in_wishlist) p.saved++;
+    else p.viewers++;
     p.views += Number(r.views);
   });
   const wanted = [...byProduct.entries()]
-    .map(([id, p]) => ({ id, ...p, watchers: p.saved + p.viewers }))
+    .map(([id, p]) => ({ id, ...p, watchers: p.saved + p.viewers + p.guests }))
     .sort((a, b) => b.watchers - a.watchers || b.views - a.views)
     .slice(0, 12);
   const wantedMax = Math.max(0, ...wanted.map((p) => p.watchers));
@@ -72,7 +90,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       <div class="tile">
         <div class="label">Watching right now</div>
         <div class="value">${watching.length}</div>
-        <div class="sub">Saved, or viewed ${WATCHING_VIEWS}+ times</div>
+        <div class="sub">Saved, or viewed ${WATCHING_VIEWS}+ times (guests included)</div>
       </div>
       <div class="tile">
         <div class="label">Watching with no deal</div>
@@ -82,12 +100,12 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       <div class="tile">
         <div class="label">Views recorded</div>
         <div class="value">${count(totalViews)}</div>
-        <div class="sub">${customers} customer${customers === 1 ? "" : "s"}, ${byProduct.size} product${byProduct.size === 1 ? "" : "s"} watched</div>
+        <div class="sub">${customers} customer${customers === 1 ? "" : "s"}, ${guests} guest${guests === 1 ? "" : "s"}, ${byProduct.size} product${byProduct.size === 1 ? "" : "s"} watched</div>
       </div>
       <div class="tile">
         <div class="label">Active in ${RECENT_DAYS} days</div>
         <div class="value">${recent.length}</div>
-        <div class="sub">Customer-product pairs touched</div>
+        <div class="sub">Shopper-product pairs touched</div>
       </div>
     </div>
 
@@ -95,7 +113,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
     <div class="card">
       ${wanted.length === 0
         ? `<p style="color:#888;">Nobody is watching anything closely enough yet.
-             A product needs a wishlist save or ${WATCHING_VIEWS} views from one customer.</p>`
+             A product needs a wishlist save or ${WATCHING_VIEWS} views from one shopper.</p>`
         : wanted.map((p) => `
         <div style="margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; gap:12px;">
@@ -104,6 +122,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
             <span style="white-space:nowrap;">
               ${p.saved > 0 ? `<span class="badge" style="background:#d6283922; color:#d62839;">${p.saved} saved</span> ` : ""}
               ${p.viewers > 0 ? `<span style="color:#888;">${p.viewers} watching</span>` : ""}
+              ${p.guests > 0 ? `<span style="color:#888;">${p.guests} guest${p.guests === 1 ? "" : "s"}</span>` : ""}
               ${p.deal !== null
                 ? ` &middot; <strong style="color:#1e8e3e;">on offer ${e(money(p.deal))}</strong>`
                 : ` &middot; <span style="color:#b4642a;">${e(money(p.price))}, no deal</span>`}
@@ -115,9 +134,9 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
           </div>
         </div>`).join("") + `
         <p class="hint" style="margin:0;">
-          Bar length is how many customers are watching. Amber means nobody has put it on
-          offer yet &mdash; creating a deal on the Timed Deals page messages every customer
-          counted here.
+          Bar length is how many shoppers are watching, guests included. Amber means nobody
+          has put it on offer yet &mdash; creating a deal on the Timed Deals page messages
+          every signed-in customer counted here. Guests cannot be messaged.
         </p>`}
     </div>
 
@@ -137,8 +156,11 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
               .slice(0, 100)
               .map((r) => `
           <tr>
-            <td><strong>${e(r.customer_name)}</strong><br />
-                <small style="color:#999;">${e(r.customer_email)}</small></td>
+            <td>${r.guest
+                  ? `<strong style="color:#888;">Guest shopper</strong><br />
+                     <small style="color:#999;">Not signed in &middot; browser ${e(r.customer_id.slice(0, 8))}</small>`
+                  : `<strong>${e(r.customer_name)}</strong><br />
+                     <small style="color:#999;">${e(r.customer_email)}</small>`}</td>
             <td>${e(shorten(r.product_name, 40))}<br />
                 <small style="color:#999;">${e(r.category || "")}</small></td>
             <td class="num">${r.views}</td>
@@ -162,8 +184,53 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       : ""}
 
     <p class="hint" style="margin-top:20px;">
-      Signed-out browsing is not counted here. It is recorded against a random id and joins
-      the customer's history when they next sign in.
+      Guest shoppers are people browsing without signing in, told apart by a random id kept
+      in their browser or phone. When one signs in, their history moves onto their account.
     </p>`;
 });
+
+// ------------------------------------------------------------
+// Signed-out views, shaped like admin_customer_activity rows.
+//
+// One row per browser per product, so the rest of the page can treat a
+// guest exactly like a customer who has only looked. Views with no
+// anon_id (storage blocked) cannot be told apart, so they are skipped.
+// ------------------------------------------------------------
+function guestRows(views, dealPrices) {
+  const byKey = new Map();
+  views.forEach((v) => {
+    if (!v.anon_id || !v.products) return;
+    const key = v.anon_id + "|" + v.product_id;
+    let r = byKey.get(key);
+    if (!r) {
+      r = {
+        guest: true,
+        customer_id: v.anon_id,
+        product_id: v.product_id,
+        product_name: v.products.name,
+        category: v.products.categories ? v.products.categories.name : "",
+        price: v.products.price,
+        views: 0, cart_adds: 0, purchases: 0,
+        first_view: v.created_at, last_seen: v.created_at,
+        in_wishlist: false,
+        deal_price: dealPrices.has(v.product_id) ? dealPrices.get(v.product_id) : null,
+      };
+      byKey.set(key, r);
+    }
+    r.views++;
+    if (v.created_at < r.first_view) r.first_view = v.created_at;
+    if (v.created_at > r.last_seen) r.last_seen = v.created_at;
+  });
+  return [...byKey.values()];
+}
+
+// The lowest live deal price per product -- the same rule the view uses.
+function liveDealPrices(deals) {
+  const prices = new Map();
+  deals.forEach((d) => {
+    const price = Number(d.discount_price);
+    if (!prices.has(d.product_id) || price < prices.get(d.product_id)) prices.set(d.product_id, price);
+  });
+  return prices;
+}
 

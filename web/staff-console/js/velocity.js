@@ -56,24 +56,6 @@ adminPage("Inventory Velocity", "velocity", async (content) => {
     "?" + new URLSearchParams({ days, cat: categoryId, ...extra }).toString();
 
   content.innerHTML = `
-    <div class="card" style="border-top-color:#2c5d8f;">
-      <h2 style="margin-top:0;">How the score works</h2>
-      <p style="font-size:14px; margin-bottom:10px;">
-        This is LFU &mdash; the least-frequently-used caching idea &mdash; read the other way up.
-        Instead of finding what to throw away, we count every time a customer touches a product
-        and rank the ones they engage with most. Each kind of touch is weighted by how close it
-        sits to an actual sale:
-      </p>
-      <p style="font-family:monospace; background:#f4f6f8; padding:12px 16px; border-radius:6px; font-size:15px;">
-        score = (views &times; 1) + (cart adds &times; 3) + (purchases &times; 5)
-      </p>
-      <p class="hint" style="margin-bottom:0;">
-        The top 20% by score are <strong>High</strong> velocity, the next 30% <strong>Mid</strong>,
-        the rest <strong>Low</strong>. Products nobody touched at all are listed separately &mdash;
-        those are the ones the dead-stock alerts pick up.
-      </p>
-    </div>
-
     <form class="filters" id="filters">
       <div class="field">
         <label>Period</label>
