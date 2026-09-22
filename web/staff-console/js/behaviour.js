@@ -16,7 +16,7 @@
 //
 // Signed-in customers come from admin_customer_activity, one row per
 // customer per product. Signed-out browsing is read from events as well,
-// the way Inventory Velocity counts it, and shown as "Guest shopper":
+// the way the stock scores count it, and shown as "Guest shopper":
 // one row per browser (anon_id) per product. A guest has no name and
 // cannot be messaged, so a deal never reaches one -- but the interest is
 // real, and leaving it out hid most of the shop's browsing. When a guest

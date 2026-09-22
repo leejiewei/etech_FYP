@@ -4,10 +4,10 @@
 //   Restock:    products selling well that are about to run out.
 //   Dead stock: money sitting on a shelf that nobody has touched.
 //
-// Both come from the same weighted score as the velocity page, and from
-// the same database function, admin_product_scores(). The two pages
-// asked for the same thing with different filters, so it is written once
-// and read twice.
+// Both come from one weighted score, admin_product_scores(). The
+// Inventory Velocity page that used to list the whole ranking is gone --
+// Customer Behaviour took its place -- and this page is what the score
+// is still for.
 //
 // Everything below the fetch is judgement rather than arithmetic — which
 // products count as "selling", what to do about one that isn't — and
