@@ -33,12 +33,16 @@
 // same as admin_create_deal(), so the "Watching" figure here is the
 // number that function would message.
 
+// How long after an alert a view or purchase is credited to it. Passed
+// to admin_deal_alert_results(), which does the matching.
+const ALERT_WINDOW_DAYS = 7;
+
 // Long enough to hold a shopping decision, short enough that a card
 // somebody abandoned in April is not called interest in September.
 const RECENT_DAYS = 60;
 
 adminPage("Customer Behaviour", "behaviour", async (content) => {
-  const [named, guestViews, deals] = await Promise.all([
+  const [named, guestViews, deals, alerts] = await Promise.all([
     select(sb.from("admin_customer_activity")
       .select("customer_id,customer_name,customer_email,product_id,product_name,category," +
               "price,views,cart_adds,purchases,first_view,last_seen,in_wishlist,wishlisted_at,deal_price")
@@ -51,6 +55,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       .eq("is_active", 1)
       .lte("start_time", new Date().toISOString())
       .gt("end_time", new Date().toISOString())),
+    select(sb.rpc("admin_deal_alert_results", { p_days: ALERT_WINDOW_DAYS })),
   ]);
 
   const rows = named.concat(guestRows(guestViews, liveDealPrices(deals)));
@@ -111,6 +116,8 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
         <div class="sub">Shopper-product pairs touched</div>
       </div>
     </div>
+
+    ${alertResults(alerts)}
 
     <h2>Most wanted, and whether it is on offer</h2>
     <div class="card">
@@ -191,6 +198,9 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       Guest shoppers are people browsing without signing in, told apart by a random id kept
       in their browser or phone. When one signs in, their history moves onto their account.
     </p>`;
+
+  const download = document.getElementById("alerts-csv");
+  if (download) download.onclick = () => downloadAlerts(alerts);
 });
 
 // ------------------------------------------------------------
@@ -238,3 +248,106 @@ function liveDealPrices(deals) {
   return prices;
 }
 
+
+// ------------------------------------------------------------
+// Did the deal alerts work?
+//
+// Each alert admin_create_deal() sent, and what the customer did in the
+// ALERT_WINDOW_DAYS after it: opened it, came back to the product,
+// bought it. This is the result Objective 1 is reported on, so it is
+// shown as a funnel and split by why the customer was picked -- a
+// wishlist save, a cart add or repeat views -- which is the question a
+// reader will ask next: which signal is worth acting on.
+// ------------------------------------------------------------
+function alertResults(alerts) {
+  const header = `<h2>Deal alerts: did they work?</h2>`;
+  if (alerts.length === 0) {
+    return header + `
+      <div class="card">
+        <p style="color:#888; margin:0;">No deal alerts sent yet. Create a deal on the
+          Timed Deals page and the customers watching that product are messaged; what
+          they do in the ${ALERT_WINDOW_DAYS} days after shows up here.</p>
+      </div>`;
+  }
+
+  const tally = (rows) => ({
+    sent: rows.length,
+    opened: rows.filter((a) => a.read_at !== null).length,
+    viewed: rows.filter((a) => a.viewed_after).length,
+    bought: rows.filter((a) => a.bought_after).length,
+  });
+  const pct = (part, whole) => whole === 0 ? "–" : Math.round((part / whole) * 100) + "%";
+  const all = tally(alerts);
+  const reasons = [["saved", "Saved to wishlist"], ["carted", "In cart, not bought"], ["viewed", `Viewed ${WATCHING_VIEWS}+ times`]];
+
+  return header + `
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Alerts sent</div>
+        <div class="value">${all.sent}</div>
+        <div class="sub">${new Set(alerts.map((a) => a.customer_id)).size} customers, ${new Set(alerts.map((a) => a.product_id)).size} products</div>
+      </div>
+      <div class="tile">
+        <div class="label">Opened</div>
+        <div class="value">${pct(all.opened, all.sent)}</div>
+        <div class="sub">${all.opened} of ${all.sent}</div>
+      </div>
+      <div class="tile">
+        <div class="label">Came back to look</div>
+        <div class="value">${pct(all.viewed, all.sent)}</div>
+        <div class="sub">${all.viewed} viewed the product within ${ALERT_WINDOW_DAYS} days</div>
+      </div>
+      <div class="tile">
+        <div class="label">Bought</div>
+        <div class="value">${pct(all.bought, all.sent)}</div>
+        <div class="sub">${all.bought} bought it within ${ALERT_WINDOW_DAYS} days</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Why they were alerted</th><th class="num">Sent</th>
+          <th class="num">Opened</th><th class="num">Came back</th><th class="num">Bought</th></tr></thead>
+        <tbody>
+        ${reasons.map(([key, label]) => {
+          const t = tally(alerts.filter((a) => a.reason === key));
+          return `
+          <tr>
+            <td>${e(label)}</td>
+            <td class="num">${t.sent}</td>
+            <td class="num">${t.opened} <small style="color:#999;">${pct(t.opened, t.sent)}</small></td>
+            <td class="num">${t.viewed} <small style="color:#999;">${pct(t.viewed, t.sent)}</small></td>
+            <td class="num"><strong>${t.bought}</strong> <small style="color:#999;">${pct(t.bought, t.sent)}</small></td>
+          </tr>`;
+        }).join("")}
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">
+      A view or purchase counts only if it happened within ${ALERT_WINDOW_DAYS} days after the
+      alert and was of the same product.
+      <button type="button" class="btn small grey" id="alerts-csv">Download for the report (CSV)</button>
+      The download has no names or emails, only customer numbers.
+    </p>`;
+}
+
+// One line per alert, for the dissertation's results chapter. Customer
+// numbers only: the data agreement keeps names and emails out of
+// anything published.
+function downloadAlerts(alerts) {
+  const columns = ["notification_id", "customer_id", "product_id", "product_name", "reason",
+                   "sent_at", "read_at", "viewed_after", "bought_after", "bought_at"];
+  const cell = (v) => {
+    const text = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+  };
+  const csv = [columns.join(",")]
+    .concat(alerts.map((a) => columns.map((c) => cell(a[c])).join(",")))
+    .join("\n");
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  link.download = `deal-alert-results-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
