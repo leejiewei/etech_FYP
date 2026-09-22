@@ -10,36 +10,38 @@
 
   <div id="site-header"></div>
 
-  <section class="section">
-    <h2>All Products</h2>
-    <div id="active-filter" style="text-align:center; margin-bottom: 16px; display:none;"></div>
-    <div class="filter-bar" id="category-buttons"></div>
-    <div class="attr-filters" id="attr-filters"></div>
-    <div style="max-width: 300px; margin: 0 auto 12px auto;">
-      <input type="text" id="shop-search" class="attr-select" style="width: 100%;"
+  <section class="section shop">
+    <!-- Tick-box filters down the side, after suncycle.com.my's category
+         pages. On a phone the panel folds up behind a Filters button. -->
+    <details class="shop-side" id="shop-side" open>
+      <summary class="shop-side-toggle">Filters</summary>
+      <input type="search" id="shop-search" class="shop-search"
         placeholder="Search products or brands..." oninput="handleSearchInput(this.value)" />
+      <div id="shop-facets"></div>
+    </details>
+
+    <div class="shop-main">
+      <p class="shop-crumbs"><a href="index.html">Home</a> &rsaquo; <span id="shop-crumb">All Products</span></p>
+      <h2 class="shop-title" id="shop-title">All Products</h2>
+      <div class="shop-chips" id="shop-chips"></div>
+
+      <div class="shop-bar">
+        <span id="shop-count"></span>
+        <select id="sort-select" class="attr-select" onchange="handleSortChange(this.value)">
+          <option value="default">Sort by: Default</option>
+          <option value="brand">Brand (A-Z)</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+        </select>
+      </div>
+
+      <!-- What the filters are answering. Scrolled to by name when a
+           mega-menu tile is picked, so the answer arrives on screen
+           instead of being left below the fold. -->
+      <div id="product-grid-top"></div>
+      <p id="no-results">No products match your filters.</p>
+      <div class="product-grid" id="product-grid"></div>
     </div>
-    <div style="max-width: 300px; margin: 0 auto 12px auto;">
-      <select id="stock-select" class="attr-select" style="width: 100%;" onchange="handleStockChange(this.value)">
-        <option value="all">Availability: All products</option>
-        <option value="in_stock">In stock only</option>
-        <option value="out_of_stock">Out of stock only</option>
-      </select>
-    </div>
-    <div style="max-width: 300px; margin: 0 auto 24px auto;">
-      <select id="sort-select" class="attr-select" style="width: 100%;" onchange="handleSortChange(this.value)">
-        <option value="default">Sort by: Default</option>
-        <option value="brand">Brand (A-Z)</option>
-        <option value="price-low">Price: Low to High</option>
-        <option value="price-high">Price: High to Low</option>
-      </select>
-    </div>
-    <!-- What the filters above are answering. Scrolled to by name when a
-         category or a mega-menu tile is picked, so the answer arrives on
-         screen instead of being left below the fold. -->
-    <div id="product-grid-top"></div>
-    <p id="no-results">No products match your filters.</p>
-    <div class="product-grid" id="product-grid"></div>
   </section>
 
   <div id="site-footer"></div>
