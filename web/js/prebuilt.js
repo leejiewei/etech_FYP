@@ -61,16 +61,6 @@ const PREBUILT_GROUPS = [
 
 let currentUseCaseFilter = "All";
 
-// The upgrades ticked on each machine's card, by machine id. Held here
-// rather than in the basket, because nothing has been bought yet -- they
-// travel to the basket with the Add button, and the cart page is where
-// they become real.
-const chosenUpgrades = {};
-
-function chosenFor(productId) {
-  return (chosenUpgrades[productId] ||= new Set());
-}
-
 // Which of the four a machine belongs to, or null if it belongs to none
 // -- in which case it is not a machine this page shows.
 function prebuiltGroup(product) {
@@ -156,17 +146,12 @@ function renderPrebuilts() {
   }
 
   grid.innerHTML = list.map(prebuiltCard).join("");
+}
 
-  grid.querySelectorAll(".prebuilt-card").forEach((card) => {
-    const id = Number(card.id.replace("prebuilt-", ""));
-    card.querySelector(".product-img-wrap").addEventListener("click", () => {
-      openProductModal(id);
-    });
-  });
-
-  // Here rather than only at start-up, so the boxes are live again after
-  // a range chip redraws the grid.
-  wireUpgradeBoxes();
+// Where a card leads: the machine's own page, where the upgrades are
+// chosen. See prebuilt-detail.js.
+function prebuiltDetailUrl(productId) {
+  return "prebuilt-detail.html?id=" + encodeURIComponent(productId);
 }
 
 function prebuiltCard(p) {
@@ -176,24 +161,18 @@ function prebuiltCard(p) {
   const stock = stockOf(p);
   const outOfStock = stock === "out";
   const waiting = blockedBy(p.id);
+  const optionCount = upgradesFor(p.id).length;
+  const url = prebuiltDetailUrl(p.id);
 
-  const options = upgradesFor(p.id);
-  const chosen = chosenFor(p.id);
-  const extra = options
-    .filter((u) => chosen.has(u.id))
-    .reduce((sum, u) => sum + u.priceDelta, 0);
-
-  // Only fall back to the prose when there is nothing better. A machine
-  // with real options should not also show the sentence they came from.
-  const note = options.length ? null : upgradeNote(p);
-
+  // The upgrades themselves are chosen on the machine's own page; the
+  // card only says there are some, so the grid stays easy to scan.
   return `
     <div class="prebuilt-card" id="prebuilt-${p.id}">
-      <div class="product-img-wrap">
+      <a class="product-img-wrap" href="${url}">
         ${productImageTag(p, "product-img")}
-      </div>
+      </a>
       <span class="prebuilt-usecase">${escapeHtml(prebuiltGroup(p))}</span>
-      <h3>${escapeHtml(p.name)}</h3>
+      <h3><a class="prebuilt-name" href="${url}">${escapeHtml(p.name)}</a></h3>
       <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
       ${waiting
         ? `<p class="prebuilt-waiting">Waiting on: ${escapeHtml(waiting)}</p>`
@@ -201,106 +180,20 @@ function prebuiltCard(p) {
       <ul class="prebuilt-specs">
         ${prebuiltSpecList(p)}
       </ul>
-      ${optionBlock(p, machineUpgrades(p.id), chosen, outOfStock,
-                    "Add on at build time",
-                    "Ticked here, confirmed in your cart.")}
-      ${optionBlock(p, machineAccessories(p.id), chosen, outOfStock,
-                    "Buy with this machine",
-                    "Shop prices for buying alongside a PC.")}
-      ${note ? `
-      <div class="addon-list">
-        <strong>Available upgrades:</strong>
-        <p class="prebuilt-upgrades">${escapeHtml(note)}</p>
-      </div>` : ""}
-      ${/* A deal is on the machine, not on the options bolted to it --
-            the till works the same way -- so the deal price replaces the
-            base and the upgrades are added to it as before. */ ""}
-      <p class="prebuilt-price">RM ${(priceOf(p) + extra).toFixed(2)}</p>
-      ${hasDeal(p)
-        ? `<p class="prebuilt-price-basis">
-             <span class="price-was">RM ${(p.price + extra).toFixed(2)}</span>
-             on deal until ${escapeHtml(dealEndsText(p))}</p>`
+      ${priceBlockHtml(p, "prebuilt-price")}
+      ${optionCount
+        ? `<p class="prebuilt-price-basis">${optionCount} upgrade option${optionCount === 1 ? "" : "s"} available</p>`
         : ""}
-      ${extra > 0
-        ? `<p class="prebuilt-price-basis">RM ${priceOf(p).toFixed(2)}
-             + RM ${extra.toFixed(2)} upgrades</p>`
-        : ""}
-      <button class="add-btn" ${outOfStock ? "disabled" : ""}
-              onclick="addPrebuiltToCart(${p.id})">
-        ${outOfStock ? "Out of Stock" : "Add to Cart"}
-      </button>
+      <div class="prebuilt-actions">
+        <a class="btn prebuilt-customise" href="${url}">
+          ${optionCount ? "Customise" : "View details"}
+        </a>
+        <button class="add-btn" ${outOfStock ? "disabled" : ""}
+                onclick="addToCart(${p.id}, [])">
+          ${outOfStock ? "Out of Stock" : "Add to Cart"}
+        </button>
+      </div>
     </div>`;
-}
-
-// One tickable list. An upgrade changes the machine itself; an accessory
-// is sold beside it at a with-purchase price. Same tick box to a
-// customer, different fact about the shop, so they get separate
-// headings rather than one mixed list.
-function optionBlock(product, options, chosen, outOfStock, title, hint) {
-  if (!options.length) return "";
-
-  return `
-    <div class="addon-list">
-      <strong>${escapeHtml(title)}</strong>
-      <p class="addon-hint">${escapeHtml(hint)}</p>
-      ${options.map((u) => `
-        <label class="addon-option${outOfStock ? " disabled" : ""}">
-          <input type="checkbox" value="${u.id}" data-machine="${product.id}"
-                 data-slot="${escapeHtml(u.slot)}"
-                 ${chosen.has(u.id) ? "checked" : ""}
-                 ${outOfStock ? "disabled" : ""} />
-          <span>${escapeHtml(u.label)}</span>
-          <em>+RM ${u.priceDelta.toFixed(2)}</em>
-        </label>`).join("")}
-    </div>`;
-}
-
-// Ticking a box redraws only its own card, so the running price updates
-// without the page losing the other cards' scroll position.
-function wireUpgradeBoxes() {
-  const grid = document.getElementById("prebuilt-grid");
-  if (!grid) return;
-
-  grid.querySelectorAll(".addon-option input").forEach((box) => {
-    box.onchange = () => {
-      const machineId = Number(box.dataset.machine);
-      const upgradeId = Number(box.value);
-      const chosen = chosenFor(machineId);
-
-      if (box.checked) {
-        // One swap per slot: a machine has one graphics card, so ticking
-        // a second graphics upgrade replaces the first rather than
-        // charging for both.
-        upgradesFor(machineId)
-          .filter((u) => u.slot === box.dataset.slot)
-          .forEach((u) => chosen.delete(u.id));
-        chosen.add(upgradeId);
-      } else {
-        chosen.delete(upgradeId);
-      }
-
-      redrawCard(machineId);
-    };
-  });
-}
-
-function redrawCard(productId) {
-  const card = document.getElementById("prebuilt-" + productId);
-  const product = getProductById(productId);
-  if (!card || !product) return;
-
-  card.outerHTML = prebuiltCard(product);
-  const fresh = document.getElementById("prebuilt-" + productId);
-  fresh.querySelector(".product-img-wrap").addEventListener("click", () => {
-    openProductModal(productId);
-  });
-  wireUpgradeBoxes();
-}
-
-// Only the ids travel to the basket. What each one costs is read from
-// prebuilt_upgrades by place_order, on the server.
-function addPrebuiltToCart(productId) {
-  addToCart(productId, Array.from(chosenFor(productId)));
 }
 
 onAppReady(() => {

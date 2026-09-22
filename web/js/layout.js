@@ -146,8 +146,9 @@ function buildBrandsMenu() {
 // ------------------------------------------------------------
 // Category icons.
 //
-// Line icons, drawn in currentColor so they take the menu's text colour
-// and its hover. They replaced emoji, which every phone and computer
+// Line icons, drawn in currentColor so they take the colour of whatever
+// they sit in. Used by the Categories menu and by the upgrade tiles on a
+// prebuilt machine's page. They replaced emoji, which every phone and computer
 // draws differently. Most are from Lucide (lucide.dev, ISC licence),
 // copied in because the site's Content-Security-Policy allows no
 // outside files; "monitor-arm" and "all-in-one" are drawn here in the
@@ -173,6 +174,8 @@ const CATEGORY_ICONS = {
   "storage": '<path d="M10 16h.01"/><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M21.946 12.013H2.054"/><path d="M6 16h.01"/>',
   "psu": '<path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="m2 22 3-3"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m18 3-4 4h6l-4 4"/>',
   "case": '<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M15 14h.01"/><path d="M9 6h6"/><path d="M9 10h6"/>',
+  "keyboard": '<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
+  "speaker": '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M12 6h.01"/><circle cx="12" cy="14" r="4"/><path d="M12 14h.01"/>',
   "monitor-arm": '<rect x="10" y="3" width="12" height="8" rx="1.5"/><path d="M13 11 6 13l2.5 6"/><circle cx="6" cy="13" r="1"/><path d="M4 21h9"/><path d="M8.5 19v2"/>',
   "all-in-one": '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 13h20"/><path d="M12 17v4"/><path d="M8 21h8"/>',
 };
