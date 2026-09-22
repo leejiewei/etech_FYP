@@ -779,25 +779,42 @@ footer {
 }
 
 /* ---------- Shop page: tick-box filters beside the grid ----------
-   After suncycle.com.my's category pages. */
+   The products on the left, a Refine panel on the right. On a phone the
+   panel comes first, folded behind a Filters button. */
 .shop {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 28px;
   max-width: 1360px;
   margin: 0 auto;
   align-items: start;
 }
 
+.shop-main {
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .shop-side {
+  grid-column: 2;
+  grid-row: 1;
   background: white;
-  border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  padding: 0 16px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   position: sticky;
   top: 16px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+}
+
+.shop-side-head {
+  margin: 0 -16px 14px;
+  padding: 12px 16px;
+  background: var(--red-dark);
+  color: white;
+  font-weight: bold;
+  border-radius: 14px 14px 0 0;
 }
 
 /* The Filters button only exists on a phone. */
@@ -809,38 +826,37 @@ footer {
   width: 100%;
   padding: 9px 12px;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 8px;
   font: inherit;
   font-size: 14px;
   margin-bottom: 6px;
 }
 
 .shop-facet {
-  border-top: 1px solid #eee;
-  padding: 10px 0 6px;
-}
-
-.shop-facet:first-child {
-  border-top: none;
+  padding: 10px 0 4px;
 }
 
 .shop-facet summary {
   font-weight: bold;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 15px;
+  color: var(--red-dark);
   cursor: pointer;
-  margin-bottom: 6px;
-  list-style-position: outside;
+  margin-bottom: 4px;
 }
 
 .shop-tick {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 5px 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
   font-size: 14px;
   cursor: pointer;
+}
+
+.shop-tick:hover {
+  background: #fdf0f1;
 }
 
 .shop-tick input {
@@ -857,8 +873,11 @@ footer {
 
 .shop-tick em {
   font-style: normal;
-  font-size: 12px;
-  color: #888;
+  font-size: 11px;
+  color: #666;
+  background: #f1f1f3;
+  padding: 1px 8px;
+  border-radius: 999px;
 }
 
 .shop-tick.empty {
@@ -876,7 +895,6 @@ footer {
 }
 
 .shop-hint {
-  border-top: 1px solid #eee;
   padding-top: 10px;
 }
 
@@ -884,19 +902,30 @@ footer {
   max-width: none;
 }
 
-.shop-crumbs {
-  font-size: 13px;
-  color: #888;
-}
-
-.shop-crumbs a {
-  color: var(--red);
+/* A header card: what is showing, how many, and the sort. */
+.shop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: white;
+  border-radius: 14px;
+  border-left: 6px solid var(--red);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .section h2.shop-title {
   text-align: left;
-  font-size: 30px;
-  margin: 2px 0 10px;
+  font-size: 22px;
+  margin: 0;
+}
+
+.shop-count {
+  font-size: 13px;
+  color: #777;
 }
 
 .shop-chips {
@@ -904,7 +933,11 @@ footer {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.shop-chips:empty {
+  display: none;
 }
 
 .shop-chips .active-filter-chip {
@@ -922,26 +955,23 @@ footer {
   cursor: pointer;
 }
 
-.shop-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0 14px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #e3e3e3;
-  font-weight: bold;
-  font-size: 14px;
-}
-
 @media (max-width: 900px) {
   .shop {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
+  .shop-main,
+  .shop-side {
+    grid-column: 1;
+    grid-row: auto;
+  }
   .shop-side {
     position: static;
     max-height: none;
+    padding: 14px 16px;
+  }
+  .shop-side-head {
+    display: none;
   }
   .shop-side-toggle {
     display: block;
@@ -1039,97 +1069,113 @@ footer {
 }
 
 /* ---------- PC Builder ----------
-   Laid out after JUSPC's Build PC page: a row per slot that opens a
-   picker window, the checks down the side, and a bar pinned to the
-   bottom of the window with the running total. */
+   eTech's own layout: a red header with a progress bar, the eight parts
+   as numbered cards, a picker that slides in from the right, and the
+   total with its buttons at the top of the side panel. */
 .bp {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.bp-head {
-  text-align: center;
-  margin-bottom: 22px;
+.bp-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 26px 30px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--red-darker), var(--red-dark) 60%, var(--red));
+  color: white;
+  margin-bottom: 20px;
 }
 
-.bp-head p {
-  color: #666;
-  max-width: 720px;
-  margin: 0 auto;
+.section .bp-hero h2 {
+  text-align: left;
+  margin-bottom: 6px;
+  font-size: 28px;
 }
 
-.bp-notes {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
+.bp-hero p {
+  max-width: 560px;
+  opacity: 0.85;
+  font-size: 15px;
 }
 
-.bp-note {
-  background: white;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-  color: #666;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+.bp-progress {
+  min-width: 260px;
 }
 
-.bp-note strong {
+.bp-progress-label {
   display: block;
-  color: #222;
-  font-size: 14px;
-  margin-bottom: 2px;
+  font-size: 13px;
+  margin-bottom: 6px;
+  text-align: right;
+}
+
+.bp-progress-track {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.bp-progress-track span {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.bp-progress-track span.on {
+  background: white;
 }
 
 .bp-toolbar {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: 10px;
 }
 
 .bp-tool {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 999px;
-  padding: 8px 16px;
+  background: none;
+  border: none;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--red-dark);
+  text-decoration: underline;
   cursor: pointer;
-  color: #333;
-}
-
-.bp-tool:hover {
-  border-color: var(--red);
-  color: var(--red);
 }
 
 .bp-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
   align-items: start;
 }
 
-/* One slot: the wide button opens the picker; the square beside it is +
-   while empty and x once a part is chosen. */
+/* The eight parts, two to a row. */
+.bp-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .bp-slot {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  position: relative;
 }
 
 .bp-slot-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 16px 10px 10px;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  column-gap: 14px;
+  row-gap: 2px;
+  padding: 16px;
   background: white;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px dashed #cfcfcf;
+  border-radius: 14px;
   font: inherit;
   color: #222;
   text-align: left;
@@ -1137,24 +1183,50 @@ footer {
 }
 
 .bp-slot-main:hover {
-  border-color: #f0c4c9;
-}
-
-.bp-slot.picked .bp-slot-main {
   border-color: var(--red);
 }
 
-.bp-slot-icon {
-  width: 52px;
-  height: 52px;
-  flex-shrink: 0;
+.bp-slot.picked .bp-slot-main {
+  border: 1px solid #e6e6e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bp-slot-no {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fdf0f1;
-  color: var(--red);
-  border-radius: 8px;
+  border-radius: 50%;
+  background: #bbb;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.bp-slot.picked .bp-slot-no {
+  background: var(--red-dark);
+}
+
+.bp-slot-icon {
+  grid-row: 1 / 4;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f4f4f6;
+  color: #888;
   overflow: hidden;
+}
+
+.bp-slot.picked .bp-slot-icon {
+  border-radius: 10px;
+  background: white;
 }
 
 .bp-slot-icon svg {
@@ -1166,56 +1238,61 @@ footer {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: white;
-}
-
-.bp-slot-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .bp-slot-title {
-  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
 }
 
 .bp-slot-choice {
-  font-size: 13px;
-  color: #777;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: bold;
+  font-size: 15px;
+  line-height: 1.35;
+  padding-right: 18px;
 }
 
-.bp-slot.picked .bp-slot-choice {
-  color: #333;
+.bp-slot:not(.picked) .bp-slot-choice {
+  color: #aaa;
+  font-weight: normal;
+}
+
+.bp-slot-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 6px;
 }
 
 .bp-slot-price {
   font-weight: bold;
-  white-space: nowrap;
+  color: var(--red-dark);
 }
 
-.bp-slot-chevron {
-  font-size: 26px;
-  line-height: 1;
-  color: #aaa;
+.bp-slot-action {
+  font-size: 13px;
+  color: var(--red);
+  font-weight: bold;
 }
 
-.bp-slot-side {
-  width: 72px;
-  flex-shrink: 0;
-  background: white;
+.bp-slot-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
   border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  font-size: 26px;
-  color: #444;
+  border-radius: 50%;
+  background: #f1f1f1;
+  color: #666;
+  font-size: 16px;
+  line-height: 1;
   cursor: pointer;
 }
 
-.bp-slot-side:hover {
+.bp-slot-remove:hover {
   background: var(--red);
   color: white;
 }
@@ -1224,13 +1301,62 @@ footer {
   position: sticky;
   top: 16px;
   background: white;
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-top: 5px solid var(--red);
 }
 
 .bp-side h3 {
-  margin-bottom: 12px;
+  margin: 18px 0 10px;
+  font-size: 16px;
+}
+
+.bp-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #ccc;
+}
+
+.bp-checkout-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.bp-checkout-info span {
+  font-size: 13px;
+  color: #777;
+}
+
+.bp-checkout-info strong {
+  font-size: 28px;
+  color: var(--red-dark);
+}
+
+.bp-checkout-add {
+  border: none;
+  border-radius: 8px;
+  padding: 13px 18px;
+  background: var(--red);
+  color: white;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.bp-checkout-add:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.bp-checkout-talk {
+  text-align: center;
+  font-size: 14px;
+  color: #1a9e4b;
+  font-weight: bold;
+  text-decoration: none;
 }
 
 .bp-power {
@@ -1268,84 +1394,14 @@ footer {
   margin-top: 4px;
 }
 
-/* The bottom bar. The page's floating WhatsApp and chat buttons sit in
-   the same corners, so on this page they are lifted above it. */
-.has-bp-bar {
-  padding-bottom: 84px;
-}
-
-.has-bp-bar .whatsapp-btn,
-.has-bp-bar .chatbot-wrapper {
-  bottom: 96px;
-}
-
-.bp-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px max(16px, calc((100% - 1200px) / 2));
-  background: white;
-  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.1);
-}
-
-.bp-bar-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.bp-bar-info span {
-  font-size: 13px;
-  color: #777;
-}
-
-.bp-bar-info strong {
-  font-size: 22px;
-}
-
-.bp-bar-talk,
-.bp-bar-add {
-  border-radius: 999px;
-  padding: 12px 22px;
-  font: inherit;
-  font-weight: bold;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.bp-bar-talk {
-  border: 2px solid #25d366;
-  color: #1a9e4b;
-}
-
-.bp-bar-add {
-  border: none;
-  background: var(--red);
-  color: white;
-  cursor: pointer;
-}
-
-.bp-bar-add:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-/* The picker window */
+/* The picker: a drawer from the right edge. */
 .bp-picker {
   position: fixed;
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 16px;
-  background: rgba(20, 20, 20, 0.55);
+  justify-content: flex-end;
+  background: rgba(20, 20, 20, 0.45);
 }
 
 .bp-picker[hidden] {
@@ -1358,20 +1414,31 @@ body.bp-picker-open {
 
 .bp-picker-box {
   width: 100%;
-  max-width: 820px;
-  max-height: calc(100vh - 80px);
+  max-width: 560px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 12px;
-  overflow: hidden;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
+  animation: bp-slide-in 0.2s ease-out;
+}
+
+@keyframes bp-slide-in {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-picker-box { animation: none; }
 }
 
 .bp-picker-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 8px;
+  padding: 18px 20px;
+  background: var(--red-dark);
+  color: white;
 }
 
 .bp-picker-close {
@@ -1379,56 +1446,56 @@ body.bp-picker-open {
   border: none;
   font-size: 30px;
   line-height: 1;
-  color: #666;
+  color: white;
   cursor: pointer;
 }
 
 .bp-search {
-  margin: 0 20px;
-  padding: 11px 16px;
+  margin: 16px 20px 0;
+  padding: 10px 14px;
   border: 1px solid #ccc;
-  border-radius: 999px;
+  border-radius: 8px;
   font: inherit;
 }
 
 .bp-tabs {
   display: flex;
-  gap: 6px;
+  gap: 18px;
   flex-wrap: wrap;
-  justify-content: center;
-  padding: 14px 20px 6px;
+  padding: 12px 20px 0;
+  border-bottom: 1px solid #eee;
 }
 
 .bp-tab {
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 999px;
-  padding: 6px 16px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  padding: 6px 0 8px;
   font: inherit;
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  color: #444;
+  color: #777;
 }
 
 .bp-tab.active {
-  background: var(--red);
-  border-color: var(--red);
-  color: white;
+  color: var(--red-dark);
+  border-bottom-color: var(--red);
 }
 
 .bp-list {
+  flex: 1;
   overflow-y: auto;
   padding: 0 20px 20px;
 }
 
 .bp-group {
-  color: var(--red);
+  color: #999;
   font-weight: bold;
-  text-transform: uppercase;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 1px;
-  margin: 16px 0 4px;
+  text-transform: uppercase;
+  margin: 16px 0 6px;
 }
 
 .bp-option {
@@ -1437,10 +1504,11 @@ body.bp-picker-open {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 10px;
-  background: none;
-  border: none;
-  border-bottom: 1px solid #eee;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
   font: inherit;
   color: #222;
   text-align: left;
@@ -1448,21 +1516,22 @@ body.bp-picker-open {
 }
 
 .bp-option:hover {
-  background: #fdf0f1;
+  border-color: var(--red);
 }
 
 .bp-option.chosen {
-  background: #fde3e6;
+  border-color: var(--red);
+  background: #fdf0f1;
 }
 
 .bp-option:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  background: none;
 }
 
 .bp-option-name {
   font-weight: bold;
+  font-size: 14px;
 }
 
 .bp-option-name small {
@@ -1496,18 +1565,36 @@ body.bp-picker-open {
 @media (max-width: 900px) {
   .bp-layout { grid-template-columns: minmax(0, 1fr); }
   .bp-side { position: static; }
-  .bp-notes { grid-template-columns: 1fr; }
+  .bp-progress { min-width: 0; width: 100%; }
+  .bp-progress-label { text-align: left; }
+
+  /* On a phone the total and the button stay on screen, pinned to the
+     bottom; the floating WhatsApp and chat buttons move up out of its way. */
+  .has-bp-bar { padding-bottom: 84px; }
+  .has-bp-bar .whatsapp-btn,
+  .has-bp-bar .chatbot-wrapper { bottom: 96px; }
+  .bp-checkout {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: none;
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.1);
+  }
+  .bp-checkout-info { flex: 1; min-width: 0; }
+  .bp-checkout-info strong { font-size: 20px; }
+  .bp-checkout-talk { display: none; }
+  .bp-side h3 { margin-top: 0; }
 }
 
 @media (max-width: 600px) {
-  .bp-slot-side { width: 48px; }
-  .bp-slot-price { display: none; }
-  .bp-bar { gap: 8px; }
-  .bp-bar-talk { display: none; }
-  .bp-bar-info strong { font-size: 18px; }
-  .bp-bar-add { padding: 12px 16px; }
-  .bp-picker { padding: 0; }
-  .bp-picker-box { max-height: 100vh; height: 100%; border-radius: 0; }
+  .bp-slots { grid-template-columns: minmax(0, 1fr); }
+  .bp-hero { padding: 20px; }
 }
 
 .compat-message {
@@ -2759,166 +2846,218 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   color: white;
 }
 
-/* ---------- One prebuilt machine: prebuilt-detail.html ---------- */
+/* ---------- One prebuilt machine: prebuilt-detail.html ----------
+   eTech's own layout: a red band with the name and price, the picture
+   beside a table of parts, numbered upgrade steps, and a receipt that
+   follows the page down. */
 
 .pd {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.pd-top {
+.pd-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 26px 30px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--red-darker), var(--red-dark) 60%, var(--red));
+  color: white;
+  margin-bottom: 24px;
+}
+
+.pd-hero-text {
+  flex: 1;
+  min-width: 260px;
+}
+
+.pd-crumbs {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.pd-crumbs a {
+  color: white;
+}
+
+.pd-title {
+  font-size: 28px;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.pd-hero .stock-badge {
+  margin: 0;
+}
+
+.pd-hero-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pd-price-now {
+  font-size: 34px;
+  font-weight: bold;
+}
+
+.pd-was {
+  font-size: 14px;
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.pd-save {
+  background: white;
+  color: var(--red-dark);
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.pd-deal-ends {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.pd-body {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 40px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
   align-items: start;
 }
 
-/* The picture stays in view while the upgrade list scrolls past it. */
-.pd-image {
-  position: sticky;
-  top: 16px;
+.pd-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
   background: white;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.pd-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f9;
   border-radius: 10px;
-  padding: 24px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 16px;
 }
 
 .pd-img {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 560px;
+  max-height: 380px;
   object-fit: contain;
 }
 
-.pd-crumbs {
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #888;
-  margin-bottom: 10px;
+.pd-spec {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  align-self: start;
 }
 
-.pd-crumbs a {
-  color: #888;
+.pd-spec caption {
+  text-align: left;
+  font-weight: bold;
+  font-size: 16px;
+  padding-bottom: 8px;
 }
 
-.pd-title {
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: 500;
-  margin-bottom: 16px;
+.pd-spec th,
+.pd-spec td {
+  text-align: left;
+  padding: 7px 10px;
+  vertical-align: top;
 }
 
-.pd-price {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+.pd-spec th {
+  width: 38%;
+  color: #777;
+  font-weight: normal;
+}
+
+.pd-spec tr:nth-child(odd) {
+  background: #f7f7f9;
+}
+
+.section .pd-steps-title,
+.pd-steps-title {
+  text-align: left;
+  font-size: 22px;
+  margin: 30px 0 2px;
+}
+
+.pd-steps-hint {
+  color: #777;
+  font-size: 14px;
   margin-bottom: 6px;
 }
 
-.pd-price .price-was {
-  display: inline;
-  font-size: 18px;
+.pd-step {
+  margin-top: 18px;
 }
 
-.pd-price-now {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--red);
+.section .pd-step-title,
+.pd-step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-size: 17px;
+  margin-bottom: 10px;
 }
 
-.pd-save {
-  background: var(--red);
+.pd-step-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--red-dark);
   color: white;
   font-size: 13px;
-  font-weight: bold;
-  padding: 6px 12px;
-  border-radius: 4px;
-}
-
-.pd-deal-ends {
-  font-size: 12px;
-  color: #888;
-}
-
-.pd-parts {
-  margin: 18px 0 10px 20px;
-  color: #444;
-  line-height: 1.9;
-  font-size: 15px;
-}
-
-.pd-parts .spec-key {
-  color: #222;
-  font-weight: 600;
-}
-
-.pd-section {
-  margin-top: 22px;
-}
-
-.section .pd-section-title,
-.pd-section-title {
-  font-size: 22px;
-  font-weight: 500;
-  text-align: left;
-  margin-bottom: 12px;
-  cursor: pointer;
-}
-
-/* A plus or a minus in front of each section, like the reference shop's. */
-summary.pd-section-title {
-  list-style: none;
-}
-
-summary.pd-section-title::-webkit-details-marker {
-  display: none;
-}
-
-summary.pd-section-title::before {
-  content: "+";
-  display: inline-block;
-  width: 22px;
-  color: var(--red);
-  font-weight: bold;
-}
-
-details[open] > summary.pd-section-title::before {
-  content: "\2212";
 }
 
 .pd-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-/* One upgrade: its icon, its name, what it adds. Chosen = red border. */
+/* One upgrade: a round marker, its icon, its name, what it adds. */
 .pd-tile {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 18px 12px 14px;
+  gap: 12px;
+  padding: 12px 14px;
   background: white;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
   cursor: pointer;
   font: inherit;
   color: #333;
-  text-align: center;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
 }
 
 .pd-tile:hover {
-  border-color: #bbb;
+  border-color: var(--red);
 }
 
 .pd-tile.chosen {
   border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(214, 40, 57, 0.15);
+  background: #fdf0f1;
 }
 
 .pd-tile:disabled {
@@ -2926,14 +3065,24 @@ details[open] > summary.pd-section-title::before {
   cursor: not-allowed;
 }
 
-.pd-tile-icon {
-  width: 56px;
-  height: 56px;
-  color: #2f3640;
+.pd-tile-mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid #bbb;
+  border-radius: 50%;
 }
 
-.pd-tile.chosen .pd-tile-icon {
-  color: var(--red);
+.pd-tile.chosen .pd-tile-mark {
+  border-color: var(--red);
+  background: radial-gradient(circle, var(--red) 45%, transparent 50%);
+}
+
+.pd-tile-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: var(--red-dark);
 }
 
 .pd-tile-icon svg {
@@ -2943,47 +3092,81 @@ details[open] > summary.pd-section-title::before {
 }
 
 .pd-tile-name {
+  flex: 1;
+  min-width: 0;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .pd-tile-price {
-  font-size: 12px;
-  color: #777;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--red-dark);
+  white-space: nowrap;
 }
 
-.pd-summary {
-  margin: 26px 0 14px;
-  border-top: 1px solid #e5e5e5;
-  padding-top: 12px;
-  font-size: 15px;
+/* The receipt down the side. */
+.pd-receipt {
+  position: sticky;
+  top: 16px;
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-top: 5px solid var(--red);
 }
 
-.pd-summary > div {
+.section .pd-receipt h2,
+.pd-receipt h2 {
+  text-align: left;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.pd-line {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.pd-line span:last-child {
+  white-space: nowrap;
+}
+
+.pd-line-up {
+  color: #555;
+}
+
+.pd-line-none {
+  font-size: 13px;
+  color: #999;
   padding: 4px 0;
 }
 
-.pd-summary .pd-total {
+.pd-total {
+  border-top: 1px dashed #ccc;
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 20px;
   font-weight: bold;
-  font-size: 18px;
-  color: var(--red);
+  color: var(--red-dark);
 }
 
 .pd-add {
+  margin-top: 14px;
   padding: 14px 16px;
   font-size: 16px;
   font-weight: bold;
-  letter-spacing: 1px;
 }
 
 .pd-description {
-  margin-top: 40px;
+  margin-top: 30px;
   background: white;
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 24px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .section .pd-description h2 {
@@ -2997,21 +3180,32 @@ details[open] > summary.pd-section-title::before {
   line-height: 1.7;
 }
 
-@media (max-width: 800px) {
-  .pd-top {
-    grid-template-columns: 1fr;
-    gap: 20px;
+@media (max-width: 900px) {
+  .pd-body,
+  .pd-showcase {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .pd-image {
+  .pd-receipt {
     position: static;
   }
 
+  .pd-hero-price {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .pd-hero {
+    padding: 20px;
+  }
+
   .pd-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .pd-tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
+

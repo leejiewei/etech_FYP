@@ -3,8 +3,7 @@
 // a count), real-time search, sorting, and stock badges (via
 // buildProductCard).
 //
-// The side panel follows suncycle.com.my's category pages. Unlike theirs
-// there is no Apply button: a tick redraws the grid straight away.
+// There is no Apply button: a tick redraws the grid straight away.
 
 let currentSearch = "";
 let currentSort = "default";
@@ -241,13 +240,12 @@ function refreshShop() {
   renderProductGrid();
 }
 
-// The heading, the crumb and a chip for each thing ticked, so it is always
+// The heading and a chip for each thing ticked, so it is always
 // plain why only some products are showing.
 function renderShopHead() {
   const one = (set) => (set.size === 1 ? Array.from(set)[0] : null);
   const title = one(selected.subcategory) || one(selected.category) || one(selected.brand) || "All Products";
   document.getElementById("shop-title").textContent = title;
-  document.getElementById("shop-crumb").textContent = title;
 
   const chips = [];
   const chip = (group, value, label) => chips.push(`

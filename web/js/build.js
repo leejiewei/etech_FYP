@@ -2,10 +2,10 @@
 // filtering (socket, RAM type) and a build summary that checks socket
 // match, memory type match, and PSU headroom before checkout.
 //
-// Laid out like the build pages of Malaysian PC shops (JUSPC's was the
-// reference): one row per slot, each opening a picker window with a
-// search box, brand tabs and live stock; the checks down the side; and a
-// bar pinned to the bottom with the running total.
+// The eight parts are numbered cards; each opens a picker that slides in
+// from the right with a search box, brand tabs and live stock. A progress
+// bar sits in the header, and the total, the buttons and the checks sit
+// in the side panel.
 
 let currentBuild = {}; // e.g. { CPU: 101, Motherboard: 111, RAM: null, ... }
 
@@ -116,29 +116,27 @@ function renderBuilder() {
   const container = document.getElementById("builder-slots");
   if (!container) return;
 
-  container.innerHTML = builderSlots.map((slot) => {
+  container.innerHTML = builderSlots.map((slot, i) => {
     const info = buildSlotInfo(slot);
     const picked = selectedProduct(slot);
     return `
       <div class="bp-slot${picked ? " picked" : ""}">
         <button type="button" class="bp-slot-main" data-slot="${escapeHtml(slot)}">
+          <span class="bp-slot-no">${i + 1}</span>
           <span class="bp-slot-icon">${picked
             ? productImageTag(picked, "bp-slot-img")
             : categoryIcon(info.icon)}</span>
-          <span class="bp-slot-text">
-            <span class="bp-slot-title">${escapeHtml(info.title)}</span>
-            <span class="bp-slot-choice">${picked
-              ? escapeHtml(picked.name)
-              : "Select " + escapeHtml(info.title)}</span>
+          <span class="bp-slot-title">${escapeHtml(info.title)}</span>
+          <span class="bp-slot-choice">${picked ? escapeHtml(picked.name) : "Not chosen yet"}</span>
+          <span class="bp-slot-foot">
+            <span class="bp-slot-price">${picked ? money(partPrice(picked)) : ""}</span>
+            <span class="bp-slot-action">${picked ? "Change" : "Choose"}</span>
           </span>
-          ${picked ? `<span class="bp-slot-price">${money(partPrice(picked))}</span>` : ""}
-          <span class="bp-slot-chevron" aria-hidden="true">&#8250;</span>
         </button>
         ${picked
-          ? `<button type="button" class="bp-slot-side" data-remove="${escapeHtml(slot)}"
-               aria-label="Remove ${escapeHtml(info.title)}">&times;</button>`
-          : `<button type="button" class="bp-slot-side" data-slot="${escapeHtml(slot)}"
-               aria-label="Choose ${escapeHtml(info.title)}">+</button>`}
+          ? `<button type="button" class="bp-slot-remove" data-remove="${escapeHtml(slot)}"
+               aria-label="Remove ${escapeHtml(info.title)}" title="Remove">&times;</button>`
+          : ""}
       </div>`;
   }).join("");
 
@@ -149,13 +147,27 @@ function renderBuilder() {
     btn.onclick = () => handleSlotChange(btn.dataset.remove, null);
   });
 
+  renderProgress();
   renderBuildSummary();
+}
+
+// A bar of eight segments in the page header, one per part, filled in as
+// parts are chosen.
+function renderProgress() {
+  const el = document.getElementById("bp-progress");
+  if (!el) return;
+  const done = builderSlots.filter((slot) => currentBuild[slot]).length;
+  el.innerHTML = `
+    <span class="bp-progress-label">${done} of ${builderSlots.length} parts chosen</span>
+    <span class="bp-progress-track">${builderSlots.map((slot) =>
+      `<span class="${currentBuild[slot] ? "on" : ""}" title="${escapeHtml(buildSlotInfo(slot).title)}"></span>`).join("")}
+    </span>`;
 }
 
 // ------------------------------------------------------------
 // The part picker
 // ------------------------------------------------------------
-// One window, refilled for whichever slot was clicked.
+// One drawer, refilled for whichever part was clicked.
 let pickerSlot = null;
 let pickerBrand = "All";
 
@@ -299,7 +311,7 @@ function buildSpecText() {
 function wireToolbar() {
   document.getElementById("bp-reset").onclick = () => {
     if (!builderSlots.some((slot) => currentBuild[slot])) return;
-    if (!confirm("Clear every part from this build?")) return;
+    if (!confirm("Start over and clear every part from this build?")) return;
     builderSlots.forEach((slot) => { currentBuild[slot] = null; });
     saveBuild();
     renderBuilder();
