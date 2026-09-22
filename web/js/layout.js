@@ -48,7 +48,6 @@ function injectHeader() {
         onkeyup="if(event.key==='Enter'){ window.location.href='shop.html?search=' + encodeURIComponent(this.value); }" />
 
       <ul class="nav-links">
-        <li><a href="shop.html">Shop</a></li>
         <li><a href="build.html">Build PC</a></li>
         <li><a href="prebuilt.html">Prebuilt</a></li>
         <li><a href="deals.html">Deals</a></li>

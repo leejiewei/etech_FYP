@@ -778,6 +778,181 @@ footer {
   color: #999;
 }
 
+/* ---------- Shop page: tick-box filters beside the grid ----------
+   After suncycle.com.my's category pages. */
+.shop {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 28px;
+  max-width: 1360px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.shop-side {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* The Filters button only exists on a phone. */
+.shop-side-toggle {
+  display: none;
+}
+
+.shop-search {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.shop-facet {
+  border-top: 1px solid #eee;
+  padding: 10px 0 6px;
+}
+
+.shop-facet:first-child {
+  border-top: none;
+}
+
+.shop-facet summary {
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  list-style-position: outside;
+}
+
+.shop-tick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.shop-tick input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--red);
+  flex-shrink: 0;
+}
+
+.shop-tick span {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-tick em {
+  font-style: normal;
+  font-size: 12px;
+  color: #888;
+}
+
+.shop-tick.empty {
+  color: #aaa;
+}
+
+.shop-more {
+  background: none;
+  border: none;
+  color: var(--red);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.shop-hint {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.shop-main .product-grid {
+  max-width: none;
+}
+
+.shop-crumbs {
+  font-size: 13px;
+  color: #888;
+}
+
+.shop-crumbs a {
+  color: var(--red);
+}
+
+.section h2.shop-title {
+  text-align: left;
+  font-size: 30px;
+  margin: 2px 0 10px;
+}
+
+.shop-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.shop-chips .active-filter-chip {
+  font-size: 13px;
+  padding: 4px 12px;
+}
+
+.shop-clear {
+  background: none;
+  border: none;
+  color: #666;
+  text-decoration: underline;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.shop-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e3e3e3;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .shop {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .shop-side {
+    position: static;
+    max-height: none;
+  }
+  .shop-side-toggle {
+    display: block;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .shop-side[open] .shop-side-toggle {
+    margin-bottom: 12px;
+  }
+}
+
 /* ---------- Auth / form pages ---------- */
 .form-page {
   max-width: 420px;
