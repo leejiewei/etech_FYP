@@ -87,7 +87,7 @@ async function select(query) {
 }
 
 // Every product's scores over the last `days` days, optionally for one
-// category (null means all). Read by the Alerts and Velocity pages.
+// category (null means all). Read by the Stock Alerts page.
 async function loadScores(days, categoryId = null) {
   const { data, error } = await sb.rpc("admin_product_scores", {
     p_days: days,
@@ -95,6 +95,19 @@ async function loadScores(days, categoryId = null) {
   });
   if (error) throw error;
   return data;
+}
+
+// Who a deal would message, read off one admin_customer_activity row:
+// saved it, carted it without buying, or viewed it WATCHING_VIEWS times.
+// The same three groups, in the same order, as admin_create_deal() --
+// so the Dashboard and Customer Behaviour count what a deal sends.
+const WATCHING_VIEWS = 3;
+
+function watchReason(r) {
+  if (r.in_wishlist) return "saved";
+  if (Number(r.cart_adds) > 0 && Number(r.purchases) === 0) return "carted";
+  if (Number(r.views) >= WATCHING_VIEWS) return "viewed";
+  return null;
 }
 
 // A stored date read back in Malaysian time, which is the zone the
@@ -150,10 +163,9 @@ const ADMIN_MENU = [
   ["showcases",  "showcases.html",    "Rig Showcase"],
   ["chatlogs",   "chatlogs.html",     "Chatbot Logs"],
   [null,         null,                "Analytics"],
-  ["velocity",   "velocity.html",     "Inventory Velocity"],
+  ["behaviour",  "behaviour.html",    "Customer Behaviour"],
   ["alerts",     "alerts.html",       "Stock Alerts"],
   ["reports",    "reports.html",      "Sales &amp; Customers"],
-  ["behaviour",  "behaviour.html",    "Customer Behaviour"],
   ["forecast",   "forecast.html",     "Sales Forecast"],
 ];
 

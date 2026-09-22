@@ -166,12 +166,31 @@ function wirePriceHint(productList) {
   const select = document.getElementById("product_id");
   const hint = document.getElementById("price-hint");
 
-  select.onchange = () => {
+  select.onchange = async () => {
     const product = productList.find((p) => String(p.product_id) === select.value);
     hint.textContent = product
       ? `List price is ${money(product.price)}. The deal must be below it.`
       : "Must be below the list price.";
+    if (!product) return;
+
+    // Who this deal would message, so the number is known before the
+    // button is pressed, not only after.
+    const { data: rows } = await sb.from("admin_customer_activity")
+      .select("views,cart_adds,purchases,in_wishlist")
+      .eq("product_id", product.product_id);
+    if (!rows || select.value !== String(product.product_id)) return;
+    const told = rows.filter((r) => watchReason(r) !== null).length;
+    hint.textContent += told === 0
+      ? " Nobody is waiting on it yet."
+      : ` ${told} customer${told === 1 ? "" : "s"} will be messaged.`;
   };
+
+  // Arriving from the Dashboard's "Put on offer" with the product chosen.
+  const wanted = params().product;
+  if (wanted && productList.some((p) => String(p.product_id) === wanted)) {
+    select.value = wanted;
+    select.onchange();
+  }
 }
 
 async function createDeal(productList) {
@@ -210,7 +229,7 @@ async function createDeal(productList) {
   // at 23:59 where the shop is, not where the reader's browser is.
   // Through the function rather than straight into the table, because
   // creating a deal also messages everyone who was watching the product
-  // -- saved it, or came back to it three times. Both happen in one
+  // -- saved it, carted it, or came back to it three times. Both happen in one
   // transaction, so a deal never goes live with the news half sent, and
   // the count comes back so staff can see it did something.
   const { data: alerted, error } = await sb.rpc("admin_create_deal", {
