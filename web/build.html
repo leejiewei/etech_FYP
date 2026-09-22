@@ -6,32 +6,61 @@
   <title>Build Your Own PC - eTech Computer Accessories</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="has-bp-bar">
 
   <div id="site-header"></div>
 
-  <section class="section">
-    <h2>Build Your Own PC</h2>
-    <p style="text-align:center; color:#666; margin-bottom: 12px;">
-      Pick one part per slot. Once you choose a CPU we hide the motherboards and RAM that won't fit it,
-      and any cooler that isn't strong enough to keep it cool — so you only ever see parts that work
-      together. The Build Summary below checks case fit, card length and power for you.
-    </p>
+  <section class="section bp">
+    <div class="bp-head">
+      <h2>Build Your Own PC</h2>
+      <p>Pick one part per slot. Once you choose a CPU we hide the motherboards, RAM and coolers
+        that won't work with it, so everything you're offered fits together.</p>
+    </div>
 
-    <p style="text-align:center; font-size: 13px; color:#888; margin-bottom: 8px;">Filter by Brand</p>
-    <div class="filter-bar" id="builder-brand-filter" style="margin-bottom: 30px;"></div>
+    <div class="bp-notes">
+      <div class="bp-note"><strong>Only parts that fit</strong>Socket, memory type and cooling are matched for you.</div>
+      <div class="bp-note"><strong>Checked before you pay</strong>Case fit, card length and power are checked in the summary.</div>
+      <div class="bp-note"><strong>Stock is live</strong>Every part shows whether we have it on the shelf right now.</div>
+    </div>
 
-    <div class="builder-slots" id="builder-slots"></div>
+    <div class="bp-toolbar">
+      <button type="button" class="bp-tool" id="bp-copy">Copy Specs</button>
+      <button type="button" class="bp-tool" id="bp-reset">Reset</button>
+    </div>
 
-    <div class="builder-summary">
-      <h3>Build Summary</h3>
-      <div id="compat-messages"></div>
-      <p class="subtotal">Subtotal: <span id="builder-subtotal">RM 0.00</span></p>
-      <button class="hero-btn" id="add-build-btn" style="width:100%; margin-top: 14px;" onclick="addBuildToCart()" disabled>
-        Add Build to Cart
-      </button>
+    <div class="bp-layout">
+      <div class="bp-slots" id="builder-slots"></div>
+
+      <aside class="bp-side">
+        <h3>Build Summary</h3>
+        <div id="bp-power"></div>
+        <div id="compat-messages"></div>
+      </aside>
     </div>
   </section>
+
+  <!-- Pinned to the bottom of the window while you build. -->
+  <div class="bp-bar">
+    <div class="bp-bar-info">
+      <span id="bp-count">No parts selected</span>
+      <strong id="builder-subtotal">RM 0.00</strong>
+    </div>
+    <a class="bp-bar-talk" id="bp-talk" target="_blank" rel="noopener">Talk to Us</a>
+    <button class="bp-bar-add" id="add-build-btn" onclick="addBuildToCart()" disabled>Add Build to Cart</button>
+  </div>
+
+  <!-- The part picker: one window, refilled for whichever slot was clicked. -->
+  <div class="bp-picker" id="bp-picker" hidden>
+    <div class="bp-picker-box" role="dialog" aria-modal="true" aria-labelledby="bp-picker-title">
+      <div class="bp-picker-head">
+        <h3 id="bp-picker-title"></h3>
+        <button type="button" class="bp-picker-close" id="bp-picker-close" aria-label="Close">&times;</button>
+      </div>
+      <input type="search" class="bp-search" id="bp-search" placeholder="Search" autocomplete="off" />
+      <div class="bp-tabs" id="bp-tabs"></div>
+      <div class="bp-list" id="bp-list"></div>
+    </div>
+  </div>
 
   <div id="site-footer"></div>
 

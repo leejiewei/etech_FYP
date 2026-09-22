@@ -1,35 +1,29 @@
 // "Own Build" PC builder: pick one part per slot, with compatibility
 // filtering (socket, RAM type) and a build summary that checks socket
 // match, memory type match, and PSU headroom before checkout.
+//
+// Laid out like the build pages of Malaysian PC shops (JUSPC's was the
+// reference): one row per slot, each opening a picker window with a
+// search box, brand tabs and live stock; the checks down the side; and a
+// bar pinned to the bottom with the running total.
 
 let currentBuild = {}; // e.g. { CPU: 101, Motherboard: 111, RAM: null, ... }
-let currentBrandFilter = "All";
 
-// All the brands that appear anywhere among buildable parts (CPU, Motherboard,
-// RAM, GPU, Storage, PSU, Case), used for the brand filter row at the top.
-function getBuilderBrands() {
-  const brands = new Set();
-  builderSlots.forEach((slot) => {
-    getProductsBySubcategory(slot).forEach((p) => brands.add(p.brand));
-  });
-  return ["All", ...Array.from(brands).sort()];
-}
+// What each slot is called on the page, and its icon from CATEGORY_ICONS
+// in layout.js.
+const BUILD_SLOT_INFO = {
+  CPU:         { title: "Processor (CPU)",     icon: "cpu" },
+  Cooler:      { title: "CPU Cooler",          icon: "cooler" },
+  Motherboard: { title: "Motherboard",         icon: "motherboard" },
+  RAM:         { title: "Memory (RAM)",        icon: "ram" },
+  GPU:         { title: "Graphics Card (GPU)", icon: "gpu" },
+  Storage:     { title: "Storage",             icon: "storage" },
+  PSU:         { title: "Power Supply (PSU)",  icon: "psu" },
+  Case:        { title: "Case",                icon: "case" },
+};
 
-function renderBrandFilter() {
-  const container = document.getElementById("builder-brand-filter");
-  if (!container) return;
-
-  container.innerHTML = "";
-  getBuilderBrands().forEach((brand) => {
-    const btn = document.createElement("button");
-    btn.textContent = brand;
-    btn.className = "filter-btn" + (brand === currentBrandFilter ? " active" : "");
-    btn.onclick = () => {
-      currentBrandFilter = brand;
-      renderBuilder();
-    };
-    container.appendChild(btn);
-  });
+function buildSlotInfo(slot) {
+  return BUILD_SLOT_INFO[slot] || { title: slot, icon: "puzzle" };
 }
 
 function loadBuild() {
@@ -92,14 +86,6 @@ function eligibleOptions(slot) {
       (p.attrs.coolerRating || 0) >= (cpu.attrs.tdp || 0));
   }
 
-  // Brand filter from the top of the page. If this slot has no products of
-  // the chosen brand (e.g. "AMD" doesn't make PSUs or cases), just show
-  // everything for that slot instead of leaving the dropdown empty.
-  if (currentBrandFilter !== "All") {
-    const brandMatches = list.filter((p) => p.brand === currentBrandFilter);
-    if (brandMatches.length > 0) list = brandMatches;
-  }
-
   return list;
 }
 
@@ -121,59 +107,215 @@ function handleSlotChange(slot, productId) {
   renderBuilder();
 }
 
-// Which drawing to show as the greyed-out placeholder for an empty slot.
-function slotImageName(slot) {
-  const names = {
-    CPU: "cpu",
-    Cooler: "cooler",
-    Motherboard: "motherboard",
-    RAM: "ram",
-    GPU: "gpu",
-    Storage: "ssd",
-    PSU: "psu",
-    Case: "case",
-  };
-  return names[slot] || "default";
+// The deal price when there is one, as the cart will charge it.
+function partPrice(p) {
+  return priceOf(p);
 }
 
 function renderBuilder() {
   const container = document.getElementById("builder-slots");
   if (!container) return;
 
-  renderBrandFilter();
-  container.innerHTML = "";
-
-  builderSlots.forEach((slot) => {
-    const options = eligibleOptions(slot);
-    const chosen = currentBuild[slot];
-
-    // Show a thumbnail of whatever is picked for this slot (or a faded
-    // placeholder drawing while the slot is still empty).
+  container.innerHTML = builderSlots.map((slot) => {
+    const info = buildSlotInfo(slot);
     const picked = selectedProduct(slot);
-    const slotImg = picked
-      ? `<img class="slot-img" src="${safeUrl(productImage(picked))}" alt="${escapeHtml(picked.name)}"
-           onerror="this.onerror=null; this.src='${safeUrl(productImageFallback(picked))}';" />`
-      : `<img class="slot-img" style="opacity:0.3" src="images/${encodeURIComponent(slotImageName(slot))}.svg" alt="${escapeHtml(slot)}" />`;
+    return `
+      <div class="bp-slot${picked ? " picked" : ""}">
+        <button type="button" class="bp-slot-main" data-slot="${escapeHtml(slot)}">
+          <span class="bp-slot-icon">${picked
+            ? productImageTag(picked, "bp-slot-img")
+            : categoryIcon(info.icon)}</span>
+          <span class="bp-slot-text">
+            <span class="bp-slot-title">${escapeHtml(info.title)}</span>
+            <span class="bp-slot-choice">${picked
+              ? escapeHtml(picked.name)
+              : "Select " + escapeHtml(info.title)}</span>
+          </span>
+          ${picked ? `<span class="bp-slot-price">${money(partPrice(picked))}</span>` : ""}
+          <span class="bp-slot-chevron" aria-hidden="true">&#8250;</span>
+        </button>
+        ${picked
+          ? `<button type="button" class="bp-slot-side" data-remove="${escapeHtml(slot)}"
+               aria-label="Remove ${escapeHtml(info.title)}">&times;</button>`
+          : `<button type="button" class="bp-slot-side" data-slot="${escapeHtml(slot)}"
+               aria-label="Choose ${escapeHtml(info.title)}">+</button>`}
+      </div>`;
+  }).join("");
 
-    const row = document.createElement("div");
-    row.className = "builder-slot";
-    row.innerHTML = `
-      ${slotImg}
-      <span class="slot-name">${escapeHtml(slot)}</span>
-      <select onchange="handleSlotChange('${escapeHtml(slot)}', this.value)">
-        <option value="">-- Choose ${escapeHtml(slot)} --</option>
-        ${options.map((p) => `
-          <option value="${p.id}" ${chosen === p.id ? "selected" : ""} ${p.stock === "out" ? "disabled" : ""}>
-            ${escapeHtml(p.name)} - RM ${p.price.toFixed(2)} ${p.stock === "out" ? "(Out of stock)" : p.stock === "low" ? "(Low stock)" : ""}
-          </option>
-        `).join("")}
-      </select>
-      <span class="slot-price">${selectedProduct(slot) ? "RM " + selectedProduct(slot).price.toFixed(2) : "-"}</span>
-    `;
-    container.appendChild(row);
+  container.querySelectorAll("[data-slot]").forEach((btn) => {
+    btn.onclick = () => openPicker(btn.dataset.slot);
+  });
+  container.querySelectorAll("[data-remove]").forEach((btn) => {
+    btn.onclick = () => handleSlotChange(btn.dataset.remove, null);
   });
 
   renderBuildSummary();
+}
+
+// ------------------------------------------------------------
+// The part picker
+// ------------------------------------------------------------
+// One window, refilled for whichever slot was clicked.
+let pickerSlot = null;
+let pickerBrand = "All";
+
+// A short line of the specs that matter for fitting, under each part's
+// name. Anything a product doesn't have is simply left out.
+function partSpecLine(slot, p) {
+  const a = p.attrs || {};
+  const bits = {
+    CPU:         [a.socket, a.tdp && a.tdp + "W", a.igpu === "No" && "needs a graphics card"],
+    Cooler:      [a.coolerRating && "cools up to " + a.coolerRating + "W"],
+    Motherboard: [a.socket, a.formFactor, a.ramGen],
+    RAM:         [a.ramGen],
+    GPU:         [a.length && a.length + "mm long", a.power && a.power + "W"],
+    Storage:     [a.pcieGen && "PCIe Gen " + a.pcieGen],
+    PSU:         [a.wattage && a.wattage + "W"],
+    Case:        [(a.supportedFormFactors || []).join(" / "),
+                  a.maxGpuLength && "cards up to " + a.maxGpuLength + "mm"],
+  }[slot] || [];
+  return bits.filter(Boolean).join(" · ");
+}
+
+function openPicker(slot) {
+  pickerSlot = slot;
+  pickerBrand = "All";
+  const info = buildSlotInfo(slot);
+  document.getElementById("bp-picker-title").textContent = "Select " + info.title;
+  const search = document.getElementById("bp-search");
+  search.value = "";
+  search.placeholder = "Search all " + info.title;
+  document.getElementById("bp-picker").hidden = false;
+  document.body.classList.add("bp-picker-open");
+  renderPicker();
+  search.focus();
+}
+
+function closePicker() {
+  pickerSlot = null;
+  document.getElementById("bp-picker").hidden = true;
+  document.body.classList.remove("bp-picker-open");
+}
+
+function renderPicker() {
+  const slot = pickerSlot;
+  if (!slot) return;
+
+  const eligible = eligibleOptions(slot);
+  const brands = ["All", ...Array.from(new Set(eligible.map((p) => p.brand))).sort()];
+  if (brands.indexOf(pickerBrand) === -1) pickerBrand = "All";
+
+  const tabs = document.getElementById("bp-tabs");
+  tabs.innerHTML = brands.map((b) => `
+    <button type="button" class="bp-tab${b === pickerBrand ? " active" : ""}"
+            data-brand="${escapeHtml(b)}">${escapeHtml(b)}</button>`).join("");
+  tabs.querySelectorAll(".bp-tab").forEach((tab) => {
+    tab.onclick = () => { pickerBrand = tab.dataset.brand; renderPicker(); };
+  });
+
+  const query = document.getElementById("bp-search").value.trim().toLowerCase();
+  const shown = eligible.filter((p) =>
+    (pickerBrand === "All" || p.brand === pickerBrand) &&
+    (!query || p.name.toLowerCase().indexOf(query) !== -1));
+
+  // Parts left out because they won't work with what's already picked.
+  // Saying so beats letting someone think we don't sell them.
+  const all = getProductsBySubcategory(slot).filter((p) => !p.excludeFromBuilder).length;
+  const hidden = all - eligible.length;
+  const hiddenNote = hidden > 0
+    ? `<p class="bp-hidden-note">${hidden} more ${hidden > 1 ? "are" : "is"} hidden because
+         ${hidden > 1 ? "they don't" : "it doesn't"} fit the parts you've already picked.</p>`
+    : "";
+
+  const chosen = currentBuild[slot];
+  const groups = [];
+  shown.forEach((p) => {
+    let g = groups.find((x) => x.brand === p.brand);
+    if (!g) groups.push(g = { brand: p.brand, parts: [] });
+    g.parts.push(p);
+  });
+
+  const list = document.getElementById("bp-list");
+  list.innerHTML = (groups.length ? groups.map((g) => `
+    <p class="bp-group">${escapeHtml(g.brand)}</p>
+    ${g.parts.map((p) => {
+      const spec = partSpecLine(slot, p);
+      return `
+      <button type="button" class="bp-option${p.id === chosen ? " chosen" : ""}"
+              data-pick="${p.id}" ${p.stock === "out" ? "disabled" : ""}>
+        <span class="bp-option-name">${escapeHtml(p.name)}
+          ${spec ? `<small>${escapeHtml(spec)}</small>` : ""}</span>
+        <span class="bp-option-side">
+          <span class="stock-badge stock-${p.stock}">${stockLabel(p.stock)}</span>
+          ${hasDeal(p) ? `<span class="price-was">${money(p.price)}</span>` : ""}
+          <strong>${money(partPrice(p))}</strong>
+        </span>
+      </button>`;
+    }).join("")}`).join("")
+    : `<p class="bp-empty">Nothing matches that search.</p>`) + hiddenNote;
+
+  list.querySelectorAll("[data-pick]").forEach((btn) => {
+    btn.onclick = () => {
+      handleSlotChange(slot, btn.dataset.pick);
+      closePicker();
+    };
+  });
+}
+
+function wirePicker() {
+  document.getElementById("bp-picker-close").onclick = closePicker;
+  // A click on the dimmed backdrop, outside the box, closes it too.
+  document.getElementById("bp-picker").onclick = (e) => {
+    if (e.target.id === "bp-picker") closePicker();
+  };
+  document.getElementById("bp-search").oninput = renderPicker;
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && pickerSlot) closePicker();
+  });
+}
+
+// ------------------------------------------------------------
+// Reset, Copy Specs and Talk to Us
+// ------------------------------------------------------------
+function buildTotal() {
+  return builderSlots.reduce((sum, slot) => {
+    const p = selectedProduct(slot);
+    return p ? sum + partPrice(p) : sum;
+  }, 0);
+}
+
+function buildSpecText() {
+  const lines = builderSlots
+    .filter((slot) => selectedProduct(slot))
+    .map((slot) => {
+      const p = selectedProduct(slot);
+      return buildSlotInfo(slot).title + ": " + p.name + " - " + money(partPrice(p));
+    });
+  return lines.length
+    ? "My eTech PC build\n" + lines.join("\n") + "\nTotal: " + money(buildTotal())
+    : "";
+}
+
+function wireToolbar() {
+  document.getElementById("bp-reset").onclick = () => {
+    if (!builderSlots.some((slot) => currentBuild[slot])) return;
+    if (!confirm("Clear every part from this build?")) return;
+    builderSlots.forEach((slot) => { currentBuild[slot] = null; });
+    saveBuild();
+    renderBuilder();
+  };
+
+  const copy = document.getElementById("bp-copy");
+  copy.onclick = () => {
+    const text = buildSpecText();
+    const done = (label) => {
+      copy.textContent = label;
+      setTimeout(() => { copy.textContent = "Copy Specs"; }, 1800);
+    };
+    if (!text) return done("Nothing to copy yet");
+    if (!navigator.clipboard) return done("Could not copy");
+    navigator.clipboard.writeText(text).then(() => done("Copied"), () => done("Could not copy"));
+  };
 }
 
 // Which PCIe generation a motherboard's M.2 slot runs at, worked out from
@@ -192,12 +334,7 @@ function renderBuildSummary() {
   const messagesEl = document.getElementById("compat-messages");
   if (!subtotalEl) return;
 
-  let subtotal = 0;
-  builderSlots.forEach((slot) => {
-    const p = selectedProduct(slot);
-    if (p) subtotal += p.price;
-  });
-  subtotalEl.textContent = "RM " + subtotal.toFixed(2);
+  subtotalEl.textContent = money(buildTotal());
 
   const messages = [];
   const cpu = selectedProduct("CPU");
@@ -377,6 +514,9 @@ function renderBuildSummary() {
       group(passes, "compat-ok", "&#10003;", passes.length && (criticals.length || warnings.length) ? "Checks passed" : "");
   }
 
+  renderPowerMeter(cpu, gpu, psu);
+  renderBarInfo();
+
   // Every slot must be filled — except the cooler, when the CPU already
   // comes with one in the box.
   const coolerOptional = cpu && cpu.attrs.coolerIncluded === "Yes";
@@ -392,6 +532,48 @@ function renderBuildSummary() {
   }
 }
 
+// Estimated draw against the power supply, as a bar. The same sum as
+// check 7 above: CPU + graphics card + a flat allowance for the rest.
+function renderPowerMeter(cpu, gpu, psu) {
+  const el = document.getElementById("bp-power");
+  if (!el) return;
+  if (!cpu && !gpu) {
+    el.innerHTML = "";
+    return;
+  }
+  const needed = (cpu ? cpu.attrs.tdp || 0 : 0) + (gpu ? gpu.attrs.power || 0 : 0) + OTHER_PARTS_WATTAGE;
+  const capacity = psu ? psu.attrs.wattage || 0 : 0;
+  const share = capacity ? Math.min(100, Math.round(needed / capacity * 100)) : 0;
+  const over = capacity && needed > capacity;
+  el.innerHTML = `
+    <div class="bp-power">
+      <div class="bp-power-row">
+        <span>Estimated power draw</span>
+        <strong>about ${needed}W</strong>
+      </div>
+      ${capacity ? `
+        <div class="bp-meter"><span class="${over ? "over" : ""}" style="width:${share}%"></span></div>
+        <p class="bp-power-note">${over
+          ? `More than your ${capacity}W supply can give.`
+          : `${share}% of your ${capacity}W supply.`}</p>`
+        : `<p class="bp-power-note">Choose a power supply of at least ${needed}W.</p>`}
+    </div>`;
+}
+
+// The count in the bottom bar, and a Talk to Us link that carries the
+// build so far, so the shop sees exactly what the customer is asking about.
+function renderBarInfo() {
+  const picked = builderSlots.filter((slot) => currentBuild[slot]).length;
+  document.getElementById("bp-count").textContent = picked
+    ? `${picked} of ${builderSlots.length} parts selected`
+    : "No parts selected";
+
+  const spec = buildSpecText();
+  document.getElementById("bp-talk").href = whatsappShopLink(spec
+    ? "Hi eTech, can you check this build for me?\n\n" + spec
+    : "Hi eTech, I'd like help choosing parts for a PC build.");
+}
+
 function addBuildToCart() {
   builderSlots.forEach((slot) => {
     const id = currentBuild[slot];
@@ -402,5 +584,7 @@ function addBuildToCart() {
 
 onAppReady(() => {
   loadBuild();
+  wirePicker();
+  wireToolbar();
   renderBuilder();
 });
