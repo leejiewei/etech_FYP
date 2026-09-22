@@ -11,45 +11,44 @@
   <div id="site-header"></div>
 
   <section class="section bp">
-    <div class="bp-head">
-      <h2>Build Your Own PC</h2>
-      <p>Pick one part per slot. Once you choose a CPU we hide the motherboards, RAM and coolers
-        that won't work with it, so everything you're offered fits together.</p>
-    </div>
-
-    <div class="bp-notes">
-      <div class="bp-note"><strong>Only parts that fit</strong>Socket, memory type and cooling are matched for you.</div>
-      <div class="bp-note"><strong>Checked before you pay</strong>Case fit, card length and power are checked in the summary.</div>
-      <div class="bp-note"><strong>Stock is live</strong>Every part shows whether we have it on the shelf right now.</div>
-    </div>
-
-    <div class="bp-toolbar">
-      <button type="button" class="bp-tool" id="bp-copy">Copy Specs</button>
-      <button type="button" class="bp-tool" id="bp-reset">Reset</button>
+    <div class="bp-hero">
+      <div>
+        <h2>Build Your Own PC</h2>
+        <p>Choose one part for each step. Pick a CPU first and we only offer the boards, memory
+          and coolers that work with it.</p>
+      </div>
+      <div class="bp-progress" id="bp-progress"></div>
     </div>
 
     <div class="bp-layout">
-      <div class="bp-slots" id="builder-slots"></div>
+      <div>
+        <div class="bp-toolbar">
+          <button type="button" class="bp-tool" id="bp-copy">Copy Specs</button>
+          <button type="button" class="bp-tool" id="bp-reset">Start Over</button>
+        </div>
+        <div class="bp-slots" id="builder-slots"></div>
+      </div>
 
       <aside class="bp-side">
-        <h3>Build Summary</h3>
+        <!-- The total and the buttons. On a phone this block pins itself
+             to the bottom of the window. -->
+        <div class="bp-checkout">
+          <div class="bp-checkout-info">
+            <span id="bp-count">No parts selected</span>
+            <strong id="builder-subtotal">RM 0.00</strong>
+          </div>
+          <button class="bp-checkout-add" id="add-build-btn" onclick="addBuildToCart()" disabled>Add Build to Cart</button>
+          <a class="bp-checkout-talk" id="bp-talk" target="_blank" rel="noopener">Ask us on WhatsApp</a>
+        </div>
+        <h3>Compatibility</h3>
         <div id="bp-power"></div>
         <div id="compat-messages"></div>
       </aside>
     </div>
   </section>
 
-  <!-- Pinned to the bottom of the window while you build. -->
-  <div class="bp-bar">
-    <div class="bp-bar-info">
-      <span id="bp-count">No parts selected</span>
-      <strong id="builder-subtotal">RM 0.00</strong>
-    </div>
-    <a class="bp-bar-talk" id="bp-talk" target="_blank" rel="noopener">Talk to Us</a>
-    <button class="bp-bar-add" id="add-build-btn" onclick="addBuildToCart()" disabled>Add Build to Cart</button>
-  </div>
-
-  <!-- The part picker: one window, refilled for whichever slot was clicked. -->
+  <!-- The part picker: a drawer from the right, refilled for whichever
+       part was clicked. -->
   <div class="bp-picker" id="bp-picker" hidden>
     <div class="bp-picker-box" role="dialog" aria-modal="true" aria-labelledby="bp-picker-title">
       <div class="bp-picker-head">
