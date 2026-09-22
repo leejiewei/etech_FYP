@@ -11,7 +11,8 @@
 // back to what, and is that product on offer yet. Somebody on their
 // third visit to the same graphics card is the person a deal is for, and
 // creating one on the Timed Deals page now messages exactly these people
-// -- wishlist first, then anyone at or above the view threshold below.
+// -- wishlist first, then anyone who carted it unbought, then anyone at
+// or above the view threshold.
 // The number in the "Watching" tile is what that deal would reach.
 //
 // Signed-in customers come from admin_customer_activity, one row per
