@@ -27,10 +27,10 @@
 // person. It is counting, and the counts are the customer's own actions.
 // ============================================================
 
-// Three views of one product is the line between a second look and a
-// decision. Kept the same as admin_create_deal()'s p_min_views default,
-// so the "Watching" figure here is the number that function would message.
-const WATCHING_VIEWS = 3;
+// Who counts as watching -- saved, carted and not bought, or three views
+// -- is watchReason() in admin.js, shared with the Dashboard and kept the
+// same as admin_create_deal(), so the "Watching" figure here is the
+// number that function would message.
 
 // Long enough to hold a shopping decision, short enough that a card
 // somebody abandoned in April is not called interest in September.
@@ -57,8 +57,8 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
   const since = Date.now() - RECENT_DAYS * 86400000;
   const recent = rows.filter((r) => new Date(r.last_seen).getTime() >= since);
 
-  // The rows a deal would reach: saved, or looked at enough times.
-  const watching = rows.filter((r) => r.in_wishlist || Number(r.views) >= WATCHING_VIEWS);
+  // The rows a deal would reach: saved, carted, or looked at enough times.
+  const watching = rows.filter((r) => watchReason(r) !== null);
   const unserved = watching.filter((r) => r.deal_price === null && Number(r.purchases) === 0);
 
   const customers = new Set(named.map((r) => r.customer_id)).size;
@@ -71,16 +71,18 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
     let p = byProduct.get(r.product_id);
     if (!p) {
       p = { name: r.product_name, category: r.category, price: r.price,
-            deal: r.deal_price, saved: 0, viewers: 0, guests: 0, views: 0 };
+            deal: r.deal_price, saved: 0, carted: 0, viewers: 0, guests: 0, views: 0 };
       byProduct.set(r.product_id, p);
     }
+    const reason = watchReason(r);
     if (r.guest) p.guests++;
-    else if (r.in_wishlist) p.saved++;
+    else if (reason === "saved") p.saved++;
+    else if (reason === "carted") p.carted++;
     else p.viewers++;
     p.views += Number(r.views);
   });
   const wanted = [...byProduct.entries()]
-    .map(([id, p]) => ({ id, ...p, watchers: p.saved + p.viewers + p.guests }))
+    .map(([id, p]) => ({ id, ...p, watchers: p.saved + p.carted + p.viewers + p.guests }))
     .sort((a, b) => b.watchers - a.watchers || b.views - a.views)
     .slice(0, 12);
   const wantedMax = Math.max(0, ...wanted.map((p) => p.watchers));
@@ -90,7 +92,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
       <div class="tile">
         <div class="label">Watching right now</div>
         <div class="value">${watching.length}</div>
-        <div class="sub">Saved, or viewed ${WATCHING_VIEWS}+ times (guests included)</div>
+        <div class="sub">Saved, carted, or viewed ${WATCHING_VIEWS}+ times (guests included)</div>
       </div>
       <div class="tile">
         <div class="label">Watching with no deal</div>
@@ -113,7 +115,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
     <div class="card">
       ${wanted.length === 0
         ? `<p style="color:#888;">Nobody is watching anything closely enough yet.
-             A product needs a wishlist save or ${WATCHING_VIEWS} views from one shopper.</p>`
+             A product needs a wishlist save, a cart add or ${WATCHING_VIEWS} views from one shopper.</p>`
         : wanted.map((p) => `
         <div style="margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; gap:12px;">
@@ -121,6 +123,7 @@ adminPage("Customer Behaviour", "behaviour", async (content) => {
               <small style="color:#999;"> ${e(p.category || "")}</small></span>
             <span style="white-space:nowrap;">
               ${p.saved > 0 ? `<span class="badge" style="background:#d6283922; color:#d62839;">${p.saved} saved</span> ` : ""}
+              ${p.carted > 0 ? `<span class="badge" style="background:#2c5d8f22; color:#2c5d8f;">${p.carted} in cart</span> ` : ""}
               ${p.viewers > 0 ? `<span style="color:#888;">${p.viewers} watching</span>` : ""}
               ${p.guests > 0 ? `<span style="color:#888;">${p.guests} guest${p.guests === 1 ? "" : "s"}</span>` : ""}
               ${p.deal !== null

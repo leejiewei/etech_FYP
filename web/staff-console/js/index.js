@@ -11,21 +11,19 @@
 // ============================================================
 
 adminPage("Dashboard", "dashboard", async (content) => {
-  const [summary, recentOrders, topProducts] = await Promise.all([
+  const [summary, recentOrders, activity] = await Promise.all([
     sb.from("admin_dashboard").select("*").single(),
     sb.from("admin_orders")
       .select("order_id,order_date,status,total,customer_name")
       .order("order_date", { ascending: false }).limit(8),
-    sb.from("v_product_velocity")
-      .select("product_id,name,views,cart_adds,purchases,velocity_score")
-      .gt("velocity_score", 0)
-      .order("velocity_score", { ascending: false }).order("name").limit(8),
+    sb.from("admin_customer_activity")
+      .select("customer_id,product_id,product_name,price,views,cart_adds,purchases,in_wishlist,deal_price"),
   ]);
 
   if (summary.error) throw summary.error;
   const s = summary.data;
   const orders = recentOrders.data || [];
-  const top = topProducts.data || [];
+  const waiting = waitingForADeal(activity.data || []);
 
   content.innerHTML = `
     <div class="tiles">
@@ -75,25 +73,28 @@ adminPage("Dashboard", "dashboard", async (content) => {
       </div>
 
       <div style="flex:1; min-width:300px;">
-        <h2>Most engaged products</h2>
+        <h2>Customers waiting for a deal</h2>
         <p class="hint">
-          Velocity score = views + (cart adds × 3) + (purchases × 5).
-          <a href="velocity.html" style="color:#d62839;">See the full ranking</a> or
-          <a href="alerts.html" style="color:#d62839;">what needs acting on</a>.
+          Signed-in customers who saved, carted or keep viewing a product that is not
+          on offer. Put one on offer and each of them is messaged straight away.
+          <a href="behaviour.html" style="color:#d62839;">See Customer Behaviour</a>.
         </p>
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Product</th><th class="num">V</th><th class="num">C</th><th class="num">P</th><th class="num">Score</th></tr></thead>
+            <thead><tr><th>Product</th><th class="num">Saved</th><th class="num">In cart</th>
+                <th class="num">Viewed</th><th class="num">Told</th><th></th></tr></thead>
             <tbody>
-            ${top.length === 0
-              ? `<tr><td colspan="5" style="text-align:center; color:#888; padding:20px;">No activity recorded yet.</td></tr>`
-              : top.map((p) => `
+            ${waiting.length === 0
+              ? `<tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">
+                   Nobody is waiting on a product yet.</td></tr>`
+              : waiting.map((p) => `
               <tr>
                 <td>${e(shorten(p.name, 34))}</td>
-                <td class="num">${p.views}</td>
-                <td class="num">${p.cart_adds}</td>
-                <td class="num">${p.purchases}</td>
-                <td class="num"><strong>${p.velocity_score}</strong></td>
+                <td class="num">${p.saved || ""}</td>
+                <td class="num">${p.carted || ""}</td>
+                <td class="num">${p.viewed || ""}</td>
+                <td class="num"><strong>${p.total}</strong></td>
+                <td><a href="deals.html?product=${p.id}" class="btn small">Put on offer</a></td>
               </tr>`).join("")}
             </tbody>
           </table>
@@ -101,6 +102,27 @@ adminPage("Dashboard", "dashboard", async (content) => {
       </div>
     </div>`;
 });
+
+// Products with somebody waiting on a price drop and no live deal, most
+// waited-on first. "Told" is how many customers a deal on it would
+// message today -- admin_create_deal() counts the same people.
+function waitingForADeal(rows) {
+  const byProduct = new Map();
+  rows.forEach((r) => {
+    const reason = watchReason(r);
+    if (!reason || r.deal_price !== null) return;
+    let p = byProduct.get(r.product_id);
+    if (!p) {
+      p = { id: r.product_id, name: r.product_name, saved: 0, carted: 0, viewed: 0, total: 0 };
+      byProduct.set(r.product_id, p);
+    }
+    p[reason]++;
+    p.total++;
+  });
+  return [...byProduct.values()]
+    .sort((a, b) => b.total - a.total || b.saved - a.saved || b.carted - a.carted)
+    .slice(0, 8);
+}
 
 // Two fields were never recorded in the supplier notes, and part of the
 // dashboard is waiting on them. Saying so plainly beats showing a zero
