@@ -17,7 +17,7 @@ import '../theme.dart';
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
 
-  static const String lastUpdated = '12 September 2026';
+  static const String lastUpdated = '22 September 2026';
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +71,12 @@ class PrivacyScreen extends StatelessWidget {
           _p('This is the point of the project rather than a side effect. The '
               'research question is whether a shop\'s own records can be used '
               'to recommend products and forecast stock, so the browsing '
-              'record is the subject being studied. It is used to rank '
-              'products in the shop\'s admin dashboard, to suggest items on '
-              'the home page, and — in aggregate, with no names attached — as '
-              'the dataset analysed in the written dissertation.'),
+              'record is the subject being studied. It is used to show the '
+              'shop\'s staff which products customers are interested in, to '
+              'decide who is told when one of those products goes on offer '
+              '(see "Messages we send you" below), to suggest items on the '
+              'home page, and — in aggregate, with no names attached — as the '
+              'dataset analysed in the written dissertation.'),
 
           _h('Being recognised without being identified'),
           _p('If you browse without signing in, your device is given a random '
@@ -116,6 +118,37 @@ class PrivacyScreen extends StatelessWidget {
                 'be no receipt to send. Please do not upload a real bank '
                 'document unless you actually intend to.',
           ]),
+
+          _h('Messages we send you'),
+          _p('If you have an account, the shop sends you short messages. They '
+              'appear under the bell in this app and on the website, and — if '
+              'you allow this app to send notifications — on your phone as '
+              'well. To reach your phone, the app stores a delivery token for '
+              'this device; it is removed when you sign out. There are two '
+              'kinds:'),
+          _bullets(const [
+            'Order updates: when your payment is approved or rejected, and '
+                'when your order is ready to collect or has been sent.',
+            'Offers on things you showed interest in: when the shop puts a '
+                'product on a timed deal, a message goes to signed-in '
+                'customers who saved it to their wishlist, added it to their '
+                'basket without buying it, or opened it three or more times. '
+                'Who receives it is worked out automatically from the browsing '
+                'record described above; staff choose which product goes on '
+                'offer, not who is told. If you browse without signing in, you '
+                'are never sent one.',
+          ]),
+          _p('For every message we record when it was sent and whether, and '
+              'when, you opened it. For offer messages we also look at whether '
+              'you viewed or bought that product in the seven days afterwards. '
+              'This is part of the research: it measures whether offers chosen '
+              'from browsing are of any use to the people who get them, and it '
+              'appears in the dissertation only as totals, with no names '
+              'attached.'),
+          _p('You can turn notifications off for this app in your phone\'s '
+              'settings at any time; the messages still wait under the bell. '
+              'If you would rather not receive offer messages at all, say so '
+              'through the Contact page on the website and they will stop.'),
 
           _h('If we contact you on WhatsApp'),
           _p('The phone number you give at checkout may be used to message you '
