@@ -3209,3 +3209,106 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   }
 }
 
+
+/* ------------------------------------------------------------
+   "Built by eTech" on the home page: one photo per build, the whole
+   card a link to the build's Facebook post.
+   ------------------------------------------------------------ */
+.builds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 22px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.build-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.build-card:hover,
+.build-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+}
+
+/* The shop photographs its builds upright, so the frame is portrait. The
+   image is pinned to the frame rather than left to size itself: as a flex
+   item the frame has no definite height, so height:100% on the image would
+   fall back to its intrinsic size and every card would crop differently. */
+.build-photo {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: #1b1d22;
+}
+
+.build-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.build-more {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.build-body {
+  padding: 14px 16px 16px;
+  border-top: 3px solid var(--red);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.build-body h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.build-specs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.build-specs li {
+  font-size: 12px;
+  background: #f4f5f7;
+  border: 1px solid #e3e5ea;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.build-link {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .build-card { transition: none; }
+  .build-card:hover, .build-card:focus-visible { transform: none; }
+}
