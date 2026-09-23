@@ -15,13 +15,47 @@
 //      buyer would ask about first.
 //
 // The section stays hidden while this list is empty.
+// Specs are the tower's headline parts only, taken from each Facebook
+// post's own list. The posts also price the whole sale, which for some
+// of these includes a monitor or speakers, so the totals are left to the
+// post rather than shown beside four tower parts.
 const HIGHEND_BUILDS = [
-  // {
-  //   title: "White RTX 4080 Super Build",
-  //   photo: "images/builds/white-4080s.jpg",
-  //   post: "https://www.facebook.com/etech.computer.7/posts/...",
-  //   specs: ["Ryzen 7 7800X3D", "RTX 4080 Super", "32GB DDR5", "360mm AIO"],
-  // },
+  {
+    title: "ROG Astral RTX 5080 Upgrade",
+    photo: "images/builds/black-rtx5080-astral.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid023VzpZ3WmPAipXfEi5PxSjrebM38FKw93rQTNHcQYGH2TxLGkBmecEd1gv2BjfHmsl",
+    specs: ["ROG Astral RTX 5080 OC", "TUF Gaming B850M-Plus WiFi 7", "32GB DDR5 6000", "TUF LC III 360 ARGB LCD"],
+  },
+  {
+    title: "White 9800X3D RTX 5070 Ti",
+    photo: "images/builds/white-rtx5070ti-tuf.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid0BezEx2AqaiZFW4ErwhsuKyrWp6vw2iizBSEDqs68xVAuPKXPR7dhcArwFYwXRji3l",
+    specs: ["Ryzen 7 9800X3D", "TUF Gaming RTX 5070 Ti 16GB", "32GB DDR5 6000 CL30", "Prime LC 360 ARGB"],
+  },
+  {
+    title: "White 7800X3D RTX 5070",
+    photo: "images/builds/white-rtx5070-zotac.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid02od1URxTpwMkCxyNz9J1fs9AJPGX9UF5fdq5MxowMZ6wyNhxWJvuL4vaHqdj4XLKvl",
+    specs: ["Ryzen 7 7800X3D", "ZOTAC RTX 5070 AMP White", "16GB DDR5 6000 CL30", "Prime LC 360 ARGB"],
+  },
+  {
+    title: "9700X RTX 5070 Ti Build",
+    photo: "images/builds/black-rtx5070ti-tuf.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid04d64B4Ec83uKgy4C6S8M8qHdTxEW31sVSvfYNfWzirgmDnjLknkLVVGYv6Buv5atl",
+    specs: ["Ryzen 7 9700X", "TUF Gaming RTX 5070 Ti 16GB", "32GB DDR5", "FX360 LCD ARGB AIO"],
+  },
+  {
+    title: "9800X3D RTX 5070 RGB Build",
+    photo: "images/builds/black-rtx5070-prime.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid022NMyVEvDS5qLY61pRVki4yaz3JASqWnPgEJJN69wpCYY9kPN4fPcigPWc483347tl",
+    specs: ["Ryzen 7 9800X3D", "Prime RTX 5070 12GB OC", "32GB DDR5 6000", "TUF LC III 360 ARGB LCD"],
+  },
+  {
+    title: "Core Ultra 7 RTX 5070 Upgrade",
+    photo: "images/builds/black-rtx5070-ultra7.jpg",
+    post: "https://www.facebook.com/etech.computer.7/posts/pfbid0Vgg5JZktiwzzgJcaf8tG9aGUAePEYbGEkhUcdz6MeG8ivRoR1CYyWe4zCTUEhjyGl",
+    specs: ["Core Ultra 7 270K Plus", "Prime RTX 5070 12GB OC", "32GB DDR5 6000 CL30", "FX240 LCD ARGB AIO"],
+  },
 ];
 
 const ETECH_FACEBOOK = "https://www.facebook.com/etech.computer.7/";

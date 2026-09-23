@@ -3216,7 +3216,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
    ------------------------------------------------------------ */
 .builds-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 22px;
   max-width: 1100px;
   margin: 0 auto;
@@ -3240,13 +3240,21 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
 }
 
+/* The shop photographs its builds upright, so the frame is portrait. The
+   image is pinned to the frame rather than left to size itself: as a flex
+   item the frame has no definite height, so height:100% on the image would
+   fall back to its intrinsic size and every card would crop differently. */
 .build-photo {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
+  flex: 0 0 auto;
+  overflow: hidden;
   background: #1b1d22;
 }
 
 .build-photo img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
