@@ -25,12 +25,21 @@ class Config {
 
   /// Where the website lives.
   ///
-  /// The app needs this for exactly one thing: a password reset link has to
+  /// The app needs this for two things. A password reset link has to
   /// land on a page that can finish the reset, and that page is the
   /// website's. Supabase only honours a redirect that is in the project's
   /// allow-list, so this must stay the deployed origin -- the wildcard
-  /// https://etech-fyp.vercel.app/** already covers the page below.
+  /// https://etech-fyp.vercel.app/** already covers the page below. And
+  /// the "Built by eTech" photos on the home screen are the website's own
+  /// files in web/images/builds/, so both stay the same six pictures.
   static const String webOrigin = 'https://etech-fyp.vercel.app';
+
+  /// The shop's WhatsApp, in the form wa.me wants. The same number as
+  /// WHATSAPP_NUMBER in web/js/whatsapp.js; change both together.
+  static const String whatsappNumber = '601110743634';
+
+  static Uri whatsappLink(String message) => Uri.https(
+      'wa.me', '/$whatsappNumber', {'text': message});
 
   /// The drawn illustrations used to be fetched from the website over
   /// HTTP. They are bundled into the app now, so a product picture no

@@ -115,6 +115,11 @@ function buildProductCard(product) {
     <p class="product-category">${escapeHtml(product.category)}${product.subcategory ? " · " + escapeHtml(product.subcategory) : ""}</p>
     <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
     ${priceBlockHtml(product, "product-price")}
+    ${product.officialUrl
+      ? `<a class="product-card-official" href="${safeUrl(product.officialUrl)}"
+           target="_blank" rel="noopener noreferrer"
+           title="Full specifications on the maker's own site">Full specs ↗</a>`
+      : ""}
     <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
       ${outOfStock ? "Out of Stock" : "Add to Cart"}
     </button>

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/built_by_etech.dart';
 import '../widgets/product_card.dart';
 import 'deals.dart';
 import 'rigs.dart';
@@ -114,6 +115,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _hero(context),
                   if (shop.deals.isNotEmpty) _dealStrip(context),
+                  const BuiltByEtech(),
                   _section(context, 'Featured', shop.products.take(6).toList()),
                   _section(
                     context,

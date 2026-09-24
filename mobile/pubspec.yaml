@@ -51,6 +51,12 @@ dependencies:
   # hands over the one chosen file and needs no gallery permission.
   image_picker: ^1.1.2
 
+  # Opens a "Built by eTech" build's Facebook post. The shop posts every
+  # finished build there with the full set of photos, so the home screen
+  # shows one photo and hands off to the Facebook app (or the browser)
+  # for the rest.
+  url_launcher: ^6.3.2
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

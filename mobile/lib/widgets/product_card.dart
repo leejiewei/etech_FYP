@@ -90,7 +90,29 @@ class ProductCard extends StatelessWidget {
             // shop.priceOf, not product.price: a product with a deal
             // running shows the old price struck through and the deal
             // price under it, which is what the checkout will charge.
-            DealPriceText(product: product, shop: shop),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(child: DealPriceText(product: product, shop: shop)),
+                // The maker's own spec page, so the full details are one
+                // tap away without opening the product first.
+                if (product.officialUrl != null)
+                  InkWell(
+                    onTap: () =>
+                        ProductDetailScreen.openOfficial(context, product),
+                    child: const Padding(
+                      padding: EdgeInsets.fromLTRB(6, 6, 0, 2),
+                      child: Text(
+                        'Specs ↗',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.red),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

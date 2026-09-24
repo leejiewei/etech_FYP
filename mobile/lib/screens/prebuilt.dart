@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/prebuilt.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import '../widgets/deal_price.dart';
 import '../widgets/product_image.dart';
+import 'prebuilt_detail.dart';
 import 'product_detail.dart';
 
 /// Complete machines, ready to buy.
@@ -29,9 +29,7 @@ class PrebuiltScreen extends StatefulWidget {
 
   @override
   State<PrebuiltScreen> createState() => _PrebuiltScreenState();
-}
 
-class _PrebuiltScreenState extends State<PrebuiltScreen> {
   /// The four ranges, and which catalogue categories feed each. A machine
   /// is matched by its most specific category name -- its sub-category if
   /// it has one, otherwise its category -- because Branded PC and
@@ -71,24 +69,40 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
     'sku',
   ];
 
-  String _filter = 'All';
-
-  /// The upgrades ticked on each machine's card, by machine id. Held on
-  /// the screen rather than in the basket, because nothing has been
-  /// bought yet -- they travel to the basket with the Add button, and
-  /// the cart screen is where they become real.
-  final Map<int, Set<int>> _chosen = {};
-
-  Set<int> _chosenFor(int id) => _chosen.putIfAbsent(id, () => <int>{});
-
   /// Which range a machine belongs to, or null if it belongs to none --
   /// in which case this screen does not show it.
-  String? _groupOf(Product p) {
+  static String? groupOf(Product p) {
     for (final entry in _groups.entries) {
       if (entry.value.contains(p.subcategory ?? p.category)) return entry.key;
     }
     return null;
   }
+
+  /// The record writes upgrade options as prose at the end of a
+  /// description -- "Upgrades: +RM499 to RTX 5050 8GB". Shown as a note,
+  /// not as priced options: an upgrade is only real once it is a row the
+  /// shop can price and stock, and inventing a total on the phone is
+  /// exactly what moving the cart into the database was meant to stop.
+  static String? upgradeNote(Product p) {
+    final match = RegExp(
+      r'Upgrades?:\s*([^.]+)',
+      caseSensitive: false,
+    ).firstMatch(p.description);
+    return match?.group(1)?.trim();
+  }
+
+  static List<MapEntry<String, dynamic>> orderedSpecs(Product p) {
+    final attrs = p.attrs;
+    final known = _specOrder.where(attrs.containsKey);
+    final rest = attrs.keys.where((k) => !_specOrder.contains(k));
+    return [...known, ...rest].map((k) => MapEntry(k, attrs[k])).toList();
+  }
+}
+
+class _PrebuiltScreenState extends State<PrebuiltScreen> {
+  String _filter = 'All';
+
+  String? _groupOf(Product p) => PrebuiltScreen.groupOf(p);
 
   List<Product> get _machines {
     final list =
@@ -98,26 +112,6 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
           ..sort((a, b) => a.id.compareTo(b.id));
     if (_filter == 'All') return list;
     return list.where((p) => _groupOf(p) == _filter).toList();
-  }
-
-  /// The record writes upgrade options as prose at the end of a
-  /// description -- "Upgrades: +RM499 to RTX 5050 8GB". Shown as a note,
-  /// not as priced options: an upgrade is only real once it is a row the
-  /// shop can price and stock, and inventing a total on the phone is
-  /// exactly what moving the cart into the database was meant to stop.
-  String? _upgradeNote(Product p) {
-    final match = RegExp(
-      r'Upgrades?:\s*([^.]+)',
-      caseSensitive: false,
-    ).firstMatch(p.description);
-    return match?.group(1)?.trim();
-  }
-
-  List<MapEntry<String, dynamic>> _orderedSpecs(Product p) {
-    final attrs = p.attrs;
-    final known = _specOrder.where(attrs.containsKey);
-    final rest = attrs.keys.where((k) => !_specOrder.contains(k));
-    return [...known, ...rest].map((k) => MapEntry(k, attrs[k])).toList();
   }
 
   @override
@@ -133,7 +127,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
             .map(_groupOf)
             .whereType<String>()
             .toSet();
-        final chips = ['All', ..._groups.keys.where(stocked.contains)];
+        final chips = ['All', ...PrebuiltScreen._groups.keys.where(stocked.contains)];
 
         return Scaffold(
           appBar: AppBar(title: const Text('Prebuilt PCs')),
@@ -205,20 +199,8 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
     final stock = widget.shop.stockOf(p);
     final outOfStock = stock == 'out';
     final blockedBy = widget.shop.blockedBy(p);
-    final options = widget.shop.upgradesFor(p.id);
-    // An upgrade changes the machine itself; an accessory is sold beside
-    // it at a with-purchase price. Same tick box, different fact, so
-    // they get separate headings rather than one mixed list.
-    final upgradeOptions = options.where((u) => !u.isAccessory).toList();
-    final accessoryOptions = options.where((u) => u.isAccessory).toList();
-    final chosen = _chosenFor(p.id);
-    final extra = options
-        .where((u) => chosen.contains(u.id))
-        .fold<double>(0, (sum, u) => sum + u.priceDelta);
-    // Only fall back to the prose when there is nothing better. A machine
-    // with real options should not show the sentence they came from.
-    final upgrades = options.isEmpty ? _upgradeNote(p) : null;
-    final specs = _orderedSpecs(p);
+    final optionCount = widget.shop.upgradesFor(p.id).length;
+    final specs = PrebuiltScreen.orderedSpecs(p);
 
     return Container(
       decoration: BoxDecoration(
@@ -237,20 +219,10 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // The picture opens the machine's own screen, and records the
-          // view on the way -- the same path a product card takes, so a
-          // prebuilt counts for exactly as much as anything else.
+          // The picture and the name open the machine's own screen, where
+          // the upgrades are chosen. See prebuilt_detail.dart.
           InkWell(
-            onTap: () {
-              widget.shop.trackView(p.id);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ProductDetailScreen(product: p, shop: widget.shop),
-                ),
-              );
-            },
+            onTap: () => _open(p),
             child: Container(
               width: double.infinity,
               height: 150,
@@ -280,9 +252,12 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            p.name,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          GestureDetector(
+            onTap: () => _open(p),
+            child: Text(
+              p.name,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 6),
           StockPill(stock: stock, label: widget.shop.stockLabelOf(p)),
@@ -322,85 +297,42 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
               ),
             ),
           ],
-          if (upgrades != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF4DD),
-                borderRadius: BorderRadius.circular(6),
+          const SizedBox(height: 12),
+          DealPriceText(product: p, shop: widget.shop, size: 19),
+          // The upgrades themselves are chosen on the machine's own
+          // screen; the card only says there are some, so the list stays
+          // easy to scan.
+          if (optionCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                '$optionCount upgrade option${optionCount == 1 ? '' : 's'} available',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
               ),
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(
-                      text: 'Available upgrades: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextSpan(
-                      text: upgrades,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          if (upgradeOptions.isNotEmpty)
-            _optionBlock(
-              title: 'Add on at build time',
-              hint: 'Ticked here, confirmed in your cart.',
-              options: upgradeOptions,
-              all: options,
-              chosen: chosen,
-              enabled: !outOfStock,
-            ),
-          if (accessoryOptions.isNotEmpty)
-            _optionBlock(
-              title: 'Buy with this machine',
-              hint: 'Shop prices for buying alongside a PC.',
-              options: accessoryOptions,
-              all: options,
-              chosen: chosen,
-              enabled: !outOfStock,
             ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // A deal is on the machine, not on the options
-                    // bolted to it -- the till works the same way -- so
-                    // the ticks are added on top of the deal price.
-                    DealPriceText(
-                      product: p,
-                      shop: widget.shop,
-                      size: 19,
-                      extra: extra,
+                child: OutlinedButton(
+                  onPressed: () => _open(p),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.redDark,
+                    side: const BorderSide(color: AppTheme.redDark),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    // The base price stays visible next to the new one,
-                    // so nobody has to work out what the ticks did.
-                    if (extra > 0)
-                      Text(
-                        '${money(widget.shop.priceOf(p))} + ${money(extra)} upgrades',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                  ],
+                  ),
+                  child: Text(optionCount > 0 ? 'Customise' : 'View details'),
                 ),
               ),
-              ElevatedButton(
-                onPressed: outOfStock ? null : () => _add(p),
-                child: Text(outOfStock ? 'Out of Stock' : 'Add to Cart'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: outOfStock ? null : () => _add(p),
+                  child: Text(outOfStock ? 'Out of Stock' : 'Add to Cart'),
+                ),
               ),
             ],
           ),
@@ -409,89 +341,25 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
     );
   }
 
-  /// One tickable list. [options] is what this block shows; [all] is
-  /// every option on the machine, because the one-swap-per-slot rule has
-  /// to see across both blocks -- a cooler upgrade and a cooler
-  /// accessory would still be two coolers.
-  Widget _optionBlock({
-    required String title,
-    required String hint,
-    required List<PrebuiltUpgrade> options,
-    required List<PrebuiltUpgrade> all,
-    required Set<int> chosen,
-    required bool enabled,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6F8FA),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFE8EAED)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              hint,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-            ...options.map((u) {
-              return CheckboxListTile(
-                value: chosen.contains(u.id),
-                onChanged: !enabled
-                    ? null
-                    : (on) => setState(() {
-                        if (on == true) {
-                          // One swap per slot: a machine has one graphics
-                          // card, so ticking a second graphics upgrade
-                          // replaces the first rather than charging for
-                          // both. The two peripheral sets are
-                          // alternatives for the same reason.
-                          chosen.removeWhere((id) =>
-                              all.any((o) => o.id == id && o.slot == u.slot));
-                          chosen.add(u.id);
-                        } else {
-                          chosen.remove(u.id);
-                        }
-                      }),
-                title: Text(u.label, style: const TextStyle(fontSize: 12.5)),
-                subtitle: Text(
-                  '+${money(u.priceDelta)}  ·  '
-                  '${ProductDetailScreen.specLabel(u.slot)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-                dense: true,
-                visualDensity: VisualDensity.compact,
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                activeColor: AppTheme.redDark,
-              );
-            }),
-          ],
-        ),
+  /// Opening a machine's screen is a view, the same path a product card
+  /// takes, so a prebuilt counts for exactly as much as anything else.
+  void _open(Product p) {
+    widget.shop.trackView(p.id);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrebuiltDetailScreen(product: p, shop: widget.shop),
       ),
     );
   }
 
+  /// The card's own Add button buys the standard build. Upgrades are
+  /// added from the machine's screen.
   Future<void> _add(Product p) async {
-    final picked = _chosenFor(p.id).toList();
-    final error = await widget.shop.addToCart(p.id, upgradeIds: picked);
+    final error = await widget.shop.addToCart(p.id, upgradeIds: const []);
     if (!mounted) return;
-
-    final added = picked.isEmpty
-        ? '${p.name} added to your cart.'
-        : '${p.name} added with ${picked.length} '
-              '${picked.length == 1 ? 'upgrade' : 'upgrades'}.';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(error ?? added)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error ?? '${p.name} added to your cart.')),
+    );
   }
 }

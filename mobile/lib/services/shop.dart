@@ -166,7 +166,8 @@ class Shop extends ChangeNotifier {
         Api.selectAll(() => Api.db
             .from('products')
             .select('product_id,name,price,stock_status,description,icon,'
-                'img_slug,image_path,exclude_from_builder,brand_id,category_id')
+                'img_slug,image_path,official_url,exclude_from_builder,'
+                'brand_id,category_id')
             .eq('is_active', 1)
             .order('product_id')),
         Api.selectAll(() => Api.db.from('brands').select('brand_id,name')),

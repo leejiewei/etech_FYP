@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
@@ -58,6 +59,21 @@ class ProductDetailScreen extends StatelessWidget {
   /// web/js/products.js -- and they must be kept in step by hand; a third
   /// would be one more place for a label to drift.
   static String specLabel(String key) => _labels[key] ?? key;
+
+  /// Opens the maker's page in the phone's browser. The database only
+  /// accepts https links, and this checks again before handing one over.
+  /// Public so a grid card can offer the same link beside its price.
+  static Future<void> openOfficial(BuildContext context, Product product) async {
+    final uri = Uri.tryParse(product.officialUrl ?? '');
+    final ok = uri != null &&
+        uri.scheme == 'https' &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the official site.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +138,24 @@ class ProductDetailScreen extends StatelessWidget {
                         label: shop.stockLabelOf(product),
                       ),
                     ]),
+                    if (product.officialUrl != null) ...[
+                      const SizedBox(height: 10),
+                      InkWell(
+                        onTap: () => openOfficial(context, product),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text('Full specs on the official site',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.red)),
+                            SizedBox(width: 4),
+                            Icon(Icons.open_in_new, size: 15, color: AppTheme.red),
+                          ]),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
