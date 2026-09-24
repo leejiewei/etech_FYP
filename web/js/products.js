@@ -90,7 +90,7 @@ function loadProducts() {
   return Promise.all([
     selectAllRows(() => sb.from("products")
       .select("product_id,name,price,stock_status,description,icon,img_slug," +
-              "image_path,exclude_from_builder,brand_id,category_id")
+              "image_path,official_url,exclude_from_builder,brand_id,category_id")
       .eq("is_active", 1)
       .order("product_id")),
     selectAllRows(() => sb.from("brands").select("brand_id,name")),
@@ -210,6 +210,7 @@ function shapeCatalogue(productRows, brandRows, categoryRows, attributeRows) {
     if (parent)                      item.subcategory = own.name;
     if (row.exclude_from_builder)    item.excludeFromBuilder = true;
     if (row.image_path)              item.imagePath = row.image_path;
+    if (row.official_url)            item.officialUrl = row.official_url;
 
     return item;
   });
