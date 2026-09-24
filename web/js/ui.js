@@ -234,6 +234,10 @@ function productModalContent(product) {
         }</p>
         <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
         ${priceBlockHtml(product, "product-modal-price")}
+        ${product.officialUrl
+          ? `<a class="product-modal-official" href="${safeUrl(product.officialUrl)}"
+               target="_blank" rel="noopener noreferrer">Full specs on the official site ↗</a>`
+          : ""}
         ${product.description
           ? `<p class="product-modal-desc">${escapeHtml(product.description)}</p>`
           : ""}

@@ -2537,6 +2537,19 @@ body.privacy-notice-open .toast.show {
   margin: 10px 0;
 }
 
+/* The maker's own page, for the full spec sheet. */
+.product-modal-official {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+  text-decoration: none;
+}
+
+.product-modal-official:hover {
+  text-decoration: underline;
+}
+
 .product-modal-desc {
   font-size: 14px;
   color: #444;
