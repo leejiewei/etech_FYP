@@ -231,6 +231,22 @@ a {
   margin-bottom: 12px;
 }
 
+/* The maker's own spec page, beside the price, so the full details are
+   one tap away without opening the product first. Only products with an
+   official_url get one. */
+.product-card-official {
+  display: block;
+  margin: -6px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+  text-decoration: none;
+}
+
+.product-card-official:hover {
+  text-decoration: underline;
+}
+
 .add-btn {
   background-color: var(--red);
   color: white;

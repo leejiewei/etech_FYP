@@ -28,6 +28,7 @@ class Product {
   final String description;
   final String imgSlug; // which drawing to fall back on
   final String? imagePath; // a real photo, if one was uploaded
+  final String? officialUrl; // the maker's own page, for the full specs
   final Map<String, dynamic> attrs;
   final bool excludeFromBuilder;
 
@@ -42,6 +43,7 @@ class Product {
     required this.description,
     required this.imgSlug,
     this.imagePath,
+    this.officialUrl,
     required this.attrs,
     required this.excludeFromBuilder,
   });
@@ -64,6 +66,7 @@ class Product {
       description: row['description'] ?? '',
       imgSlug: row['img_slug'] ?? 'default',
       imagePath: row['image_path'],
+      officialUrl: row['official_url'],
       attrs: attrs,
       excludeFromBuilder: (row['exclude_from_builder'] ?? 0) == 1,
     );
