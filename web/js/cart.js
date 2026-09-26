@@ -319,7 +319,7 @@ function drawCartTable() {
         <img class="cart-img" src="${safeUrl(firstSrc)}" alt="${escapeHtml(item.name)}"
           onerror="this.onerror=null; this.src='${safeUrl(fallbackSrc)}';" />
         <span>${escapeHtml(item.name)}${item.colour
-          ? `<small class="cart-colour">Colour: ${escapeHtml(item.colour)}</small>` : ""}</span>
+          ? `<small class="cart-colour">${/ Switch$/.test(item.colour) ? "" : "Colour: "}${escapeHtml(item.colour)}</small>` : ""}</span>
         ${item.upgrades && item.upgrades.length ? `
         <ul class="cart-upgrades">
           ${item.upgrades.map((u) => `

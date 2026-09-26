@@ -49,7 +49,10 @@ class CartScreen extends StatelessWidget {
                                         fontWeight: FontWeight.w600,
                                         height: 1.3)),
                                 if (item.colour != null)
-                                  Text('Colour: ${item.colour}',
+                                  Text(
+                                      item.colour!.endsWith(' Switch')
+                                          ? item.colour!
+                                          : 'Colour: ${item.colour}',
                                       style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600)),

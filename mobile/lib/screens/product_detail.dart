@@ -229,9 +229,14 @@ class ProductDetailScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
-              child: Text('Choose a colour',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+              // A board sold in one colour with a choice of switches
+              // asks for a switch.
+              child: Text(
+                  product.colourOptions.every((o) => o.endsWith(' Switch'))
+                      ? 'Choose a switch'
+                      : 'Choose a colour',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             for (final c in product.colourOptions)

@@ -100,6 +100,12 @@ function colourOptionsOf(product) {
   return Array.isArray(options) ? options : [];
 }
 
+// What the choice is called. A board sold in one colour with a choice of
+// switches (the G512 Carbon, the BlackWidow V3 TKL) asks for a switch.
+function optionKindOf(options) {
+  return options.length && options.every((o) => / Switch$/.test(o)) ? "Switch" : "Colour";
+}
+
 function buildProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
@@ -131,7 +137,8 @@ function buildProductCard(product) {
     <button class="add-btn" ${outOfStock ? "disabled" : ""}
       onclick="${colourOptionsOf(product).length
         ? `openProductModal(${product.id})` : `addToCart(${product.id})`}">
-      ${outOfStock ? "Out of Stock" : colourOptionsOf(product).length ? "Choose Colour" : "Add to Cart"}
+      ${outOfStock ? "Out of Stock" : colourOptionsOf(product).length
+        ? "Choose " + optionKindOf(colourOptionsOf(product)) : "Add to Cart"}
     </button>
   `;
 
@@ -260,9 +267,9 @@ function productModalContent(product) {
           ? `<table class="product-modal-specs">${specRows}</table>`
           : ""}
         ${colourOptionsOf(product).length && !outOfStock
-          ? `<label class="product-modal-colour">Colour
+          ? `<label class="product-modal-colour">${optionKindOf(colourOptionsOf(product))}
                <select class="product-modal-colour-pick">
-                 <option value="">Choose a colour</option>
+                 <option value="">Choose a ${optionKindOf(colourOptionsOf(product)).toLowerCase()}</option>
                  ${colourOptionsOf(product).map((c) =>
                    `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
                </select>
@@ -295,7 +302,7 @@ function wireProductModalActions(product) {
       const pick = root.querySelector(".product-modal-colour-pick");
       if (pick && !pick.value) {
         pick.focus();
-        alert("Please choose a colour first.");
+        alert("Please choose a " + optionKindOf(colourOptionsOf(product)).toLowerCase() + " first.");
         return;
       }
       addToCart(product.id, [], pick ? pick.value : null);
