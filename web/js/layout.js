@@ -175,6 +175,7 @@ const CATEGORY_ICONS = {
   "case": '<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M15 14h.01"/><path d="M9 6h6"/><path d="M9 10h6"/>',
   "keyboard": '<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
   "speaker": '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M12 6h.01"/><circle cx="12" cy="14" r="4"/><path d="M12 14h.01"/>',
+  "webcam": '<circle cx="12" cy="10" r="8"/><circle cx="12" cy="10" r="3"/><path d="M7 22h10"/><path d="M12 22v-4"/>',
   "monitor-arm": '<rect x="10" y="3" width="12" height="8" rx="1.5"/><path d="M13 11 6 13l2.5 6"/><circle cx="6" cy="13" r="1"/><path d="M4 21h9"/><path d="M8.5 19v2"/>',
   "all-in-one": '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 13h20"/><path d="M12 17v4"/><path d="M8 21h8"/>',
 };
@@ -201,6 +202,7 @@ function buildCategoriesMenu() {
     { name: "Branded PC", icon: "computer" },
     { name: "All-in-One PC", icon: "all-in-one" },
     { name: "Gaming Gear", icon: "gamepad" },
+    { name: "Webcams", icon: "webcam" },
   ];
 
   const subCategories = [
