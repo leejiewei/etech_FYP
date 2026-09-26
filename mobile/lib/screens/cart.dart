@@ -48,6 +48,11 @@ class CartScreen extends StatelessWidget {
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w600,
                                         height: 1.3)),
+                                if (item.colour != null)
+                                  Text('Colour: ${item.colour}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600)),
                                 const SizedBox(height: 4),
                                 // The line's own price, struck through
                                 // when a deal took it down -- the basket

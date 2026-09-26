@@ -146,7 +146,10 @@ function loadProducts() {
 
 // Specifications that can hold several values, so they must come back
 // as a list even when there happens to be only one.
-const ARRAY_SPECS = ["sockets", "supportedFormFactors", "incompatibleSockets"];
+// colourOption is the list a shopper picks from when a product comes in
+// more than one colour; see colourOptionsOf() in ui.js.
+const ARRAY_SPECS = ["sockets", "supportedFormFactors", "incompatibleSockets",
+                     "colourOption"];
 
 // Specifications that are numbers. Everything is stored as text, and
 // the compatibility checks compare these with < and >, so "90" has to
@@ -460,6 +463,11 @@ function attrLabel(key) {
     bladeDirection: "Blade Direction",
     // accessories
     connector: "Connector",
+    // keyboards, mice and mouse pads
+    switch: "Switch",
+    battery: "Power",
+    size: "Size",
+    colourOption: "Available In",
     // complete systems: laptops, towers, all-in-ones and prebuilts
     sku: "SKU",
     cpu: "Processor",

@@ -92,6 +92,14 @@ function startDealTicker() {
   setInterval(tickDealCountdowns, 1000);
 }
 
+// The colours a product can be bought in, when the shop stocks more
+// than one side by side. Empty for everything else, which is what keeps
+// the picker off every other product.
+function colourOptionsOf(product) {
+  const options = (product.attrs || {}).colourOption;
+  return Array.isArray(options) ? options : [];
+}
+
 function buildProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
@@ -120,8 +128,10 @@ function buildProductCard(product) {
            target="_blank" rel="noopener noreferrer"
            title="Full specifications on the maker's own site">Full specs ↗</a>`
       : ""}
-    <button class="add-btn" ${outOfStock ? "disabled" : ""} onclick="addToCart(${product.id})">
-      ${outOfStock ? "Out of Stock" : "Add to Cart"}
+    <button class="add-btn" ${outOfStock ? "disabled" : ""}
+      onclick="${colourOptionsOf(product).length
+        ? `openProductModal(${product.id})` : `addToCart(${product.id})`}">
+      ${outOfStock ? "Out of Stock" : colourOptionsOf(product).length ? "Choose Colour" : "Add to Cart"}
     </button>
   `;
 
@@ -249,6 +259,15 @@ function productModalContent(product) {
         ${specRows
           ? `<table class="product-modal-specs">${specRows}</table>`
           : ""}
+        ${colourOptionsOf(product).length && !outOfStock
+          ? `<label class="product-modal-colour">Colour
+               <select class="product-modal-colour-pick">
+                 <option value="">Choose a colour</option>
+                 ${colourOptionsOf(product).map((c) =>
+                   `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
+               </select>
+             </label>`
+          : ""}
         <div class="product-modal-actions">
           <button class="add-btn product-modal-add" ${outOfStock ? "disabled" : ""}>
             ${outOfStock ? "Out of Stock" : "Add to Cart"}
@@ -273,7 +292,13 @@ function wireProductModalActions(product) {
   const add = root.querySelector(".product-modal-add");
   if (!add.disabled) {
     add.addEventListener("click", () => {
-      addToCart(product.id);
+      const pick = root.querySelector(".product-modal-colour-pick");
+      if (pick && !pick.value) {
+        pick.focus();
+        alert("Please choose a colour first.");
+        return;
+      }
+      addToCart(product.id, [], pick ? pick.value : null);
       closeProductModal();
     });
   }

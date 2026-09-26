@@ -143,7 +143,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           Expanded(
                             child: Text(
-                              item.name,
+                              item.colour == null
+                                  ? item.name
+                                  : '${item.name} (${item.colour})',
                               style: const TextStyle(fontSize: 13),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

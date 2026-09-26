@@ -21,6 +21,9 @@ class CartItem {
   final String imgSlug;
   final String? imagePath;
   final String stock;
+
+  /// The colour picked, for a product the shop stocks in several.
+  final String? colour;
   final List<PrebuiltUpgrade> upgrades;
   final double lineTotal;
 
@@ -33,6 +36,7 @@ class CartItem {
     required this.imgSlug,
     this.imagePath,
     required this.stock,
+    this.colour,
     this.upgrades = const [],
     required this.lineTotal,
   });
@@ -66,6 +70,7 @@ class CartItem {
       imgSlug: product['img_slug'] ?? 'default',
       imagePath: product['image_path'],
       stock: product['stock_status'] ?? 'in',
+      colour: row['colour'] as String?,
       upgrades: upgrades,
       // Worked out here rather than read back, because it is the same
       // arithmetic either way and one less thing to keep in step.

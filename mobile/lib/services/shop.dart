@@ -225,6 +225,8 @@ class Shop extends ChangeNotifier {
     'sockets',
     'supportedFormFactors',
     'incompatibleSockets',
+    // The colours a product can be picked in; see Product.colourOptions.
+    'colourOption',
   };
 
   /// Specifications that are numbers. Everything is stored as text, and
@@ -673,7 +675,7 @@ class Shop extends ChangeNotifier {
       final results = await Future.wait([
         Api.db
             .from('cart_items')
-            .select('product_id,quantity,'
+            .select('product_id,quantity,colour,'
                 'products(name,price,icon,img_slug,image_path,stock_status)')
             .order('added_at'),
         Api.db.from('cart_item_upgrades').select(
@@ -729,10 +731,15 @@ class Shop extends ChangeNotifier {
   Future<String?> addToCart(
     int productId, {
     List<int> upgradeIds = const [],
+    String? colour,
   }) async {
     if (!loggedIn) return 'Please sign in first.';
     try {
-      await Api.db.rpc('cart_add', params: {'p_product_id': productId});
+      // cart_add checks the colour is one this product really comes in.
+      await Api.db.rpc('cart_add', params: {
+        'p_product_id': productId,
+        if (colour != null) 'p_colour': colour,
+      });
     } catch (e) {
       return Api.message(e, 'Could not add that.');
     }

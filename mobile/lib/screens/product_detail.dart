@@ -37,6 +37,10 @@ class ProductDetailScreen extends StatelessWidget {
     'productType': 'Type', 'armType': 'Arm Type', 'vesa': 'VESA Mount',
     'paperSize': 'Paper Size', 'weight': 'Paper Weight', 'backConnector': 'Back-connector Board',
     'supportsBackConnector': 'Back-connector Ready',
+    // Keyboards, mice and mouse pads. Kept in step with attrLabel() in
+    // web/js/products.js.
+    'switch': 'Switch', 'battery': 'Power', 'size': 'Size',
+    'colourOption': 'Available In',
     // Complete systems: laptops, towers, all-in-ones and prebuilts. These
     // arrived with the RigWorks record of 12 August 2026 and must stay in
     // step with attrLabel() in web/js/products.js -- the two maps describe
@@ -191,10 +195,19 @@ class ProductDetailScreen extends StatelessWidget {
                           shop.inStock(product) ? AppTheme.red : Colors.grey.shade400),
                   onPressed: shop.inStock(product)
                       ? () async {
-                          final error = await shop.addToCart(product.id);
+                          // A product stocked in several colours asks
+                          // which one first; backing out adds nothing.
+                          String? colour;
+                          if (product.colourOptions.isNotEmpty) {
+                            colour = await _pickColour(context);
+                            if (colour == null) return;
+                          }
+                          final error = await shop.addToCart(product.id,
+                              colour: colour);
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(error ?? '${product.name} added to cart'),
+                            content: Text(error ??
+                                '${product.name}${colour == null ? '' : ' ($colour)'} added to cart'),
                             duration: const Duration(seconds: 2),
                           ));
                         }
@@ -205,6 +218,32 @@ class ProductDetailScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<String?> _pickColour(BuildContext context) {
+    return showModalBottomSheet<String>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
+              child: Text('Choose a colour',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            for (final c in product.colourOptions)
+              ListTile(
+                title: Text(c),
+                trailing: const Icon(Icons.add_shopping_cart, size: 20),
+                onTap: () => Navigator.pop(sheet, c),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 

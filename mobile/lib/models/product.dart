@@ -128,6 +128,10 @@ class Product {
   List<String> get sockets => _list('sockets');
   List<String> get supportedFormFactors => _list('supportedFormFactors');
   List<String> get incompatibleSockets => _list('incompatibleSockets');
+
+  /// The colours the shop stocks this in side by side. Empty for almost
+  /// everything, which is what keeps the picker off other products.
+  List<String> get colourOptions => _list('colourOption');
 }
 
 /// A price on one product until a stated moment.

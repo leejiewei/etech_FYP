@@ -31,7 +31,7 @@ function fetchCart() {
   // next touched.
   return Promise.all([
     sb.from("cart_items")
-      .select("product_id,quantity,products(name,price,icon,img_slug,image_path,stock_status)")
+      .select("product_id,quantity,colour,products(name,price,icon,img_slug,image_path,stock_status)")
       .order("added_at"),
     sb.from("cart_item_upgrades")
       .select("product_id,prebuilt_upgrades(upgrade_id,slot,label,price_delta,kind)"),
@@ -95,6 +95,7 @@ function applyCart(rows, upgradeRows) {
       img:       product.img_slug,
       imagePath: product.image_path,
       stock:     product.stock_status,
+      colour:    row.colour,
       upgrades:  upgrades,
       lineTotal: perUnit * row.quantity,
     };
@@ -171,7 +172,9 @@ function getCart() {
 // prebuilt_upgrades by place_order, on the server -- a browser that
 // could name its own price is not a shop, which is the same reason
 // adding goes through cart_add rather than an insert.
-function addToCart(productId, upgradeIds) {
+// [colour] is the one picked in the product modal, for a product that
+// comes in several. cart_add checks it is one the product really has.
+function addToCart(productId, upgradeIds, colour) {
   if (!isLoggedIn()) {
     askToLogIn("You need an account to add things to your cart.");
     return;
@@ -186,11 +189,14 @@ function addToCart(productId, upgradeIds) {
 
   const picked = upgradeIds || [];
 
-  sb.rpc("cart_add", { p_product_id: productId }).then(({ error }) => {
+  const args = { p_product_id: productId };
+  if (colour) args.p_colour = colour;
+
+  sb.rpc("cart_add", args).then(({ error }) => {
     if (error) { alert(dbMessage(error, "Could not add that to your cart.")); return; }
     if (!picked.length) {
       fetchCart().then(() => {
-        if (product) alert(product.name + " added to cart!");
+        if (product) alert(product.name + (colour ? " (" + colour + ")" : "") + " added to cart!");
       });
       return;
     }
@@ -312,7 +318,8 @@ function drawCartTable() {
       <td class="cart-product">
         <img class="cart-img" src="${safeUrl(firstSrc)}" alt="${escapeHtml(item.name)}"
           onerror="this.onerror=null; this.src='${safeUrl(fallbackSrc)}';" />
-        <span>${escapeHtml(item.name)}</span>
+        <span>${escapeHtml(item.name)}${item.colour
+          ? `<small class="cart-colour">Colour: ${escapeHtml(item.colour)}</small>` : ""}</span>
         ${item.upgrades && item.upgrades.length ? `
         <ul class="cart-upgrades">
           ${item.upgrades.map((u) => `
