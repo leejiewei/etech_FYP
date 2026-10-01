@@ -26,11 +26,6 @@ function renderFeaturedProducts() {
   featured.forEach((product) => grid.appendChild(buildProductCard(product)));
 }
 
-function roleLabel(role) {
-  const match = SHOPPER_ROLES.find((r) => r.value === role);
-  return match ? match.label : "";
-}
-
 // Accounts made before roles existed have none. Rather than guess, the
 // row asks, and re-ranks the moment they answer.
 function renderRolePicker(user) {
