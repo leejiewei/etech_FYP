@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../widgets/deal_price.dart';
 import '../widgets/product_image.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
   final Shop shop;
   const ProductDetailScreen({super.key, required this.product, required this.shop});
@@ -80,6 +80,56 @@ class ProductDetailScreen extends StatelessWidget {
   }
 
   @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  Product get product => widget.product;
+  Shop get shop => widget.shop;
+
+  /// The colour (or switch) chosen on this screen, which also goes into
+  /// the cart. Null until the shopper taps one.
+  String? _colour;
+
+  bool get _isSwitchChoice =>
+      product.colourOptions.every((o) => o.endsWith(' Switch'));
+
+  /// The photo of the chosen colour, by the website's naming convention:
+  /// 4504.webp is the main photo and 4504-green.webp the green one. Null
+  /// when nothing is chosen, for switches, or for a photo that is not one
+  /// of ours.
+  String? get _colourPhoto {
+    final main = product.imagePath;
+    final colour = _colour;
+    if (main == null || colour == null || _isSwitchChoice) return null;
+    if (!RegExp(r'/images/products/\d+\.webp$').hasMatch(main)) return null;
+    final slug = colour
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    return slug.isEmpty ? null : main.replaceFirst(RegExp(r'\.webp$'), '-$slug.webp');
+  }
+
+  Widget _photo() {
+    final mainPhoto =
+        ProductImage(url: product.imageUrl, isSvg: product.isSvg, height: 180);
+    final colourPhoto = _colourPhoto;
+    if (colourPhoto == null) return mainPhoto;
+    // A colour with no photo of its own falls back to the main one.
+    return SizedBox(
+      height: 180,
+      child: Image.network(
+        colourPhoto,
+        key: ValueKey(colourPhoto),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => mainPhoto,
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : mainPhoto,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: shop,
@@ -107,10 +157,7 @@ class ProductDetailScreen extends StatelessWidget {
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: ProductImage(
-                      url: product.imageUrl, isSvg: product.isSvg, height: 180),
-                ),
+                child: Center(child: _photo()),
               ),
               Container(
                 color: Colors.white,
@@ -145,7 +192,8 @@ class ProductDetailScreen extends StatelessWidget {
                     if (product.officialUrl != null) ...[
                       const SizedBox(height: 10),
                       InkWell(
-                        onTap: () => openOfficial(context, product),
+                        onTap: () =>
+                            ProductDetailScreen.openOfficial(context, product),
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 4),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -158,6 +206,27 @@ class ProductDetailScreen extends StatelessWidget {
                             Icon(Icons.open_in_new, size: 15, color: AppTheme.red),
                           ]),
                         ),
+                      ),
+                    ],
+                    if (product.colourOptions.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Text(_isSwitchChoice ? 'Switch' : 'Colour',
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          for (final c in product.colourOptions)
+                            ChoiceChip(
+                              label: Text(c),
+                              selected: _colour == c,
+                              selectedColor: AppTheme.red.withValues(alpha: 0.15),
+                              onSelected: (on) =>
+                                  setState(() => _colour = on ? c : null),
+                            ),
+                        ],
                       ),
                     ],
                   ],
@@ -195,12 +264,14 @@ class ProductDetailScreen extends StatelessWidget {
                           shop.inStock(product) ? AppTheme.red : Colors.grey.shade400),
                   onPressed: shop.inStock(product)
                       ? () async {
-                          // A product stocked in several colours asks
-                          // which one first; backing out adds nothing.
-                          String? colour;
-                          if (product.colourOptions.isNotEmpty) {
+                          // A product stocked in several colours uses the
+                          // one chosen on screen, or asks which one first;
+                          // backing out adds nothing.
+                          String? colour = _colour;
+                          if (product.colourOptions.isNotEmpty && colour == null) {
                             colour = await _pickColour(context);
                             if (colour == null) return;
+                            setState(() => _colour = colour);
                           }
                           final error = await shop.addToCart(product.id,
                               colour: colour);
@@ -271,7 +342,7 @@ class ProductDetailScreen extends StatelessWidget {
     final rows = product.attrs.entries.toList();
     return Column(
       children: rows.map((entry) {
-        final label = _labels[entry.key] ?? entry.key;
+        final label = ProductDetailScreen.specLabel(entry.key);
         final value = entry.value is List
             ? (entry.value as List).join(', ')
             : '${entry.value}';

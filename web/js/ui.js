@@ -106,6 +106,18 @@ function optionKindOf(options) {
   return options.length && options.every((o) => / Switch$/.test(o)) ? "Switch" : "Colour";
 }
 
+// The photo of one colour, by naming convention: 4504.webp is the main
+// photo and 4504-green.webp the green one, side by side on the website.
+// Null for a product whose photo is not one of ours, which has nowhere
+// to look. A colour with no photo of its own 404s, and the modal falls
+// back to the main photo.
+function colourImageOf(product, colour) {
+  const main = productImage(product);
+  if (!colour || !/\/images\/products\/\d+\.webp$/.test(main)) return null;
+  const slug = colour.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug ? main.replace(/\.webp$/, "-" + slug + ".webp") : null;
+}
+
 function buildProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
@@ -295,6 +307,18 @@ function wireProductModalActions(product) {
 
   root.querySelector(".product-modal-close")
       .addEventListener("click", closeProductModal);
+
+  // Choosing a colour shows that colour, when we have its photo.
+  const colourPick = root.querySelector(".product-modal-colour-pick");
+  const figure = root.querySelector(".product-modal-figure img");
+  if (colourPick && figure && optionKindOf(colourOptionsOf(product)) === "Colour") {
+    const main = productImage(product);
+    colourPick.addEventListener("change", () => {
+      const src = colourImageOf(product, colourPick.value) || main;
+      figure.onerror = () => { figure.onerror = null; figure.src = safeUrl(main); };
+      figure.src = safeUrl(src);
+    });
+  }
 
   const add = root.querySelector(".product-modal-add");
   if (!add.disabled) {
