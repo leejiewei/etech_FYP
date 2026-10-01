@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/role_dropdown.dart';
 
 /// Sign in, or create an account. One screen with a toggle, since the two
 /// forms are nearly identical.
@@ -24,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+  String? _role;
   String? _error;
   // Set when a sign-up succeeded but the address still has to be
   // confirmed by email. A success, so it is not shown as an error.
@@ -58,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _name.text.trim(),
         _email.text.trim(),
         _password.text,
+        _role,
       );
 
       if (!mounted) return;
@@ -203,6 +206,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Confirm password',
                 ),
+              ),
+              const SizedBox(height: 14),
+              // What "Picked for you" leans on before this account has any
+              // history. Changeable later on the profile screen.
+              RoleDropdown(
+                value: _role,
+                onChanged: (v) => setState(() => _role = v),
               ),
             ],
             if (_notice != null) ...[

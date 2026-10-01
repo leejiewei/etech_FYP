@@ -17,8 +17,8 @@ class ShopNotification {
   /// this and [orderId] is set, which is what decides where a tap goes.
   final int? productId;
 
-  /// 'payment_approved', 'payment_rejected', 'order_ready' or
-  /// 'deal_started'.
+  /// 'payment_approved', 'payment_rejected', 'order_ready',
+  /// 'deal_started' or 'recommendation'.
   final String kind;
   final String title;
   final String body;
@@ -44,6 +44,10 @@ class ShopNotification {
   /// News rather than an instruction: a product they were watching has
   /// come down in price.
   bool get isPriceDrop => kind == 'deal_started';
+
+  /// A "Picked for you" from the recommender. Names a product, like a
+  /// price drop, so a tap opens it.
+  bool get isRecommendation => kind == 'recommendation';
 
   /// Takes both a row from a select and the `newRecord` Realtime hands
   /// over, which carry the same columns under the same names.

@@ -541,6 +541,11 @@ footer {
   color: #b4642a;
 }
 
+/* A "Picked for you" from the recommender. Same blue as the app. */
+.notif-item.notif-recommendation strong {
+  color: #1f6fb2;
+}
+
 .notif-empty {
   padding: 16px 14px;
   font-size: 13px;
@@ -3364,4 +3369,56 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 @media (prefers-reduced-motion: reduce) {
   .build-card { transition: none; }
   .build-card:hover, .build-card:focus-visible { transform: none; }
+}
+
+/* ---------- Picked for you (home page) ----------
+   The recommender's row. The reason line under each name says which
+   signal put the product there -- "Based on your Laptops views",
+   "Picked for students" -- so the customer can see why. */
+.pick-reason {
+  font-size: 12px;
+  color: var(--red);
+  margin: 2px 0 4px;
+  line-height: 1.35;
+}
+
+.role-picker {
+  max-width: 760px;
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.role-picker p {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 12px;
+}
+
+.role-picker-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.role-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+}
+
+.role-chip strong { font-size: 15px; }
+.role-chip span   { font-size: 12px; color: #666; }
+
+.role-chip:hover:not(:disabled) { border-color: var(--red); }
+.role-chip:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 640px) {
+  .role-picker-buttons { grid-template-columns: 1fr; }
 }

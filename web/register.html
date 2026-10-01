@@ -26,6 +26,16 @@
         <label for="confirm">Confirm Password</label>
         <input type="password" id="confirm" name="confirm-password" autocomplete="new-password" required minlength="6" />
 
+        <!-- What the home page's "Picked for you" leans on before this
+             account has any history. Changeable later on the profile page. -->
+        <label for="role">I am shopping as a…</label>
+        <select id="role" name="role" required>
+          <option value="" disabled selected>Choose one</option>
+          <option value="student">Student: laptops and study gear on a budget</option>
+          <option value="gamer">Gamer: GPUs, gaming PCs and peripherals</option>
+          <option value="enterprise">Enterprise: office PCs, printers and networking</option>
+        </select>
+
         <div class="form-error" id="register-error"></div>
 
         <button type="submit">Register</button>
@@ -63,6 +73,7 @@
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
       const confirm = document.getElementById("confirm").value;
+      const role = document.getElementById("role").value;
       const errorEl = document.getElementById("register-error");
 
       if (password !== confirm) {
@@ -70,7 +81,7 @@
         return;
       }
 
-      registerUser(name, email, password).then((result) => {
+      registerUser(name, email, password, role).then((result) => {
         if (!result.ok) {
           errorEl.style.color = "";
           errorEl.textContent = result.message;

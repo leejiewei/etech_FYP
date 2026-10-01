@@ -30,6 +30,15 @@
         <textarea id="address" name="street-address" autocomplete="street-address" rows="3"
           placeholder="Street, city, postcode, state"></textarea>
 
+        <!-- Steers the home page's "Picked for you". -->
+        <label for="role">Shopping as</label>
+        <select id="role" name="role">
+          <option value="" disabled>Choose one</option>
+          <option value="student">Student: laptops and study gear on a budget</option>
+          <option value="gamer">Gamer: GPUs, gaming PCs and peripherals</option>
+          <option value="enterprise">Enterprise: office PCs, printers and networking</option>
+        </select>
+
         <div class="form-error" id="profile-saved" style="color: #1e8e3e;"></div>
 
         <button type="submit">Save Changes</button>
@@ -90,6 +99,7 @@
       document.getElementById("email").value = user.email;
       document.getElementById("phone").value = user.phone || "";
       document.getElementById("address").value = user.address || "";
+      document.getElementById("role").value = user.role || "";
     });
 
     document.getElementById("profile-form").addEventListener("submit", (e) => {
@@ -101,6 +111,7 @@
         name: document.getElementById("name").value.trim(),
         phone: document.getElementById("phone").value.trim(),
         address: document.getElementById("address").value.trim(),
+        role: document.getElementById("role").value,
       }).then((errorMessage) => {
         savedEl.textContent = errorMessage || "Profile saved!";
         savedEl.style.color = errorMessage ? "#c0392b" : "#1e8e3e";

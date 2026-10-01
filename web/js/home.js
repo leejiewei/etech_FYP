@@ -1,7 +1,21 @@
-// Home page: featured products + a simple "Recommended for you" carousel
-// that reorders itself based on what the user has been clicking on
-// (see tracking.js). This is a simplified stand-in for a real
-// behaviour-based recommendation engine.
+// Home page: "Picked for you" first, then the featured products.
+//
+// "Picked for you" is the FYP's recommender showing its work. The list
+// comes from recommend_for_me() in the database, which blends four
+// things about the signed-in customer:
+//
+//   * what they look at, carry to the cart, save and buy, by category
+//     (keep opening laptops and the row fills with laptops),
+//   * what other customers who touched the same products went on to
+//     choose (item-to-item collaborative filtering),
+//   * the role they picked at sign-up -- Student, Gamer or Enterprise --
+//     which is all there is to go on for a brand-new account,
+//   * and plain popularity, as a tie-breaker.
+//
+// See supabase/migrations/…_picked_for_you.sql for the weights.
+//
+// Signed-in customers only. Nobody else has a history the database can
+// put a name to, so the row stays hidden rather than pretending.
 
 function renderFeaturedProducts() {
   const grid = document.getElementById("featured-grid");
@@ -12,31 +26,86 @@ function renderFeaturedProducts() {
   featured.forEach((product) => grid.appendChild(buildProductCard(product)));
 }
 
-function renderRecommendedProducts() {
-  const section = document.getElementById("recommended-section");
-  const grid = document.getElementById("recommended-grid");
-  if (!grid) return;
+function roleLabel(role) {
+  const match = SHOPPER_ROLES.find((r) => r.value === role);
+  return match ? match.label : "";
+}
 
-  const topCategory = typeof getTopCategory === "function" ? getTopCategory() : null;
+// Accounts made before roles existed have none. Rather than guess, the
+// row asks, and re-ranks the moment they answer.
+function renderRolePicker(user) {
+  const picker = document.getElementById("role-picker");
+  const buttons = document.getElementById("role-picker-buttons");
+  if (!picker || !buttons) return;
 
-  let recommended;
-  let heading;
+  if (user.role) { picker.hidden = true; return; }
 
-  if (topCategory) {
-    recommended = products.filter((p) => p.category === topCategory && p.stock !== "out").slice(0, 4);
-    heading = "Because you viewed " + topCategory;
-  } else {
-    // No browsing history yet, just show some in-stock picks.
-    recommended = products.filter((p) => p.stock === "in").slice(4, 8);
-    heading = "Popular Picks";
-  }
+  picker.hidden = false;
+  buttons.innerHTML = "";
+  SHOPPER_ROLES.forEach((r) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "role-chip";
+    button.innerHTML = `<strong>${escapeHtml(r.label)}</strong><span>${escapeHtml(r.hint)}</span>`;
+    button.addEventListener("click", () => {
+      buttons.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+      setShopperRole(r.value).then((error) => {
+        if (error) {
+          buttons.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+          picker.querySelector("p").textContent = error;
+          return;
+        }
+        renderPicks();
+      });
+    });
+    buttons.appendChild(button);
+  });
+}
 
-  document.getElementById("recommended-heading").textContent = heading;
-  grid.innerHTML = "";
-  recommended.forEach((product) => grid.appendChild(buildProductCard(product)));
+function renderPicks() {
+  const section = document.getElementById("picks-section");
+  const grid = document.getElementById("picks-grid");
+  const sub = document.getElementById("picks-sub");
+  if (!section || !grid) return;
+
+  const user = getCurrentUser();
+  if (!user) { section.hidden = true; return; }
+
+  section.hidden = false;
+  renderRolePicker(user);
+  sub.textContent = user.role
+    ? `Based on what you view, save and buy, and your ${roleLabel(user.role)} profile.`
+    : "Based on what you view, save and buy.";
+
+  sb.rpc("recommend_for_me", { p_limit: 8 }).then(({ data, error }) => {
+    if (error) {
+      // A recommender having a bad day must not take the home page with it.
+      console.error("Loading recommendations:", error);
+      section.hidden = true;
+      return;
+    }
+
+    // Matched against the catalogue already in the page. Anything the
+    // catalogue does not hold (delisted since) is simply skipped.
+    const picks = (data || [])
+      .map((row) => ({ product: getProductById(row.product_id), reason: row.reason }))
+      .filter((pick) => pick.product);
+
+    if (picks.length === 0) { section.hidden = true; return; }
+
+    grid.innerHTML = "";
+    picks.forEach(({ product, reason }) => {
+      const card = buildProductCard(product);
+      const why = document.createElement("p");
+      why.className = "pick-reason";
+      why.textContent = reason;
+      card.querySelector("h3").after(why);
+      grid.appendChild(card);
+    });
+  });
 }
 
 onAppReady(() => {
+  renderPicks();
   renderFeaturedProducts();
-  renderRecommendedProducts();
 });

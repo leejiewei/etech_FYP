@@ -108,6 +108,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ? AppTheme.red
         : n.isPriceDrop
             ? const Color(0xFFB4642A)
+            : n.isRecommendation
+            ? const Color(0xFF1F6FB2)
             : n.kind == 'order_ready'
                 ? const Color(0xFF6A3FB5)
                 : AppTheme.green;
@@ -115,6 +117,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ? Icons.error_outline
         : n.isPriceDrop
             ? Icons.sell_outlined
+            : n.isRecommendation
+            ? Icons.auto_awesome_outlined
             : n.kind == 'order_ready'
                 ? Icons.storefront_outlined
                 : Icons.check_circle_outline;

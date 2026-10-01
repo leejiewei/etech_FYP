@@ -34,7 +34,7 @@ let currentUser = null;      // filled in by loadSession()
 // The columns a customer is allowed to read of their own row. Asking
 // for * would fail: the password_hash column is revoked from every
 // client role, and a SELECT * has to be allowed every column it lands on.
-const PROFILE_COLUMNS = "customer_id,name,email,phone,address";
+const PROFILE_COLUMNS = "customer_id,name,email,phone,address,shopper_role";
 
 // ------------------------------------------------------------
 // Who is signed in?
@@ -72,7 +72,43 @@ function shapeCustomer(row) {
     email:   row.email,
     phone:   row.phone,
     address: row.address,
+    role:    row.shopper_role,   // "student" | "enterprise" | "gamer" | null
   };
+}
+
+// ------------------------------------------------------------
+// Shopper roles.
+//
+// Picked at sign-up and changeable on the profile page. The role is
+// what the home page's "Picked for you" leans on before a customer has
+// any history of their own -- see recommend_products() in
+// supabase/migrations/…_picked_for_you.sql. The database refuses any
+// value not in this list.
+// ------------------------------------------------------------
+const SHOPPER_ROLES = [
+  { value: "student",    label: "Student",    hint: "Laptops and study gear on a budget" },
+  { value: "gamer",      label: "Gamer",      hint: "GPUs, gaming PCs and peripherals" },
+  { value: "enterprise", label: "Enterprise", hint: "Office PCs, printers and networking" },
+];
+
+function isShopperRole(value) {
+  return SHOPPER_ROLES.some((r) => r.value === value);
+}
+
+// Saves just the role. UPDATE on customers is granted on this column
+// too, so it is the customer's own row and nothing else that can change.
+function setShopperRole(role) {
+  if (!currentUser) return Promise.resolve("Please log in first.");
+  if (!isShopperRole(role)) return Promise.resolve("Please pick Student, Gamer or Enterprise.");
+
+  return sb.from("customers")
+    .update({ shopper_role: role })
+    .eq("customer_id", currentUser.id)
+    .then(({ error }) => {
+      if (error) return dbMessage(error, "Could not save your choice.");
+      currentUser.role = role;
+      return "";
+    });
 }
 
 function getCurrentUser() {
@@ -109,7 +145,7 @@ function isLoggedIn() {
 // ok says which box to put the message in. message is what to write in
 // it.
 // ------------------------------------------------------------
-function registerUser(name, email, password) {
+function registerUser(name, email, password, role) {
   name = (name || "").trim();
   email = (email || "").trim().toLowerCase();
 
@@ -128,8 +164,12 @@ function registerUser(name, email, password) {
   if (password.length < 8) {
     return Promise.resolve({ ok: false, message: "Password must be at least 8 characters." });
   }
+  if (!isShopperRole(role)) {
+    return Promise.resolve({ ok: false, message: "Please tell us whether you are a student, gamer or business." });
+  }
 
-  return sb.auth.signUp({ email, password, options: { data: { name } } })
+  // The role travels beside the name; handle_new_auth_user() files both.
+  return sb.auth.signUp({ email, password, options: { data: { name, role } } })
     .then(({ data, error }) => {
       if (error) return { ok: false, message: registerError(error) };
 
@@ -479,8 +519,8 @@ function logoutUser() {
 // ------------------------------------------------------------
 // Saving the profile.
 //
-// Three columns and no more. That is not politeness — UPDATE on this
-// table is granted on exactly (name, phone, address), so a request
+// Four columns and no more. That is not politeness — UPDATE on this
+// table is granted on exactly (name, phone, address, shopper_role), so a request
 // trying to change the email or the account it belongs to is refused by
 // Postgres rather than by this function.
 // ------------------------------------------------------------
@@ -490,18 +530,22 @@ function updateProfile(fields) {
   const name = (fields.name || "").trim();
   if (name === "") return Promise.resolve("Name cannot be empty.");
 
+  const changes = {
+    name,
+    phone:   (fields.phone || "").trim(),
+    address: (fields.address || "").trim(),
+  };
+  if (isShopperRole(fields.role)) changes.shopper_role = fields.role;
+
   return sb.from("customers")
-    .update({
-      name,
-      phone:   (fields.phone || "").trim(),
-      address: (fields.address || "").trim(),
-    })
+    .update(changes)
     .eq("customer_id", currentUser.id)
     .then(({ error }) => {
       if (error) return dbMessage(error, "Could not save your details.");
       currentUser.name    = name;
       currentUser.phone   = (fields.phone || "").trim();
       currentUser.address = (fields.address || "").trim();
+      if (changes.shopper_role) currentUser.role = changes.shopper_role;
       return "";
     });
 }

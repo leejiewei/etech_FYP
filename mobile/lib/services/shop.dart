@@ -70,13 +70,36 @@ class Shop extends ChangeNotifier {
   // ---- promotions ----
   List<Deal> deals = [];
 
+  // ---- Picked for you ----
+  //
+  // The recommender's answer for whoever is signed in, best first, each
+  // with the one-line reason the database gives for it. Empty when
+  // signed out: recommend_for_me() has nobody to recommend to.
+  List<({Product product, String reason})> picks = [];
+
   int get cartCount => cart.fold(0, (sum, item) => sum + item.qty);
 
   /// The columns a customer may read of their own row. Asking for
   /// everything would be refused: password_hash is revoked from every
   /// client role, and a select of all columns has to be allowed all of
   /// them.
-  static const String _profileColumns = 'customer_id,name,email,phone,address';
+  static const String _profileColumns =
+      'customer_id,name,email,phone,address,shopper_role';
+
+  /// The three shopper roles, as stored in customers.shopper_role, with
+  /// what each one leans the recommendations toward. The same list as
+  /// SHOPPER_ROLES in web/js/auth.js.
+  static const List<({String value, String label, String hint})> shopperRoles = [
+    (value: 'student', label: 'Student', hint: 'Laptops and study gear on a budget'),
+    (value: 'gamer', label: 'Gamer', hint: 'GPUs, gaming PCs and peripherals'),
+    (value: 'enterprise', label: 'Enterprise', hint: 'Office PCs, printers and networking'),
+  ];
+
+  static bool isShopperRole(String? value) =>
+      shopperRoles.any((r) => r.value == value);
+
+  /// The signed-in customer's role, or null if they have not picked one.
+  String? get shopperRole => user?['shopper_role'] as String?;
 
   // ------------------------------------------------------------
   // Start-up
@@ -440,6 +463,7 @@ class Shop extends ChangeNotifier {
       await loadCart();
       await loadWishlist();
       await loadNotifications();
+      await loadPicks();
       _subscribeToNotifications();
       // This handset now belongs to this customer as far as push is
       // concerned. Registering on every sign-in, not only on first run,
@@ -449,6 +473,7 @@ class Shop extends ChangeNotifier {
       cart = [];
       cartTotal = 0;
       wishlist = [];
+      picks = [];
       await _unsubscribeFromNotifications();
       notifyListeners();
     }
@@ -512,7 +537,7 @@ class Shop extends ChangeNotifier {
   ///   (ok: true,  message: "Check…") made, needs confirming
   ///   (ok: false, message: "…")      refused, show as an error
   Future<({bool ok, String? message})> register(
-      String name, String email, String password) async {
+      String name, String email, String password, String? role) async {
     name = name.trim();
     email = email.trim().toLowerCase();
 
@@ -524,12 +549,19 @@ class Shop extends ChangeNotifier {
     if (password.length < 8) {
       return (ok: false, message: 'Password must be at least 8 characters.');
     }
+    if (!isShopperRole(role)) {
+      return (
+        ok: false,
+        message: 'Please tell us whether you are a student, gamer or business.',
+      );
+    }
 
     try {
+      // The role travels beside the name; handle_new_auth_user() files both.
       final result = await Api.db.auth.signUp(
         email: email,
         password: password,
-        data: {'name': name},
+        data: {'name': name, 'role': role},
       );
 
       // No session back means the project is set to confirm addresses by
@@ -587,6 +619,7 @@ class Shop extends ChangeNotifier {
     cart = [];
     cartTotal = 0;
     wishlist = [];
+    picks = [];
     notifyListeners();
   }
 
@@ -631,30 +664,92 @@ class Shop extends ChangeNotifier {
     return (ok: true, message: resetSentMessage);
   }
 
-  /// Three columns and no more. That is not politeness — UPDATE on the
-  /// customers table is granted on exactly (name, phone, address), so a
-  /// request trying to change the email or the login it belongs to is
-  /// refused by Postgres rather than by this method.
-  Future<String?> updateProfile(String name, String phone, String address) async {
+  /// Four columns and no more. That is not politeness — UPDATE on the
+  /// customers table is granted on exactly (name, phone, address,
+  /// shopper_role), so a request trying to change the email or the login
+  /// it belongs to is refused by Postgres rather than by this method.
+  Future<String?> updateProfile(
+      String name, String phone, String address, String? role) async {
     final id = _customerId;
     if (id == null) return 'Please sign in first.';
     if (name.trim().isEmpty) return 'Name cannot be empty.';
 
+    final changes = <String, dynamic>{
+      'name': name.trim(),
+      'phone': phone.trim(),
+      'address': address.trim(),
+      if (isShopperRole(role)) 'shopper_role': role,
+    };
+
     try {
-      await Api.db.from('customers').update({
-        'name': name.trim(),
-        'phone': phone.trim(),
-        'address': address.trim(),
-      }).eq('customer_id', id);
+      await Api.db.from('customers').update(changes).eq('customer_id', id);
     } catch (e) {
       return Api.message(e, 'Could not save.');
     }
 
+    final roleChanged =
+        changes.containsKey('shopper_role') && role != shopperRole;
     user?['name'] = name.trim();
     user?['phone'] = phone.trim();
     user?['address'] = address.trim();
+    if (changes.containsKey('shopper_role')) user?['shopper_role'] = role;
     notifyListeners();
+    if (roleChanged) await loadPicks();
     return null;
+  }
+
+  /// Saves just the role, from the home screen's "how do you shop?" chips.
+  Future<String?> setShopperRole(String role) async {
+    final id = _customerId;
+    if (id == null) return 'Please sign in first.';
+    if (!isShopperRole(role)) return 'Please pick Student, Gamer or Enterprise.';
+
+    try {
+      await Api.db
+          .from('customers')
+          .update({'shopper_role': role}).eq('customer_id', id);
+    } catch (e) {
+      return Api.message(e, 'Could not save your choice.');
+    }
+
+    user?['shopper_role'] = role;
+    await loadPicks();
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // Picked for you
+  //
+  // recommend_for_me() in the database blends what this customer views,
+  // carts, saves and buys with what similar customers chose, their role
+  // and overall popularity -- see supabase/migrations/…_picked_for_you.sql.
+  // The ids come back best first and are matched against the catalogue
+  // the app already holds; anything it does not hold is skipped.
+  //
+  // A failure leaves the row empty. The home screen hides an empty row,
+  // so a recommender having a bad day costs one section, not the screen.
+  // ------------------------------------------------------------
+  Future<void> loadPicks() async {
+    if (!loggedIn) {
+      picks = [];
+      notifyListeners();
+      return;
+    }
+    try {
+      final rows = await Api.db.rpc('recommend_for_me', params: {'p_limit': 8});
+      final next = <({Product product, String reason})>[];
+      for (final r in (rows as List)) {
+        final product = byId(r['product_id'] as int);
+        if (product != null) {
+          next.add((product: product, reason: '${r['reason'] ?? ''}'));
+        }
+      }
+      picks = next;
+    } catch (e) {
+      debugPrint('Loading recommendations: $e');
+      picks = [];
+    }
+    notifyListeners();
   }
 
   // ------------------------------------------------------------
@@ -838,6 +933,7 @@ class Shop extends ChangeNotifier {
           .rpc('toggle_wishlist', params: {'p_product_id': productId});
       wishlist = (ids as List).cast<int>();
       notifyListeners();
+      _refreshPicksSoon();
     } catch (e) {
       return Api.message(e, 'Could not save that.');
     }
@@ -1197,7 +1293,18 @@ class Shop extends ChangeNotifier {
       'source': 'app',
       'product_id': productId,
       'event_type': 'view',
-    }).catchError((e) => debugPrint('Recording a view: $e'));
+    }).then((_) => _refreshPicksSoon())
+        .catchError((e) => debugPrint('Recording a view: $e'));
+  }
+
+  // A few taps in a row should cost one recommendation request, not one
+  // each, so the refresh waits for the browsing to pause.
+  Timer? _picksTimer;
+
+  void _refreshPicksSoon() {
+    if (!loggedIn) return;
+    _picksTimer?.cancel();
+    _picksTimer = Timer(const Duration(seconds: 2), loadPicks);
   }
 
   void logChat(String question, String answer, bool wasBuildRequest) {

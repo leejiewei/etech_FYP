@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/role_dropdown.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Shop shop;
@@ -20,6 +21,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late final _address = TextEditingController(
     text: widget.shop.user?['address'] ?? '',
   );
+  late String? _role = widget.shop.shopperRole;
   String? _message;
   bool _ok = false;
   bool _busy = false;
@@ -41,6 +43,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _name.text.trim(),
       _phone.text.trim(),
       _address.text.trim(),
+      _role,
     );
     if (!mounted) return;
     setState(() {
@@ -92,6 +95,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 labelText: 'Address (optional)',
                 hintText: 'Street, city, postcode, state',
               ),
+            ),
+            const SizedBox(height: 14),
+            // Steers the home screen's "Picked for you".
+            RoleDropdown(
+              value: _role,
+              label: 'Shopping as',
+              onChanged: (v) => setState(() => _role = v),
             ),
             if (_message != null) ...[
               const SizedBox(height: 16),
