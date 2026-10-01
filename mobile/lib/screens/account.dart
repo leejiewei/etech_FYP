@@ -96,7 +96,7 @@ class AccountScreen extends StatelessWidget {
           // whether to take part has not signed in yet, and this is the
           // participant information sheet -- it is no use only to people who
           // have already handed over their details.
-          _tile(context, Icons.privacy_tip_outlined, 'Privacy Notice',
+          _tile(context, Icons.privacy_tip_outlined, 'Privacy Policy',
               'What this app records, and why',
               () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const PrivacyScreen()))),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// The privacy notice, and the participant information sheet for the test.
+/// The privacy policy, and the participant information sheet for the test.
 ///
 /// The website has carried this at web/privacy.html since 5 September. The
 /// app had nothing at all, which mattered more than it sounds: a tester who
@@ -17,17 +17,17 @@ import '../theme.dart';
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
 
-  static const String lastUpdated = '22 September 2026';
+  static const String lastUpdated = '1 October 2026';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy Notice')),
+      appBar: AppBar(title: const Text('Privacy Policy')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
         children: [
           const Text(
-            'Privacy Notice',
+            'Privacy Policy',
             style: TextStyle(
                 fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink),
           ),
@@ -37,189 +37,216 @@ class PrivacyScreen extends StatelessWidget {
           const SizedBox(height: 18),
 
           _callout(
-            'This app is a student final-year project. eTech Computer '
-            'Accessories is being built and tested as university coursework. '
-            'No goods are shipped, and during the test period you are asked '
-            'not to send any money — the payment details shown at the '
-            'checkout are placeholders and are not a real account. During the '
-            'test period the app records how it is used, and this page '
-            'explains exactly what that means.',
+            'Test period notice. eTech Computer Accessories is being built and '
+            'tested as a university final-year project. No order is really '
+            'fulfilled, and during the test period you are asked not to send '
+            'any money — the bank details shown at checkout are placeholders, '
+            'not a real account. If you are taking part in the test, this '
+            'policy is also your participant information sheet.',
           ),
+          const SizedBox(height: 14),
 
-          _h('Who is responsible'),
-          _p('This app is operated by a student at a Malaysian university as '
-              'part of a final-year project, supervised by an academic '
-              'supervisor. Questions about anything on this page, including a '
-              'request to see or delete your data, can be sent through the '
-              'Contact page on the website.'),
+          _p('eTech Computer Accessories ("eTech", "we", "us") respects your '
+              'privacy. This policy explains what personal data we collect '
+              'when you use our website and mobile app, why we collect it, who '
+              'we share it with, and the choices you have. It is written in '
+              'line with the Personal Data Protection Act 2010 (Malaysia). By '
+              'using the site or app you agree to the practices described '
+              'here.'),
 
-          _h('What is recorded, and why'),
-          _p('If you create an account, we store your name, email address '
-              'and phone number. These are needed to hold your basket, show '
-              'your order history, and tell you when an order is ready. Your '
-              'profile also has an address box, which is optional — it saves '
-              'typing if you choose delivery, and you can leave it empty and '
-              'collect instead. Your password is held by Supabase Auth as a '
-              'hash — the shop never sees or stores the password itself.'),
-          _p('Whether or not you sign in, the app records:'),
-          _bullets(const [
-            'which products you open, and when;',
-            'what you type into the search box, and how many results came back;',
-            'what you ask the chatbot, and what it answered;',
-            'what you add to your basket, wishlist, and what you order.',
+          _h('1. Who we are'),
+          _p('eTech Computer Accessories sells computer parts, pre-built PCs, '
+              'laptops, peripherals and accessories, and offers PC building '
+              'and repair services. This website and app are operated by a '
+              'student at a Malaysian university as part of a final-year '
+              'project, under the supervision of an academic supervisor. The '
+              'operator is responsible for the personal data described in '
+              'this policy.'),
+
+          _h('2. Personal data we collect'),
+          _rows(const [
+            ('Account details',
+                'Your name, email address and phone number, and optionally a '
+                    'delivery address saved to your profile. Your password is '
+                    'held by our authentication provider as a hash — we never '
+                    'see or store the password itself.'),
+            ('Shopper profile',
+                'Whether you shop as a Student, Gamer or Enterprise customer, '
+                    'chosen at sign-up and changeable on your profile.'),
+            ('Orders',
+                'The items you buy (including any colour you pick), the total, '
+                    'the name and phone number given at checkout, whether you '
+                    'chose collection or delivery, and a delivery address only '
+                    'if you chose delivery.'),
+            ('Payment receipts',
+                'The photo of your bank transfer receipt, if you upload one. '
+                    'See section 5.'),
+            ('Shopping activity',
+                'Products you view, searches you make (and how many results '
+                    'came back), items added to your cart or wishlist, and what '
+                    'you order. This is recorded whether or not you are signed '
+                    'in.'),
+            ('AI assistant chats',
+                'The questions you ask the shop\'s chatbot and the answers it '
+                    'gave.'),
+            ('Rig showcase',
+                'Photos of a PC you have built, the parts you tag, and your '
+                    'first name — only if you choose to submit a build.'),
+            ('Device information',
+                'A random device identifier used when you browse without '
+                    'signing in, and a notification token for this phone, '
+                    'removed when you sign out.'),
           ]),
-          _p('This is the point of the project rather than a side effect. The '
-              'research question is whether a shop\'s own records can be used '
-              'to recommend products and forecast stock, so the browsing '
-              'record is the subject being studied. It is used to show the '
-              'shop\'s staff which products customers are interested in, to '
-              'decide who is told when one of those products goes on offer '
-              '(see "Messages we send you" below), to suggest items on the '
-              'home page, and — in aggregate, with no names attached — as the '
-              'dataset analysed in the written dissertation.'),
+          _sub('Browsing without signing in'),
+          _p('If you are not signed in, this device is given a random '
+              'identifier (a UUID). It is not linked to your name, email or '
+              'any other detail — it only tells us that several visits came '
+              'from the same device. If you later sign in or create an '
+              'account, the activity recorded under that identifier on this '
+              'device is attached to your account, so that a purchase can be '
+              'read together with the browsing that led to it. Clearing the '
+              'app\'s storage, or uninstalling it, starts a new identifier.'),
 
-          _h('Being recognised without being identified'),
-          _p('If you browse without signing in, your device is given a random '
-              'identifier (a UUID) that is stored on this device and sent with '
-              'the records above. It is not a login, it proves nothing, and it '
-              'is not linked to your name, email or any other person — it only '
-              'answers the question "was this the same device?", so that a '
-              'single visit can be read as one visit rather than as a heap of '
-              'unrelated taps.'),
-          _p('If you later create an account or sign in, the activity recorded '
-              'under that identifier on this device is attached to your '
-              'account, so that a purchase can be read together with the '
-              'browsing that led to it. Clearing the app\'s storage, or '
-              'uninstalling it, ends the old identifier and starts a new one.'),
-
-          _h('If you place an order'),
-          _p('An order records the items, the total, and the name and phone '
-              'number you type at checkout. That is kept for as long as the '
-              'order record exists, because it is the order.'),
-          _p('An address is recorded only if you choose delivery. If you '
-              'choose to collect, no address is asked for, and any address '
-              'the app happens to send with the order is discarded before it '
-              'is stored — the phone number is how we tell you it is ready.'),
-          _p('There is no card payment in this app and no payment gateway. '
-              'Instead the checkout shows bank details and asks you to upload '
-              'a photograph of the transfer receipt, which a member of staff '
-              'then checks. If you upload one, we store that image. A receipt '
-              'normally shows a name, an account or reference number and an '
-              'amount, so please treat it the way you would treat any bank '
-              'document.'),
+          _h('3. How we use your data'),
           _bullets(const [
-            'Receipt images are stored in a private area. They are readable '
-                'only by you and by the shop\'s staff — not by other '
-                'customers, and not by anybody without an account.',
-            'They are not part of the research dataset and are not used in '
-                'the dissertation.',
-            'You can ask for yours to be deleted through the Contact page.',
-            'During the test period there is nothing to pay, so there should '
-                'be no receipt to send. Please do not upload a real bank '
-                'document unless you actually intend to.',
+            'To run your account and orders — keeping your cart and wishlist, '
+                'processing orders, arranging collection or delivery, and '
+                'showing your order history.',
+            'To confirm payments — staff check uploaded receipts against each '
+                'order.',
+            'To keep you updated — telling you when payment is approved or '
+                'rejected, and when an order is ready or has been sent.',
+            'To personalise your shopping — the "Picked for you" section on '
+                'the home screen is built from your shopper profile, the '
+                'products you view, wishlist and buy, and what customers with '
+                'similar interests bought. It is shown only to signed-in '
+                'customers.',
+            'To tell you about relevant offers — see section 4.',
+            'To answer your questions — through the AI assistant, WhatsApp, '
+                'or the contact form.',
+            'To improve the shop — showing staff which products customers are '
+                'interested in, and planning stock.',
+            'For the final-year project — shopping activity is the dataset '
+                'studied in the project\'s dissertation, which asks whether a '
+                'shop\'s own records can recommend products and forecast '
+                'stock. It appears there only as totals, with no one named.',
           ]),
+          _p('We do not sell your personal data, and we do not use it for '
+              'third-party advertising.'),
 
-          _h('Messages we send you'),
-          _p('If you have an account, the shop sends you short messages. They '
-              'appear under the bell in this app and on the website, and — if '
-              'you allow this app to send notifications — on your phone as '
-              'well. To reach your phone, the app stores a delivery token for '
-              'this device; it is removed when you sign out. There are two '
+          _h('4. Notifications and offers'),
+          _p('If you have an account, we send short messages that appear under '
+              'the bell in this app and on the website, and on your phone if '
+              'you allow this app to send notifications. There are three '
               'kinds:'),
           _bullets(const [
-            'Order updates: when your payment is approved or rejected, and '
-                'when your order is ready to collect or has been sent.',
-            'Offers on things you showed interest in: when the shop puts a '
-                'product on a timed deal, a message goes to signed-in '
-                'customers who saved it to their wishlist, added it to their '
-                'basket without buying it, or opened it three or more times. '
-                'Who receives it is worked out automatically from the browsing '
-                'record described above; staff choose which product goes on '
-                'offer, not who is told. If you browse without signing in, you '
-                'are never sent one.',
+            'Order updates about your own orders.',
+            'Deal alerts — when a product goes on a timed deal, we tell '
+                'signed-in customers who saved it to their wishlist, left it '
+                'in their cart, or viewed it three or more times. Staff choose '
+                'the product; who is told is worked out automatically from '
+                'shopping activity.',
+            'Weekly picks — at most one message a week, on Saturday morning, '
+                'suggesting a product you have been looking at or one picked '
+                'for you. The same product is not suggested to you twice '
+                'within 30 days.',
           ]),
-          _p('For every message we record when it was sent and whether, and '
-              'when, you opened it. For offer messages we also look at whether '
-              'you viewed or bought that product in the seven days afterwards. '
-              'This is part of the research: it measures whether offers chosen '
-              'from browsing are of any use to the people who get them, and it '
-              'appears in the dissertation only as totals, with no names '
-              'attached.'),
-          _p('You can turn notifications off for this app in your phone\'s '
-              'settings at any time; the messages still wait under the bell. '
-              'If you would rather not receive offer messages at all, say so '
-              'through the Contact page on the website and they will stop.'),
+          _p('For each message we record when it was sent and whether you '
+              'opened it, and for offers and picks we look at whether you '
+              'viewed or bought that product in the following days. This tells '
+              'us whether the messages are useful, and is reported only as '
+              'totals.'),
+          _p('Opting out: you can turn off notifications for this app in your '
+              'phone\'s settings at any time (messages will still wait under '
+              'the bell). To stop deal alerts and weekly picks altogether, '
+              'tell us through the Contact page on the website.'),
 
-          _h('If we contact you on WhatsApp'),
-          _p('The phone number you give at checkout may be used to message you '
-              'on WhatsApp about that order — usually to confirm we have '
-              'received your payment, or to ask for a clearer receipt. A '
-              'member of staff writes and sends those messages; nothing is '
-              'sent automatically.'),
-          _p('WhatsApp is run by Meta, not by us. Anything you send or receive '
-              'there goes through their service under their privacy policy, '
-              'and a conversation stays on their servers and on your phone '
-              'after the order is finished. If you would rather we did not use '
-              'WhatsApp, say so and we will use email instead. You never have '
-              'to start a WhatsApp conversation to buy anything — the receipt '
-              'upload does the same job.'),
-
-          _h('If you submit a build to the showcase'),
-          _p('The Rigs screen lets you send in photographs of a computer you '
-              'have built, with the parts tagged. If you do, those photographs '
-              'and your first name are published there once a member of staff '
-              'has approved them. Submitting is entirely optional, and you can '
-              'ask for a submission to be removed at any time.'),
-
-          _h('What is not recorded'),
+          _h('5. Payments and receipts'),
+          _p('We do not take card payments and there is no payment gateway. '
+              'Checkout shows bank transfer details and asks you to upload a '
+              'photo of the transfer receipt for staff to check. A receipt '
+              'usually shows a name, an account or reference number and an '
+              'amount, so please treat it like any bank document.'),
           _bullets(const [
-            'No card, bank or payment credentials. There is no card box in '
-                'this app and no payment is processed here.',
-            'No advertising or third-party analytics trackers, and nothing is '
-                'sold or passed to advertisers.',
-            'No tracking cookies. The app keeps your sign-in token and the '
-                'device identifier in the device\'s own storage.',
+            'Receipts are stored privately and can be seen only by you and '
+                'shop staff.',
+            'They are not used in the project\'s research or dissertation.',
+            'You can ask for yours to be deleted at any time.',
+            'During the test period there is nothing to pay, so please do not '
+                'upload a real bank document.',
           ]),
 
-          _h('Where it is kept, and who can see it'),
-          _p('Everything is stored in a Supabase (PostgreSQL) database. Access '
-              'is restricted by database policies: you can read your own '
-              'account and your own orders and nothing else, and the browsing '
-              'records can be read only by shop staff. Questions sent to the '
-              'AI assistant are passed to Google\'s Gemini API to generate a '
-              'reply; the shop\'s product catalogue and your message are sent, '
-              'and your name, email and account details are not.'),
+          _h('6. Who we share it with'),
+          _p('We share personal data only with the service providers that run '
+              'the shop for us, and only what each one needs:'),
+          _rows(const [
+            ('Supabase',
+                'Database, sign-in and file storage, where all the data above '
+                    'is kept.'),
+            ('Vercel', 'Hosts the website.'),
+            ('Google (Gemini API)',
+                'Generates the AI assistant\'s replies. Your message and our '
+                    'product catalogue are sent; your name, email and account '
+                    'details are not.'),
+            ('Google (Firebase Cloud Messaging)',
+                'Delivers notifications to this app on your phone.'),
+            ('Meta (WhatsApp)',
+                'Only if we message you about an order, or you message us.'),
+          ]),
+          _p('WhatsApp: staff may use the phone number from your order to '
+              'message you on WhatsApp about that order, for example to '
+              'confirm payment or ask for a clearer receipt. Messages are '
+              'written by a person, never sent automatically. Conversations '
+              'are handled under WhatsApp\'s privacy policy and stay on their '
+              'service after the order is finished. If you prefer, ask us to '
+              'use email instead; you never need WhatsApp to buy anything.'),
+          _p('Rig showcase: if you submit a build, its photos and your first '
+              'name are published on the Rigs screen once staff approve it. '
+              'You can ask for it to be removed at any time.'),
+          _p('We may also disclose data where the law requires us to.'),
 
-          _h('How long it is kept'),
-          _p('Account and order records are kept while the account exists. '
-              'Browsing, search and chatbot records are kept for the duration '
-              'of the project and the assessment that follows it, after which '
-              'the project database is deleted. Data that appears in the '
-              'dissertation appears only in aggregate, with no individual '
-              'identified.'),
+          _h('7. Cookies and local storage'),
+          _p('We do not use tracking or advertising cookies, and there are no '
+              'third-party analytics trackers. The app\'s own storage keeps '
+              'your sign-in session, the device identifier described in '
+              'section 2, and small settings.'),
 
-          _h('Your choices'),
+          _h('8. How we protect your data'),
+          _p('Data is sent over encrypted connections (HTTPS). Database access '
+              'rules mean you can read only your own account and orders; '
+              'shopping activity and receipts can be read only by shop staff. '
+              'Passwords are stored only as hashes. No system is perfectly '
+              'secure, but we take reasonable steps to keep your data safe.'),
+
+          _h('9. How long we keep it'),
+          _p('Account and order records are kept for as long as your account '
+              'exists. Shopping activity, search and chatbot records are kept '
+              'for the length of the project and its assessment, after which '
+              'the project database is deleted.'),
+
+          _h('10. Your rights'),
+          _p('Under the Personal Data Protection Act 2010 you can:'),
           _bullets(const [
-            'You do not have to take part. You can browse without creating an '
-                'account, and you can stop at any time.',
-            'You can ask for a copy of what is held about you, or ask for it '
-                'to be corrected or deleted, through the Contact page. '
-                'Deleting your account removes your personal details; the '
-                'browsing records that remain are detached from you and '
-                'cannot be traced back.',
-            'You can clear the device identifier at any time by clearing this '
-                'app\'s storage in your device settings.',
+            'Access the personal data we hold about you;',
+            'Correct it if it is wrong or out of date (most of it you can edit '
+                'yourself on your profile);',
+            'Withdraw consent and ask us to delete it — deleting your account '
+                'removes your personal details, and any shopping records left '
+                'behind are detached from you and cannot be traced back;',
+            'Limit marketing by opting out of deal alerts and weekly picks.',
           ]),
+          _p('Taking part is voluntary: you can browse without an account and '
+              'stop at any time. To clear the device identifier, clear this '
+              'app\'s storage in your device settings.'),
 
-          const SizedBox(height: 18),
-          Text(
-            'This notice is provided in line with the Personal Data '
-            'Protection Act 2010 (Malaysia). If you are taking part in the '
-            'project\'s test period, this page is also the participant '
-            'information sheet for that test.',
-            style: TextStyle(
-                fontSize: 12.5, height: 1.5, color: Colors.grey.shade700),
-          ),
+          _h('11. Changes to this policy'),
+          _p('We may update this policy when the shop changes what it collects '
+              'or how it uses it. The date at the top shows when it was last '
+              'changed.'),
+
+          _h('12. Contact us'),
+          _p('For any question about this policy, or to make a request about '
+              'your data, please use the Contact page on our website.'),
         ],
       ),
     );
@@ -234,11 +261,57 @@ class PrivacyScreen extends StatelessWidget {
                 color: AppTheme.redDark)),
       );
 
+  Widget _sub(String text) => Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 6),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.ink)),
+      );
+
   Widget _p(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(text,
             style: const TextStyle(
                 fontSize: 13.5, height: 1.55, color: AppTheme.ink)),
+      );
+
+  /// The website's two-column tables, stacked as label over text.
+  Widget _rows(List<(String, String)> rows) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            for (var i = 0; i < rows.length; i++)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                decoration: BoxDecoration(
+                  border: i == 0
+                      ? null
+                      : Border(top: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(rows[i].$1,
+                        style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.ink)),
+                    const SizedBox(height: 3),
+                    Text(rows[i].$2,
+                        style: const TextStyle(
+                            fontSize: 13, height: 1.5, color: AppTheme.ink)),
+                  ],
+                ),
+              ),
+          ],
+        ),
       );
 
   Widget _bullets(List<String> items) => Padding(

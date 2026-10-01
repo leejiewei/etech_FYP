@@ -325,7 +325,7 @@ function injectPrivacyNotice() {
       you search for and what you ask the chatbot &mdash; that record is what
       the project studies. No order is really fulfilled and there is nothing to pay:
       the payment details at the checkout are placeholders, not a real account.
-      <a href="privacy.html">Read the privacy notice</a>.
+      <a href="privacy.html">Read the privacy policy</a>.
     </p>
     <button type="button" class="privacy-notice-ok">I understand</button>
   `;

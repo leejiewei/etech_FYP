@@ -3,225 +3,323 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Privacy Notice - eTech Computer Accessories</title>
+  <title>Privacy Policy - eTech Computer Accessories</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .policy { max-width: 780px; margin: 0 auto; color: #333; line-height: 1.65; }
+    .policy h3 { margin-top: 30px; padding-top: 6px; scroll-margin-top: 90px; }
+    .policy h4 { margin: 18px 0 6px; font-size: 1rem; }
+    .policy-toc { background: #f7f7f8; border: 1px solid #eee; border-radius: 8px;
+                  padding: 14px 18px; margin: 22px 0; }
+    .policy-toc ol { margin: 6px 0 0; padding-left: 22px; columns: 2; column-gap: 28px; }
+    .policy-toc li { margin-bottom: 3px; break-inside: avoid; }
+    .policy-table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: .95rem; }
+    .policy-table th, .policy-table td { border: 1px solid #e4e4e4; padding: 8px 10px;
+                                         text-align: left; vertical-align: top; }
+    .policy-table th { background: #f7f7f8; }
+    @media (max-width: 600px) {
+      .policy-toc ol { columns: 1; }
+      .policy-table, .policy-table tbody, .policy-table tr, .policy-table td { display: block; width: 100%; }
+      .policy-table thead { display: none; }
+      .policy-table tr { border: 1px solid #e4e4e4; border-radius: 6px; margin-bottom: 8px; }
+      .policy-table td { border: none; padding: 4px 10px; }
+      .policy-table td:first-child { font-weight: 600; padding-top: 8px; }
+    }
+  </style>
 </head>
 <body>
 
   <div id="site-header"></div>
 
   <section class="section">
-    <div style="max-width: 760px; margin: 0 auto; color: #333; line-height: 1.65;">
+    <div class="policy">
 
-      <h2 style="text-align:center;">Privacy Notice</h2>
+      <h2 style="text-align:center;">Privacy Policy</h2>
       <p style="text-align:center; color:#777; margin-top:-10px;">
-        Last updated 22 September 2026
+        Last updated 1 October 2026
       </p>
 
       <div style="background:#fff8e1; border:1px solid #ffe0a3; border-radius:8px;
                   padding:16px 18px; margin:24px 0;">
-        <strong>This site is a student final-year project.</strong>
-        eTech Computer Accessories is being built and tested as university
-        coursework. No order is really fulfilled, and during the test period you are
-        asked not to send any money &mdash; the payment details shown at the
-        checkout are placeholders and are not a real account. During the test
-        period the site records how it is used, and this page explains exactly
-        what that means.
+        <strong>Test period notice.</strong>
+        eTech Computer Accessories is being built and tested as a university
+        final-year project. No order is really fulfilled, and during the test
+        period you are asked not to send any money &mdash; the bank details shown
+        at checkout are placeholders, not a real account. If you are taking part
+        in the test, this policy is also your participant information sheet.
       </div>
 
-      <h3>Who is responsible</h3>
       <p>
-        This site is operated by a student at a Malaysian university as part of a
-        final-year project, supervised by an academic supervisor. Questions about
-        anything on this page, including a request to see or delete your data,
-        can be sent through the <a href="contact.html">Contact</a> page.
+        eTech Computer Accessories (&ldquo;eTech&rdquo;, &ldquo;we&rdquo;,
+        &ldquo;us&rdquo;) respects your privacy. This policy explains what personal
+        data we collect when you use our website and mobile app, why we collect it,
+        who we share it with, and the choices you have. It is written in line with
+        the Personal Data Protection Act 2010 (Malaysia). By using the site or app
+        you agree to the practices described here.
       </p>
 
-      <h3>What is recorded, and why</h3>
+      <nav class="policy-toc" aria-label="Contents">
+        <strong>Contents</strong>
+        <ol>
+          <li><a href="#who">Who we are</a></li>
+          <li><a href="#collect">Personal data we collect</a></li>
+          <li><a href="#use">How we use your data</a></li>
+          <li><a href="#messages">Notifications and offers</a></li>
+          <li><a href="#payment">Payments and receipts</a></li>
+          <li><a href="#share">Who we share it with</a></li>
+          <li><a href="#storage">Cookies and local storage</a></li>
+          <li><a href="#security">How we protect your data</a></li>
+          <li><a href="#retention">How long we keep it</a></li>
+          <li><a href="#rights">Your rights</a></li>
+          <li><a href="#changes">Changes to this policy</a></li>
+          <li><a href="#contact">Contact us</a></li>
+        </ol>
+      </nav>
 
-      <p><strong>If you create an account</strong>, we store your name, email
-      address and phone number. These are needed to hold your basket, show your
-      order history, and tell you when an order is ready. Your profile also has
-      an address box, which is optional &mdash; it saves typing if you choose
-      delivery, and you can leave it empty and collect instead. Your password is
-      held by Supabase Auth as a hash &mdash; the shop never sees or stores the
-      password itself.</p>
+      <h3 id="who">1. Who we are</h3>
+      <p>
+        eTech Computer Accessories sells computer parts, pre-built PCs, laptops,
+        peripherals and accessories, and offers PC building and repair services.
+        This website and app are operated by a student at a Malaysian university
+        as part of a final-year project, under the supervision of an academic
+        supervisor. The operator is responsible for the personal data described
+        in this policy.
+      </p>
 
-      <p><strong>Whether or not you sign in</strong>, the site records:</p>
+      <h3 id="collect">2. Personal data we collect</h3>
+      <table class="policy-table">
+        <thead>
+          <tr><th style="width:30%;">Type</th><th>What it includes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Account details</td>
+            <td>Your name, email address and phone number, and optionally a
+                delivery address saved to your profile. Your password is held by
+                our authentication provider as a hash &mdash; we never see or
+                store the password itself.</td>
+          </tr>
+          <tr>
+            <td>Shopper profile</td>
+            <td>Whether you shop as a Student, Gamer or Enterprise customer,
+                chosen at sign-up and changeable on your profile page.</td>
+          </tr>
+          <tr>
+            <td>Orders</td>
+            <td>The items you buy (including any colour you pick), the total,
+                the name and phone number given at checkout, whether you chose
+                collection or delivery, and a delivery address only if you chose
+                delivery.</td>
+          </tr>
+          <tr>
+            <td>Payment receipts</td>
+            <td>The photo of your bank transfer receipt, if you upload one. See
+                <a href="#payment">section 5</a>.</td>
+          </tr>
+          <tr>
+            <td>Shopping activity</td>
+            <td>Products you view, searches you make (and how many results came
+                back), items added to your cart or wishlist, and what you order.
+                This is recorded whether or not you are signed in.</td>
+          </tr>
+          <tr>
+            <td>AI assistant chats</td>
+            <td>The questions you ask the shop's chatbot and the answers it gave.</td>
+          </tr>
+          <tr>
+            <td>Rig showcase</td>
+            <td>Photos of a PC you have built, the parts you tag, and your first
+                name &mdash; only if you choose to submit a build.</td>
+          </tr>
+          <tr>
+            <td>Device information</td>
+            <td>A random device identifier used when you browse without signing
+                in, and, in the app, a notification token for your phone.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Browsing without signing in</h4>
+      <p>
+        If you are not signed in, your browser or device is given a random
+        identifier (a UUID). It is not linked to your name, email or any other
+        detail &mdash; it only tells us that several visits came from the same
+        browser. If you later sign in or create an account, the activity recorded
+        under that identifier on this device is attached to your account, so that
+        a purchase can be read together with the browsing that led to it.
+        Clearing your browser's site data starts a new identifier.
+      </p>
+
+      <h3 id="use">3. How we use your data</h3>
       <ul>
-        <li>which products you open, and when;</li>
-        <li>what you type into the search box, and how many results came back;</li>
-        <li>what you ask the chatbot, and what it answered;</li>
-        <li>what you add to your basket, wishlist, and what you order.</li>
+        <li><strong>To run your account and orders</strong> &mdash; keeping your
+            cart and wishlist, processing orders, arranging collection or
+            delivery, and showing your order history.</li>
+        <li><strong>To confirm payments</strong> &mdash; staff check uploaded
+            receipts against each order.</li>
+        <li><strong>To keep you updated</strong> &mdash; telling you when payment
+            is approved or rejected, and when an order is ready or has been sent.</li>
+        <li><strong>To personalise your shopping</strong> &mdash; the
+            &ldquo;Picked for you&rdquo; section on the home page is built from
+            your shopper profile, the products you view, wishlist and buy, and
+            what customers with similar interests bought. It is shown only to
+            signed-in customers.</li>
+        <li><strong>To tell you about relevant offers</strong> &mdash; see
+            <a href="#messages">section 4</a>.</li>
+        <li><strong>To answer your questions</strong> &mdash; through the AI
+            assistant, WhatsApp, or the contact form.</li>
+        <li><strong>To improve the shop</strong> &mdash; showing staff which
+            products customers are interested in, and planning stock.</li>
+        <li><strong>For the final-year project</strong> &mdash; shopping activity
+            is the dataset studied in the project's dissertation, which asks
+            whether a shop's own records can recommend products and forecast
+            stock. It appears there only as totals, with no one named.</li>
       </ul>
+      <p>We do not sell your personal data, and we do not use it for third-party
+         advertising.</p>
 
+      <h3 id="messages">4. Notifications and offers</h3>
       <p>
-        This is the point of the project rather than a side effect. The research
-        question is whether a shop's own records can be used to recommend
-        products and forecast stock, so the browsing record <em>is</em> the
-        subject being studied. It is used to show the shop's staff which
-        products customers are interested in, to decide who is told when one
-        of those products goes on offer (see <em>Messages we send you</em>
-        below), to suggest items on the home page, and &mdash; in aggregate,
-        with no names attached &mdash; as the dataset analysed in the written
-        dissertation.
-      </p>
-
-      <h3>Being recognised without being identified</h3>
-      <p>
-        If you browse without signing in, your device is given a random
-        identifier (a UUID) that is stored in this browser and sent with the
-        records above. It is not a login, it proves nothing, and it is not
-        linked to your name, email or any other person &mdash; it only answers
-        the question "was this the same browser?", so that a single visit can be
-        read as one visit rather than as a heap of unrelated clicks.
-      </p>
-      <p>
-        If you later create an account or sign in, the activity recorded under
-        that identifier on this device is attached to your account, so that a
-        purchase can be read together with the browsing that led to it. Clearing
-        your browser's site data ends the old identifier and starts a new one.
-      </p>
-
-      <h3>If you place an order</h3>
-      <p>
-        An order records the items, the total, and the name and phone number you
-        type at checkout. That is kept for as long as the order record exists,
-        because it is the order.
-      </p>
-      <p>
-        <strong>An address is recorded only if you choose delivery.</strong> If
-        you choose to collect, no address is asked for, and any address your
-        browser happens to send with the order is discarded before it is
-        stored &mdash; the phone number is how we tell you it is ready.
-      </p>
-      <p>
-        There is no card payment on this site and no payment gateway. Instead
-        the checkout shows bank details and asks you to upload a photograph of
-        the transfer receipt, which a member of staff then checks. <strong>If
-        you upload one, we store that image.</strong> A receipt normally shows a
-        name, an account or reference number and an amount, so please treat it
-        the way you would treat any bank document.
+        If you have an account, we send short messages that appear under the bell
+        on the website and in the app, and on your phone if you use the app and
+        allow notifications. There are three kinds:
       </p>
       <ul>
-        <li>Receipt images are stored in a private area. They are readable only
-            by you and by the shop's staff &mdash; not by other customers, and
-            not by anybody without an account.</li>
-        <li>They are not part of the research dataset and are not used in the
-            dissertation.</li>
-        <li>You can ask for yours to be deleted through the
-            <a href="contact.html">Contact</a> page.</li>
+        <li><strong>Order updates</strong> about your own orders.</li>
+        <li><strong>Deal alerts</strong> &mdash; when a product goes on a timed
+            deal, we tell signed-in customers who saved it to their wishlist, left
+            it in their cart, or viewed it three or more times. Staff choose the
+            product; who is told is worked out automatically from shopping
+            activity.</li>
+        <li><strong>Weekly picks</strong> &mdash; at most one message a week,
+            on Saturday morning, suggesting a product you have been looking at
+            or one picked for you. The same product is not suggested to you
+            twice within 30 days.</li>
+      </ul>
+      <p>
+        For each message we record when it was sent and whether you opened it,
+        and for offers and picks we look at whether you viewed or bought that
+        product in the following days. This tells us whether the messages are
+        useful, and is reported only as totals.
+      </p>
+      <p>
+        <strong>Opting out:</strong> you can turn off phone notifications in your
+        phone's settings at any time (messages will still wait under the bell).
+        To stop deal alerts and weekly picks altogether, tell us through the
+        <a href="contact.html">Contact</a> page.
+      </p>
+
+      <h3 id="payment">5. Payments and receipts</h3>
+      <p>
+        We do not take card payments and there is no payment gateway. Checkout
+        shows bank transfer details and asks you to upload a photo of the
+        transfer receipt for staff to check. A receipt usually shows a name, an
+        account or reference number and an amount, so please treat it like any
+        bank document.
+      </p>
+      <ul>
+        <li>Receipts are stored privately and can be seen only by you and shop
+            staff.</li>
+        <li>They are not used in the project's research or dissertation.</li>
+        <li>You can ask for yours to be deleted at any time.</li>
         <li><strong>During the test period there is nothing to pay</strong>, so
-            there should be no receipt to send. Please do not upload a real bank
-            document unless you actually intend to.</li>
+            please do not upload a real bank document.</li>
       </ul>
 
-      <h3>Messages we send you</h3>
+      <h3 id="share">6. Who we share it with</h3>
+      <p>We share personal data only with the service providers that run the shop
+         for us, and only what each one needs:</p>
+      <table class="policy-table">
+        <thead>
+          <tr><th style="width:30%;">Provider</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Supabase</td>
+              <td>Database, sign-in and file storage, where all the data above is
+                  kept.</td></tr>
+          <tr><td>Vercel</td>
+              <td>Hosts the website.</td></tr>
+          <tr><td>Google (Gemini API)</td>
+              <td>Generates the AI assistant's replies. Your message and our
+                  product catalogue are sent; your name, email and account details
+                  are not.</td></tr>
+          <tr><td>Google (Firebase Cloud Messaging)</td>
+              <td>Delivers notifications to the app on your phone.</td></tr>
+          <tr><td>Meta (WhatsApp)</td>
+              <td>Only if we message you about an order, or you message us.</td></tr>
+        </tbody>
+      </table>
       <p>
-        If you have an account, the shop sends you short messages. They appear
-        under the bell on this site and in the app, and &mdash; if you use the
-        app and allow it to send notifications &mdash; on your phone as well.
-        There are two kinds:
-      </p>
-      <ul>
-        <li><strong>Order updates:</strong> when your payment is approved or
-            rejected, and when your order is ready to collect or has been sent.</li>
-        <li><strong>Offers on things you showed interest in:</strong> when the
-            shop puts a product on a timed deal, a message goes to signed-in
-            customers who saved it to their wishlist, added it to their basket
-            without buying it, or opened it three or more times. Who receives
-            it is worked out automatically from the browsing record described
-            above; staff choose which product goes on offer, not who is told.
-            If you browse without signing in, you are never sent one.</li>
-      </ul>
-      <p>
-        For every message we record when it was sent and whether, and when, you
-        opened it. For offer messages we also look at whether you viewed or
-        bought that product in the seven days afterwards. This is part of the
-        research: it measures whether offers chosen from browsing are of any
-        use to the people who get them, and it appears in the dissertation only
-        as totals, with no names attached.
-      </p>
-      <p>
-        You can turn phone notifications off in your phone's settings at any
-        time; the messages still wait under the bell. If you would rather not
-        receive offer messages at all, say so through the
-        <a href="contact.html">Contact page</a> and they will stop.
-      </p>
-
-      <h3>If we contact you on WhatsApp</h3>
-      <p>
-        The phone number you give at checkout may be used to message you on
-        WhatsApp about that order — usually to confirm we have received your
-        payment, or to ask for a clearer receipt. A member of staff writes and
-        sends those messages; nothing is sent automatically.
-      </p>
-      <p>
-        WhatsApp is run by Meta, not by us. Anything you send or receive there
-        goes through their service under
+        <strong>WhatsApp:</strong> staff may use the phone number from your order
+        to message you on WhatsApp about that order, for example to confirm
+        payment or ask for a clearer receipt. Messages are written by a person,
+        never sent automatically. Conversations are handled under
         <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank"
-           rel="noopener">their privacy policy</a>, and a conversation stays on
-        their servers and on your phone after the order is finished. If you
-        would rather we did not use WhatsApp, say so and we will use email
-        instead. You never have to start a WhatsApp conversation to buy
-        anything — the receipt upload on the site does the same job.
+           rel="noopener">WhatsApp's privacy policy</a> and stay on their service
+        after the order is finished. If you prefer, ask us to use email instead;
+        you never need WhatsApp to buy anything.
       </p>
-
-      <h3>If you submit a build to the showcase</h3>
       <p>
-        The Rigs page lets you send in photographs of a computer you have built,
-        with the parts tagged. If you do, those photographs and your first name
-        are published on that page once a member of staff has approved them.
-        Submitting is entirely optional, and you can ask for a submission to be
-        removed at any time.
+        <strong>Rig showcase:</strong> if you submit a build, its photos and your
+        first name are published on the Rigs page once staff approve it. You can
+        ask for it to be removed at any time.
+      </p>
+      <p>We may also disclose data where the law requires us to.</p>
+
+      <h3 id="storage">7. Cookies and local storage</h3>
+      <p>
+        We do not use tracking or advertising cookies, and there are no
+        third-party analytics trackers on the site. Your browser's local storage
+        (or the app's own storage) keeps your sign-in session, the device
+        identifier described in section 2, and small settings such as whether
+        you have dismissed the privacy banner.
       </p>
 
-      <h3>What is not recorded</h3>
+      <h3 id="security">8. How we protect your data</h3>
+      <p>
+        Data is sent over encrypted connections (HTTPS). Database access rules
+        mean you can read only your own account and orders; shopping activity and
+        receipts can be read only by shop staff. Passwords are stored only as
+        hashes. No system is perfectly secure, but we take reasonable steps to
+        keep your data safe.
+      </p>
+
+      <h3 id="retention">9. How long we keep it</h3>
+      <p>
+        Account and order records are kept for as long as your account exists.
+        Shopping activity, search and chatbot records are kept for the length of
+        the project and its assessment, after which the project database is
+        deleted.
+      </p>
+
+      <h3 id="rights">10. Your rights</h3>
+      <p>Under the Personal Data Protection Act 2010 you can:</p>
       <ul>
-        <li>No card, bank or payment credentials. There is no card box on this
-            site and no payment is processed here.</li>
-        <li>No advertising or third-party analytics trackers, and nothing is
-            sold or passed to advertisers.</li>
-        <li>No cookies for tracking. The site keeps your sign-in token and the
-            device identifier in your browser's own local storage.</li>
+        <li><strong>Access</strong> the personal data we hold about you;</li>
+        <li><strong>Correct</strong> it if it is wrong or out of date (most of it
+            you can edit yourself on your profile page);</li>
+        <li><strong>Withdraw consent</strong> and ask us to delete it &mdash;
+            deleting your account removes your personal details, and any shopping
+            records left behind are detached from you and cannot be traced back;</li>
+        <li><strong>Limit marketing</strong> by opting out of deal alerts and
+            weekly picks.</li>
       </ul>
-
-      <h3>Where it is kept, and who can see it</h3>
       <p>
-        Everything is stored in a Supabase (PostgreSQL) database. Access is
-        restricted by database policies: you can read your own account and your
-        own orders and nothing else, and the browsing records can be read only
-        by shop staff. Questions sent to the AI assistant are passed to Google's
-        Gemini API to generate a reply; the shop's product catalogue and your
-        message are sent, and your name, email and account details are not.
+        Taking part is voluntary: you can browse without an account and stop at
+        any time. To clear the device identifier, clear this site's data in your
+        browser settings.
       </p>
 
-      <h3>How long it is kept</h3>
+      <h3 id="changes">11. Changes to this policy</h3>
       <p>
-        Account and order records are kept while the account exists. Browsing,
-        search and chatbot records are kept for the duration of the project and
-        the assessment that follows it, after which the project database is
-        deleted. Data that appears in the dissertation appears only in
-        aggregate, with no individual identified.
+        We may update this policy when the shop changes what it collects or how
+        it uses it. The date at the top shows when it was last changed.
       </p>
 
-      <h3>Your choices</h3>
-      <ul>
-        <li><strong>You do not have to take part.</strong> You can browse without
-            creating an account, and you can stop at any time.</li>
-        <li><strong>You can ask for a copy</strong> of what is held about you, or
-            ask for it to be corrected or deleted, through the
-            <a href="contact.html">Contact</a> page. Deleting your account
-            removes your personal details; the browsing records that remain are
-            detached from you and cannot be traced back.</li>
-        <li><strong>You can clear the device identifier</strong> at any time by
-            clearing this site's data in your browser settings.</li>
-      </ul>
-
-      <p style="margin-top:28px; padding-top:18px; border-top:1px solid #eee; color:#666;">
-        This notice is provided in line with the Personal Data Protection Act
-        2010 (Malaysia). If you are taking part in the project's test period,
-        this page is also the participant information sheet for that test.
+      <h3 id="contact">12. Contact us</h3>
+      <p>
+        For any question about this policy, or to make a request about your
+        data, please use our <a href="contact.html">Contact</a> page.
       </p>
 
     </div>
