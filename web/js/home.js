@@ -73,9 +73,9 @@ function renderPicks() {
 
   section.hidden = false;
   renderRolePicker(user);
-  sub.textContent = user.role
-    ? `Based on what you view, save and buy, and your ${roleLabel(user.role)} profile.`
-    : "Based on what you view, save and buy.";
+  // No explanation under the heading or the cards (user, 1 Oct): like a
+  // marketplace's "Recommended for you", the picks speak for themselves.
+  if (sub) sub.textContent = "";
 
   sb.rpc("recommend_for_me", { p_limit: 8 }).then(({ data, error }) => {
     if (error) {
@@ -88,20 +88,13 @@ function renderPicks() {
     // Matched against the catalogue already in the page. Anything the
     // catalogue does not hold (delisted since) is simply skipped.
     const picks = (data || [])
-      .map((row) => ({ product: getProductById(row.product_id), reason: row.reason }))
-      .filter((pick) => pick.product);
+      .map((row) => getProductById(row.product_id))
+      .filter(Boolean);
 
     if (picks.length === 0) { section.hidden = true; return; }
 
     grid.innerHTML = "";
-    picks.forEach(({ product, reason }) => {
-      const card = buildProductCard(product);
-      const why = document.createElement("p");
-      why.className = "pick-reason";
-      why.textContent = reason;
-      card.querySelector("h3").after(why);
-      grid.appendChild(card);
-    });
+    picks.forEach((product) => grid.appendChild(buildProductCard(product)));
   });
 }
 

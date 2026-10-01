@@ -223,8 +223,7 @@ class HomeScreen extends StatelessWidget {
     ),
   );
 
-  /// "Picked for you": recommend_for_me(), with the reason the database
-  /// gave for each pick under the card. An account with no role yet is
+  /// "Picked for you": recommend_for_me(), cards only. An account with no role yet is
   /// asked for one first, since that is all a brand-new account has to go
   /// on.
   Widget _picks(BuildContext context) {
@@ -234,55 +233,28 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // No explanation under the heading or the cards (user, 1 Oct):
+        // like a marketplace's "Recommended for you".
         const Padding(
-          padding: EdgeInsets.fromLTRB(16, 22, 16, 2),
+          padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
           child: Text(
             'Picked for you',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-          child: Text(
-            'Based on what you view, save and buy',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ),
         if (askRole) _rolePrompt(context),
         if (shop.picks.isNotEmpty)
           SizedBox(
-            height: 290,
+            height: 250,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               itemCount: shop.picks.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, i) {
-                final pick = shop.picks[i];
-                return SizedBox(
-                  width: 160,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: 250,
-                        child: ProductCard(product: pick.product, shop: shop),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        pick.reason,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.red,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              itemBuilder: (_, i) => SizedBox(
+                width: 160,
+                child: ProductCard(product: shop.picks[i].product, shop: shop),
+              ),
             ),
           ),
       ],

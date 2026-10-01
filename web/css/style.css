@@ -3371,17 +3371,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   .build-card:hover, .build-card:focus-visible { transform: none; }
 }
 
-/* ---------- Picked for you (home page) ----------
-   The recommender's row. The reason line under each name says which
-   signal put the product there -- "Based on your Laptops views",
-   "Picked for students" -- so the customer can see why. */
-.pick-reason {
-  font-size: 12px;
-  color: var(--red);
-  margin: 2px 0 4px;
-  line-height: 1.35;
-}
-
+/* ---------- Picked for you (home page) ---------- */
 .role-picker {
   max-width: 760px;
   margin: 0 auto 24px;
