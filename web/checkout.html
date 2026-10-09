@@ -11,21 +11,31 @@
   <div id="site-header"></div>
 
   <section class="section">
-    <h2>Checkout</h2>
+    <h2>Check out</h2>
 
-    <p id="checkout-empty" style="text-align:center; color:#777; display:none;">
+    <p id="checkout-empty" class="page-empty" style="display:none;">
       Your cart is empty. <a href="shop.html">Go shopping</a>
     </p>
 
-    <div id="checkout-form-section" class="form-page wide">
-      <h3>Order Summary</h3>
-      <ul id="checkout-items" style="margin: 10px 0 10px 20px;"></ul>
-      <p style="text-align:right; font-size:18px; font-weight:bold;">Total: <span id="checkout-total">RM 0.00</span></p>
+    <div id="checkout-form-section" class="checkout-grid">
+      <!-- The order as it will print: the same lines and total the shop
+           charges, filled by js/checkout.js. -->
+      <aside class="receipt checkout-receipt" aria-label="Order summary">
+        <div class="till-head">
+          <span class="logo-mark">eTech</span>
+          <span class="till-meta">Order summary<br>Computer Accessories</span>
+        </div>
+        <ol id="checkout-items" class="till-lines"></ol>
+        <div class="till-total"><span>Total</span><span class="till-sum" id="checkout-total">RM 0.00</span></div>
+      </aside>
 
-      <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
-
-      <form onsubmit="placeOrder(event)">
-        <h3>How would you like to get it?</h3>
+      <form class="form-page wide checkout-form" onsubmit="placeOrder(event)">
+        <ol class="step-rail" id="step-rail" aria-label="Checkout steps">
+          <li data-step="get" aria-current="step">Collect or deliver</li>
+          <li data-step="details">Details</li>
+          <li data-step="pay">Payment</li>
+        </ol>
+        <h3 class="step-head" data-step="get">How would you like to get it?</h3>
         <!-- Asked before the details, because it decides which details
              are wanted. Collection needs nobody's address; delivery
              cannot go anywhere without one. -->
@@ -42,7 +52,7 @@
           </label>
         </div>
 
-        <h3 style="margin-top: 20px;">Your details</h3>
+        <h3 class="step-head" data-step="details">Your details</h3>
         <label for="checkout-name">Full Name</label>
         <input type="text" id="checkout-name" name="name" autocomplete="name" required />
 
@@ -68,7 +78,7 @@
         <input type="text" id="checkout-coupon" autocomplete="off" autocapitalize="characters"
           spellcheck="false" placeholder="e.g. PARTS10" />
 
-        <h3 style="margin-top: 20px;">How are you paying?</h3>
+        <h3 class="step-head" data-step="pay">How are you paying?</h3>
         <p class="form-note">
           Pay from your own banking app, then send us the receipt. We check every
           payment by hand before we put the order aside for you.
@@ -92,15 +102,16 @@
 
         <div class="form-error" id="checkout-error"></div>
 
-        <button type="submit">Place Order</button>
+        <button type="submit">Place order</button>
       </form>
     </div>
 
     <div id="checkout-confirmation" class="form-page" style="display:none;">
-      <h2 style="text-align:center;">✅ Order Placed</h2>
-      <p style="text-align:center;">Order #<strong id="confirm-order-id"></strong></p>
-      <p id="confirm-discount" style="display:none; color:#1e8e3e; text-align:center;"></p>
-      <p style="text-align:center;">Amount to pay: <strong id="confirm-total"></strong></p>
+      <p class="order-stamp" aria-hidden="true">Order placed</p>
+      <h2>Thank you. Your order is in.</h2>
+      <p class="confirm-line">Order <strong class="data" id="confirm-order-id"></strong></p>
+      <p id="confirm-discount" class="confirm-line confirm-saved" style="display:none;"></p>
+      <p class="confirm-line">Amount to pay <strong class="data" id="confirm-total"></strong></p>
 
       <div class="pay-panel" id="confirm-pay-details"></div>
 
@@ -119,7 +130,7 @@
       <!-- Filled from photo.js, where the limits themselves are. -->
       <p class="receipt-limits" id="receipt-limits"></p>
       <div class="form-error" id="receipt-error"></div>
-      <p id="receipt-done" style="display:none; color:#1e8e3e;"></p>
+      <p id="receipt-done" class="form-ok-text" style="display:none;"></p>
       <button type="button" id="receipt-send" onclick="sendReceipt()">Upload receipt</button>
 
       <!-- The other way people actually do this. Filled in by checkout.js
@@ -137,7 +148,7 @@
         You can also send it later from your
         <a href="orders.html">order history</a>.
       </p>
-      <p class="form-note"><a href="shop.html">Continue Shopping</a> · <a href="orders.html">View Order History</a></p>
+      <p class="form-note"><a href="shop.html">Continue shopping</a> · <a href="orders.html">Order history</a></p>
     </div>
   </section>
 

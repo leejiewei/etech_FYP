@@ -161,7 +161,7 @@ function showNotificationToast(n) {
   const toast = document.createElement("div");
   toast.className = "toast notif-toast";
   const product = n.product_id ? ` data-product-id="${Number(n.product_id)}"` : "";
-  toast.innerHTML = `🔔 <strong>${escapeHtml(n.title)}</strong> ${escapeHtml(n.body)}
+  toast.innerHTML = `${typeof uiIcon === "function" ? uiIcon("bell") : ""} <strong>${escapeHtml(n.title)}</strong> ${escapeHtml(n.body)}
     <a href="${notificationHref(n)}"${product}>${n.product_id ? "View product" : "View order"}</a>`;
   document.body.appendChild(toast);
 

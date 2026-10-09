@@ -1,3 +1,22 @@
+/* Archivo (UI and display, variable width and weight) and Azeret Mono
+   (prices, codes, quantities). Both SIL Open Font License, served from
+   this site because the Content-Security-Policy allows fonts from 'self'
+   only. Latin subset. */
+@font-face {
+  font-family: "Archivo";
+  src: url("../fonts/archivo-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Azeret Mono";
+  src: url("../fonts/azeret-mono-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 /* Basic reset */
 * {
   margin: 0;
@@ -5,12 +24,62 @@
   box-sizing: border-box;
 }
 
-/* Brand colours: eTech uses a red + white theme. Keep them as variables so
-   the whole site's colour scheme can be tweaked from one place. */
+/* The Shop Receipt world: every colour, face and corner lives here, so the
+   whole site's look can be tuned from one place. */
 :root {
-  --red: #d62839;
-  --red-dark: #7a0c1f;
-  --red-darker: #5c0916;
+  /* Thermal paper and its ink. */
+  --paper: #f6f6f2;          /* page ground: cool thermal-paper white */
+  --paper-2: #ecece5;        /* sunken: image wells, table heads */
+  --sheet: #ffffff;          /* raised: cards, panels, the receipt itself */
+  --ink: #1c1c1e;            /* thermal black */
+  --ink-2: #3d3d3b;
+  --ink-3: #5c5c57;          /* secondary text, 6.3:1 on paper */
+  --ink-4: #8a8a84;          /* decoration and disabled only */
+  --rule: #dcdcd4;           /* hairlines */
+  --rule-2: #c4c4bb;         /* inputs, stronger rules */
+
+  /* The PAID stamp: shell and primary actions. */
+  --stamp: #2448a8;
+  --stamp-deep: #1a3683;
+  --stamp-ink: #13286a;
+  --stamp-tint: #e7ecf8;
+
+  /* End-of-roll pink: reserved for change (price dropped, back in stock,
+     order moved). Never decoration. */
+  --roll: #c42f6e;
+  --roll-tint: #fbe8f0;
+
+  /* The step the customer is on (builder, checkout). Nothing else. */
+  --path: #d08a00;
+
+  /* Meaning colours. */
+  --ok: #1d6b3a;
+  --ok-tint: #e3f1e8;
+  --warn: #855600;
+  --warn-tint: #fbf0d9;
+  --danger: #b3261e;
+  --danger-tint: #fbe6e4;
+
+  /* Section hues: one per aisle, used on its tab, chips and card edge. */
+  --hue-components: #0a86a8;
+  --hue-laptops: #2a9d62;
+  --hue-gaming: #7a3fd1;
+  --hue-monitors: #d9761c;
+  --hue-printers: #4f6475;
+  --hue-networking: #5b7d14;
+  --hue-accessories: #8a6a1f;
+  --hue-pcs: #c2412d;
+
+  --font-ui: "Archivo", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-data: "Azeret Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --r: 3px;                  /* the only corner radius */
+  --shadow: 0 1px 2px rgba(28, 28, 30, 0.06), 0 6px 18px -8px rgba(28, 28, 30, 0.18);
+
+  /* Legacy names, kept so older rules follow the new world. */
+  --red: var(--stamp);
+  --red-dark: var(--stamp-deep);
+  --red-darker: var(--stamp-ink);
 }
 
 /* Anchors and scrollIntoView() glide rather than jump, so a click on a
@@ -33,166 +102,834 @@ html {
   html { scroll-behavior: auto; }
 }
 
+/* ============================================================
+   Shop Receipt: the shared shell.
+
+   The shop is laid out the way a till receipt reads. Prices are set in
+   one monospaced face with tabular figures so a column of them lines up
+   like the right edge of a receipt; sections are divided by the dashed
+   rule a receipt printer draws; the cart prints line by line. The blue
+   is the PAID stamp. The pink of a till roll's end stripe is kept for
+   one job only: telling the customer something changed.
+   ============================================================ */
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #f4f5f7;
-  color: #222;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  background-color: var(--paper);
+  color: var(--ink);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
+  color: inherit;
   text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
   color: inherit;
 }
 
-/* Navbar */
+::selection {
+  background-color: var(--stamp-tint);
+  color: var(--ink);
+}
+
+input,
+textarea {
+  caret-color: var(--stamp);
+}
+
+:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 2px;
+}
+
+html {
+  scrollbar-color: var(--rule-2) var(--paper);
+}
+
+.ui-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ---------- The header: stamp-blue shell, sticky ---------- */
+#site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.shell {
+  background-color: var(--stamp);
+  color: white;
+}
+
+.shell :focus-visible {
+  outline-color: white;
+}
+
 .navbar {
-  background-color: var(--red-dark);
-  color: white;
-  display: flex;
-  justify-content: space-between;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  padding: 16px 40px;
-}
-
-.nav-links {
-  display: flex;
   gap: 28px;
-  list-style: none;
-}
-
-.nav-links a {
   color: white;
-  font-size: 16px;
 }
 
-.nav-links a:hover {
-  color: var(--red);
+/* The wordmark is set like the shop's rubber stamp: a ruled box. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
 }
 
-.cart-link {
+.logo-mark {
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 23px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  padding: 5px 9px 6px;
+  border: 2px solid currentColor;
+  border-radius: var(--r);
+}
+
+.logo small {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  max-width: 9em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.search {
+  position: relative;
+  max-width: 640px;
+  width: 100%;
+  justify-self: center;
+}
+
+.search-box {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 42px;
+  border: 0;
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.search-box::placeholder {
+  color: var(--ink-3);
+}
+
+.search-box:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 0;
+}
+
+.search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.shell-actions {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.shell-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r);
+  background: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.shell-action:hover,
+.shell-action[aria-current="page"],
+.account-menu:focus-within > .shell-action {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 2px;
+  background-color: white;
+  color: var(--stamp-ink);
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.notif-bell .badge {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  background-color: var(--roll);
+  color: white;
+}
+
+.account-menu {
   position: relative;
 }
 
-#cart-count {
-  background-color: var(--red);
-  color: white;
-  border-radius: 50%;
-  padding: 2px 7px;
-  font-size: 12px;
-  margin-left: 6px;
+.account-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 190px;
+  padding: 6px;
+  background-color: var(--sheet);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  z-index: 70;
 }
 
-/* Hero section (home page) */
-.hero {
-  background: linear-gradient(135deg, var(--red-dark), var(--red-darker));
-  color: white;
-  text-align: center;
-  padding: 70px 20px;
-  border-bottom: 4px solid var(--red);
+/* A bridge over the 6px gap so the menu does not close on the way down. */
+.account-dropdown::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 8px;
 }
 
-.hero h1 {
-  font-size: 36px;
-  margin-bottom: 12px;
+.account-menu:hover .account-dropdown,
+.account-menu:focus-within .account-dropdown {
+  display: block;
 }
 
-.hero p {
-  font-size: 18px;
-  color: #cfd6e4;
-  margin-bottom: 24px;
-}
-
-.hero-btn {
-  display: inline-block;
-  background-color: var(--red);
-  color: white;
-  padding: 12px 28px;
-  border-radius: 6px;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-}
-
-.hero-btn:hover {
-  background-color: var(--red-darker);
-}
-
-/* Section titles */
-.section {
-  padding: 40px;
-}
-
-.section h2 {
-  font-size: 24px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-/* A line under a heading, for when two sections on one page do
-   different things and the difference is worth saying out loud. */
-.section-sub {
-  text-align: center;
+.account-dropdown a {
+  display: block;
+  padding: 9px 10px;
   font-size: 14px;
-  color: #666;
-  max-width: 640px;
-  margin: -12px auto 22px auto;
+  border-radius: 2px;
+  color: var(--ink);
 }
 
-/* Product grid */
+.account-dropdown a:hover {
+  background-color: var(--paper);
+}
+
+.notif-bell {
+  font-size: 14px;
+}
+
+/* ---------- The aisle strip ---------- */
+.mega-bar {
+  background-color: var(--stamp-deep);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.aisles {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.aisles::-webkit-scrollbar {
+  display: none;
+}
+
+.aisle,
+.mega-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 9px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Each aisle carries its hue as a small printed swatch. */
+.aisle[style*="--aisle-hue"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background-color: var(--aisle-hue);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.aisle:hover,
+.mega-tab:hover,
+.mega-tab.active {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.aisle[aria-current="page"] {
+  color: white;
+  box-shadow: inset 0 -3px 0 white;
+}
+
+.aisle-tool {
+  color: white;
+  font-weight: 700;
+}
+
+.aisle-deals .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.aisle-rule {
+  width: 1px;
+  margin: 9px 6px;
+  background-color: rgba(255, 255, 255, 0.24);
+  flex-shrink: 0;
+}
+
+.mega-tab .ui-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.mega-tab.active .ui-icon {
+  transform: rotate(180deg);
+}
+
+/* The full menus drop over the page from under the strip. */
+.mega-menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background-color: var(--sheet);
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 18px 40px -20px rgba(28, 28, 30, 0.35);
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+.mega-menu.open {
+  display: block;
+}
+
+.mega-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px 24px 26px;
+}
+
+.mega-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+
+.mega-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.12s ease;
+}
+
+.mega-item:hover {
+  background-color: var(--stamp-tint);
+}
+
+.mega-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--stamp);
+  flex-shrink: 0;
+}
+
+.mega-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mega-label {
+  font-size: 14px;
+}
+
+.mega-logo {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ---------- Sections: headed like a receipt block ---------- */
+.section {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 36px 24px;
+}
+
+.section > h2,
+.section h2 {
+  font-size: 26px;
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-align: left;
+  margin: 0 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule-2);
+  text-wrap: balance;
+}
+
+.section-sub {
+  text-align: left;
+  font-size: 14.5px;
+  color: var(--ink-3);
+  max-width: 68ch;
+  margin: -8px 0 20px;
+}
+
+/* ---------- The product card ---------- */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
-  max-width: 1100px;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  gap: 16px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
 .product-card {
-  background-color: white;
-  border-radius: 10px;
-  border-top: 3px solid var(--red);
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
 }
 
-.product-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
+/* The aisle's hue, printed along the top edge. */
+.product-card::before {
+  content: "";
+  height: 4px;
+  background-color: var(--card-hue, var(--stamp));
+  flex-shrink: 0;
 }
 
-/* ---------- Product images ---------- */
+.product-card:hover {
+  border-color: var(--rule-2);
+  box-shadow: var(--shadow);
+}
+
 .product-img-wrap {
-  background-color: #fafbfc;
-  border: 1px solid #e8eaed;
-  border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 12px;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background-color: var(--sheet);
+  border-bottom: 1px dashed var(--rule);
   cursor: pointer;
   overflow: hidden;
 }
 
 .product-img {
   width: 100%;
-  height: 130px;
+  height: 100%;
   object-fit: contain;
   display: block;
-  transition: transform 0.2s ease;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.product-img-wrap:hover .product-img {
-  transform: scale(1.06);
+.product-card:hover .product-img {
+  transform: scale(1.04);
 }
 
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 14px;
+  flex: 1;
+}
+
+.product-category {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.product-code {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--ink-2);
+  background-color: var(--paper-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.product-card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+.product-card h3:hover {
+  color: var(--stamp);
+}
+
+/* The price is the biggest thing on the card, set like a receipt total. */
+.product-price {
+  font-family: var(--font-data);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin: 2px 0 0;
+}
+
+.price-was {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+/* A dropped price is a change, so it takes the roll's pink. */
+.price-now {
+  color: var(--roll);
+}
+
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+
+.stock-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background-color: currentColor;
+}
+
+.stock-in {
+  color: var(--ok);
+}
+
+.stock-low {
+  color: var(--warn);
+}
+
+.stock-out {
+  color: var(--danger);
+}
+
+.product-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.add-btn {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r);
+  background-color: var(--stamp);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.product-card-foot .add-btn {
+  flex: 1;
+  width: auto;
+}
+
+.add-btn:hover {
+  background-color: var(--stamp-deep);
+}
+
+.add-btn:active {
+  transform: translateY(1px);
+}
+
+/* Out of stock is struck through, the way a sold-out line is on a list. */
+.add-btn:disabled {
+  background-color: var(--paper-2);
+  color: var(--ink-3);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.product-card-official {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--stamp);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-2);
+}
+
+.product-card-official:hover {
+  text-decoration-color: currentColor;
+}
+
+.wishlist-btn {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background-color: rgba(255, 255, 255, 0.94);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.wishlist-btn .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.wishlist-btn:hover {
+  color: var(--stamp);
+  border-color: var(--rule-2);
+}
+
+.wishlist-btn.active {
+  color: var(--stamp);
+}
+
+.wishlist-btn.active .ui-icon {
+  fill: currentColor;
+}
+
+/* Chip showing which filter is applied */
+.active-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--stamp-tint);
+  color: var(--stamp-ink);
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--r);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.active-filter-chip button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 17px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+/* ---------- Footer ---------- */
+.site-foot {
+  margin-top: 56px;
+  background-color: var(--stamp-ink);
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 14px;
+}
+
+.site-foot-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px 40px;
+}
+
+.site-foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+}
+
+.site-foot-brand .logo-mark {
+  font-size: 18px;
+}
+
+.site-foot-brand p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+
+.footer-links a {
+  color: white;
+  font-weight: 600;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.site-foot-note {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ---------- Phones and narrow windows ---------- */
+@media (max-width: 1100px) {
+  .shell-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .logo small {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "logo actions"
+      "search search";
+    gap: 10px 12px;
+    padding: 10px 16px 12px;
+  }
+  .logo { grid-area: logo; }
+  .shell-actions { grid-area: actions; justify-self: end; }
+  .search { grid-area: search; max-width: none; }
+  .logo-mark { font-size: 20px; }
+  .shell-action { padding: 0 8px; }
+  .aisles { padding: 0 8px; }
+  .section { padding: 28px 16px; }
+  .section h2 { font-size: 22px; }
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .product-card-body { padding: 10px 10px 12px; }
+  .product-card h3 { font-size: 14px; }
+  .product-price { font-size: 17px; }
+  .product-card-official { display: none; }
+  .chatbot-toggle span { display: none; }
+  .chatbot-toggle { padding: 0; width: 48px; justify-content: center; }
+  .site-foot-inner { grid-template-columns: 1fr; gap: 16px; }
+}
+
+/* ---------- Kept from before: cart table, notifications, filters ---------- */
 /* Small thumbnail used in the cart table */
 .cart-img {
   width: 54px;
   height: 44px;
   object-fit: contain;
-  background-color: #fafbfc;
-  border: 1px solid #e8eaed;
-  border-radius: 5px;
+  background-color: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   flex-shrink: 0;
 }
 
@@ -201,65 +938,16 @@ a {
   width: 46px;
   height: 38px;
   object-fit: contain;
-  background-color: #fafbfc;
-  border: 1px solid #e8eaed;
-  border-radius: 5px;
+  background-color: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   flex-shrink: 0;
-}
-
-.product-card h3 {
-  font-size: 16px;
-  margin-bottom: 6px;
-}
-
-.product-category {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 8px;
 }
 
 .product-desc {
   font-size: 13px;
-  color: #555;
+  color: var(--ink-2);
   margin-bottom: 10px;
-}
-
-.product-price {
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--red-dark);
-  margin-bottom: 12px;
-}
-
-/* The maker's own spec page, beside the price, so the full details are
-   one tap away without opening the product first. Only products with an
-   official_url get one. */
-.product-card-official {
-  display: block;
-  margin: -6px 0 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--red);
-  text-decoration: none;
-}
-
-.product-card-official:hover {
-  text-decoration: underline;
-}
-
-.add-btn {
-  background-color: var(--red);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  width: 100%;
-}
-
-.add-btn:hover {
-  background-color: var(--red-darker);
 }
 
 /* Category filter buttons (shop page) */
@@ -272,10 +960,10 @@ a {
 }
 
 .filter-btn {
-  background-color: white;
-  border: 1px solid #ccc;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule-2);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--r);
   cursor: pointer;
   font-size: 14px;
 }
@@ -293,13 +981,13 @@ a {
   max-width: 900px;
   margin: 0 auto;
   border-collapse: collapse;
-  background-color: white;
+  background-color: var(--sheet);
 }
 
 .cart-table th,
 .cart-table td {
   padding: 14px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--rule);
   text-align: left;
 }
 
@@ -314,11 +1002,11 @@ a {
 }
 
 .qty-btn {
-  background-color: #eee;
+  background-color: var(--rule);
   border: none;
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: var(--r);
   cursor: pointer;
   font-size: 16px;
 }
@@ -328,11 +1016,11 @@ a {
 }
 
 .remove-btn {
-  background-color: #e74c3c;
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: var(--r);
   cursor: pointer;
 }
 
@@ -346,125 +1034,14 @@ a {
 #cart-empty {
   text-align: center;
   font-size: 18px;
-  color: #777;
+  color: var(--ink-3);
   padding: 40px;
   display: none;
-}
-
-/* Footer */
-footer {
-  background-color: var(--red-dark);
-  color: #cfd6e4;
-  text-align: center;
-  padding: 20px;
-  margin-top: 40px;
-  font-size: 14px;
-}
-
-.footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 12px;
-}
-
-.footer-links a {
-  color: #cfd6e4;
-}
-
-.footer-links a:hover {
-  color: var(--red);
-}
-
-/* ---------- Navbar additions ---------- */
-.navbar {
-  flex-wrap: wrap;
-  row-gap: 10px;
-}
-
-.navbar .logo {
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.navbar .logo span {
-  color: var(--red);
-}
-
-.navbar .logo small {
-  display: block;
-  font-size: 10px;
-  font-weight: normal;
-  letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.7);
-  text-transform: uppercase;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 160px;
-  max-width: 320px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  border: none;
-  font-size: 14px;
-}
-
-.badge {
-  background-color: var(--red);
-  color: white;
-  border-radius: 50%;
-  padding: 2px 7px;
-  font-size: 12px;
-  margin-left: 4px;
-}
-
-.account-menu {
-  position: relative;
-  cursor: pointer;
-}
-
-.account-dropdown {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 24px;
-  background-color: white;
-  color: #222;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  min-width: 140px;
-  z-index: 20;
-}
-
-.account-menu:hover .account-dropdown {
-  display: block;
-}
-
-.account-dropdown a {
-  display: block;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: #222;
-}
-
-.account-dropdown a:hover {
-  background-color: #f4f5f7;
 }
 
 /* ---------- Notification bell (js/notifications.js) ---------- */
 .notif-menu {
   position: relative;
-}
-
-.notif-bell {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 17px;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
 }
 
 .notif-bell .badge[hidden],
@@ -480,9 +1057,9 @@ footer {
   top: 30px;
   width: 320px;
   max-width: calc(100vw - 32px);
-  background-color: white;
-  color: #222;
-  border-radius: 8px;
+  background-color: var(--sheet);
+  color: var(--ink);
+  border-radius: var(--r);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   z-index: 30;
   overflow: hidden;
@@ -492,7 +1069,7 @@ footer {
   padding: 12px 14px;
   font-weight: bold;
   font-size: 14px;
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid var(--rule);
 }
 
 .notif-list {
@@ -503,15 +1080,15 @@ footer {
 .nav-links .notif-item {
   display: block;
   padding: 11px 14px;
-  border-bottom: 1px solid #f1f2f4;
-  color: #222;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .nav-links .notif-item:hover {
-  background-color: #f7f8fa;
-  color: #222;
+  background-color: var(--paper);
+  color: var(--ink);
 }
 
 .notif-item strong,
@@ -521,35 +1098,34 @@ footer {
 }
 
 .notif-item small {
-  color: #999;
+  color: var(--ink-3);
   margin-top: 3px;
 }
 
 .notif-item.unread {
-  background-color: #fdf2f3;
-  border-left: 3px solid var(--red);
+  background-color: var(--stamp-tint);
 }
 
 .notif-item.notif-payment_rejected strong {
-  color: #c0392b;
+  color: var(--danger);
 }
 
 /* The one message that is news rather than an instruction, and the one
    that leads somewhere other than Order History. Same amber the mobile
    app gives it. */
 .notif-item.notif-deal_started strong {
-  color: #b4642a;
+  color: var(--warn);
 }
 
 /* A "Picked for you" from the recommender. Same blue as the app. */
 .notif-item.notif-recommendation strong {
-  color: #1f6fb2;
+  color: var(--stamp);
 }
 
 .notif-empty {
   padding: 16px 14px;
   font-size: 13px;
-  color: #777;
+  color: var(--ink-3);
 }
 
 /* max-content because .toast is placed with left: 50%, which on its own
@@ -567,215 +1143,18 @@ footer {
   text-decoration: underline;
 }
 
-/* ---------- Mega menu bar (Brands / Categories) ---------- */
-.mega-bar {
-  background-color: var(--red-darker);
-  display: flex;
-  gap: 2px;
-  padding: 0 40px;
-}
-
-.mega-tab {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  padding: 14px 26px;
-  cursor: pointer;
-}
-
-.mega-tab:hover,
-.mega-tab.active {
-  background-color: var(--red);
-}
-
-/* The big drop-down panel itself. Hidden until its tab is clicked. */
-.mega-menu {
-  display: none;
-  background-color: #1c1c1e;
-  color: white;
-  padding: 40px;
-  border-bottom: 3px solid var(--red);
-}
-
-.mega-menu.open {
-  display: block;
-}
-
-.mega-inner {
-  display: flex;
-  gap: 50px;
-  max-width: 1200px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-}
-
-.mega-left {
-  width: 260px;
-  flex-shrink: 0;
-}
-
-.mega-left h3 {
-  font-size: 22px;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
-}
-
-.mega-left p {
-  font-size: 14px;
-  color: #bdbdbd;
-  line-height: 1.6;
-}
-
-.mega-left hr {
-  border: none;
-  border-top: 1px solid #444;
-  margin: 20px 0;
-}
-
-.mega-tagline {
-  color: var(--red);
-  font-weight: bold;
-  letter-spacing: 1px;
-  font-size: 14px;
-}
-
-.mega-grid {
-  flex: 1;
-  min-width: 280px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  /* The thin grid lines are drawn by each tile (below), not by a grey
-     background showing through the gaps -- that turned the empty cells
-     of a short last row into a grey block. */
-}
-
-.mega-item {
-  background-color: #1c1c1e;
-  box-shadow: inset -1px -1px 0 #333;
-  padding: 24px 10px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 120px;
-  transition: background-color 0.15s ease;
-}
-
-.mega-item:hover {
-  background-color: var(--red-dark);
-}
-
-/* Text stand-in for a brand logo image. */
-.mega-logo {
-  font-size: 17px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: white;
-}
-
-.mega-icon {
-  width: 32px;
-  height: 32px;
-  color: white;
-}
-
-.mega-icon svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.mega-label {
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: #bdbdbd;
-}
-
-.mega-item:hover .mega-label {
-  color: white;
-}
-
-/* ---------- Product card additions (wishlist / stock) ---------- */
-.product-card {
-  position: relative;
-}
-
-.wishlist-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
 .product-brand {
   font-size: 12px;
-  color: #999;
+  color: var(--ink-3);
   text-transform: uppercase;
-}
-
-.stock-badge {
-  display: inline-block;
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  margin: 6px 0;
-}
-
-.stock-in {
-  background-color: #e3f8e8;
-  color: #1e8e3e;
-}
-
-.stock-low {
-  background-color: #fff4dd;
-  color: #b8860b;
-}
-
-.stock-out {
-  background-color: #fde8e8;
-  color: #c0392b;
-}
-
-.add-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 
 #no-results,
 #wishlist-empty {
   text-align: center;
-  color: #777;
+  color: var(--ink-3);
   padding: 40px;
   display: none;
-}
-
-/* Chip showing which mega-menu filter is currently applied */
-.active-filter-chip {
-  display: inline-block;
-  background-color: var(--red);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 14px;
-}
-
-.active-filter-chip button {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 18px;
-  margin-left: 8px;
-  cursor: pointer;
-  line-height: 1;
 }
 
 /* ---------- Filters ---------- */
@@ -789,14 +1168,14 @@ footer {
 
 .attr-select {
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--r);
+  border: 1px solid var(--rule-2);
   font-size: 14px;
 }
 
 .filter-hint {
   font-size: 13px;
-  color: #999;
+  color: var(--ink-3);
 }
 
 /* ---------- Shop page: tick-box filters beside the grid ----------
@@ -819,8 +1198,8 @@ footer {
 .shop-side {
   grid-column: 2;
   grid-row: 1;
-  background: white;
-  border-radius: 14px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 0 16px 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   position: sticky;
@@ -835,7 +1214,7 @@ footer {
   background: var(--red-dark);
   color: white;
   font-weight: bold;
-  border-radius: 14px 14px 0 0;
+  border-radius: var(--r) var(--r) 0 0;
 }
 
 /* The Filters button only exists on a phone. */
@@ -846,8 +1225,8 @@ footer {
 .shop-search {
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
   font: inherit;
   font-size: 14px;
   margin-bottom: 6px;
@@ -871,13 +1250,13 @@ footer {
   gap: 8px;
   padding: 5px 8px;
   margin: 0 -8px;
-  border-radius: 6px;
+  border-radius: var(--r);
   font-size: 14px;
   cursor: pointer;
 }
 
 .shop-tick:hover {
-  background: #fdf0f1;
+  background: var(--stamp-tint);
 }
 
 .shop-tick input {
@@ -895,14 +1274,14 @@ footer {
 .shop-tick em {
   font-style: normal;
   font-size: 11px;
-  color: #666;
-  background: #f1f1f3;
+  color: var(--ink-3);
+  background: var(--paper-2);
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--r);
 }
 
 .shop-tick.empty {
-  color: #aaa;
+  color: var(--ink-3);
 }
 
 .shop-more {
@@ -930,10 +1309,9 @@ footer {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  background: white;
-  border-radius: 14px;
-  border-left: 6px solid var(--red);
-  padding: 16px 20px;
+  background: var(--sheet);
+  border-radius: var(--r);
+    padding: 16px 20px;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -946,7 +1324,7 @@ footer {
 
 .shop-count {
   font-size: 13px;
-  color: #777;
+  color: var(--ink-3);
 }
 
 .shop-chips {
@@ -969,7 +1347,7 @@ footer {
 .shop-clear {
   background: none;
   border: none;
-  color: #666;
+  color: var(--ink-3);
   text-decoration: underline;
   font: inherit;
   font-size: 13px;
@@ -1008,10 +1386,10 @@ footer {
 .form-page {
   max-width: 420px;
   margin: 40px auto;
-  background-color: white;
+  background-color: var(--sheet);
   padding: 30px;
-  border-radius: 10px;
-  border-top: 4px solid var(--red);
+  border-radius: var(--r);
+  border-top: 1px solid var(--rule);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -1033,8 +1411,8 @@ footer {
 .form-page select {
   width: 100%;
   padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--r);
+  border: 1px solid var(--rule-2);
   font-size: 14px;
 }
 
@@ -1045,7 +1423,7 @@ footer {
   color: white;
   border: none;
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--r);
   font-size: 15px;
   cursor: pointer;
 }
@@ -1055,16 +1433,16 @@ footer {
 }
 
 .form-error {
-  color: #c0392b;
+  color: var(--danger);
   font-size: 13px;
   margin-top: 10px;
 }
 
 .form-ok {
-  color: #1e7a45;
-  background-color: #eaf7ef;
+  color: var(--ok);
+  background-color: var(--ok-tint);
   border: 1px solid #bfe3cd;
-  border-radius: 6px;
+  border-radius: var(--r);
   padding: 12px;
   font-size: 13px;
   margin-top: 16px;
@@ -1073,7 +1451,7 @@ footer {
 
 .form-note {
   font-size: 12px;
-  color: #888;
+  color: var(--ink-3);
   margin-top: 16px;
   text-align: center;
 }
@@ -1081,7 +1459,7 @@ footer {
 /* The accepted formats and size, directly under a receipt picker. */
 .receipt-limits {
   font-size: 12.5px;
-  color: #666;
+  color: var(--ink-3);
   margin: 6px 0 0;
 }
 
@@ -1105,8 +1483,7 @@ footer {
   gap: 24px;
   flex-wrap: wrap;
   padding: 26px 30px;
-  border-radius: 14px;
-  background: linear-gradient(120deg, var(--red-darker), var(--red-dark) 60%, var(--red));
+  border-radius: var(--r);
   color: white;
   margin-bottom: 20px;
 }
@@ -1142,12 +1519,12 @@ footer {
 
 .bp-progress-track span {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--r);
   background: rgba(255, 255, 255, 0.25);
 }
 
 .bp-progress-track span.on {
-  background: white;
+  background: var(--sheet);
 }
 
 .bp-toolbar {
@@ -1194,11 +1571,11 @@ footer {
   column-gap: 14px;
   row-gap: 2px;
   padding: 16px;
-  background: white;
+  background: var(--sheet);
   border: 1px dashed #cfcfcf;
-  border-radius: 14px;
+  border-radius: var(--r);
   font: inherit;
-  color: #222;
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
 }
@@ -1241,13 +1618,13 @@ footer {
   justify-content: center;
   border-radius: 50%;
   background: #f4f4f6;
-  color: #888;
+  color: var(--ink-3);
   overflow: hidden;
 }
 
 .bp-slot.picked .bp-slot-icon {
-  border-radius: 10px;
-  background: white;
+  border-radius: var(--r);
+  background: var(--sheet);
 }
 
 .bp-slot-icon svg {
@@ -1265,7 +1642,7 @@ footer {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--ink-3);
 }
 
 .bp-slot-choice {
@@ -1276,7 +1653,7 @@ footer {
 }
 
 .bp-slot:not(.picked) .bp-slot-choice {
-  color: #aaa;
+  color: var(--ink-3);
   font-weight: normal;
 }
 
@@ -1307,7 +1684,7 @@ footer {
   border: none;
   border-radius: 50%;
   background: #f1f1f1;
-  color: #666;
+  color: var(--ink-3);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -1321,11 +1698,11 @@ footer {
 .bp-side {
   position: sticky;
   top: 16px;
-  background: white;
-  border-radius: 14px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-top: 5px solid var(--red);
+  border-top: 1px solid var(--rule);
 }
 
 .bp-side h3 {
@@ -1338,7 +1715,7 @@ footer {
   flex-direction: column;
   gap: 10px;
   padding-bottom: 16px;
-  border-bottom: 1px dashed #ccc;
+  border-bottom: 1px dashed var(--rule-2);
 }
 
 .bp-checkout-info {
@@ -1348,7 +1725,7 @@ footer {
 
 .bp-checkout-info span {
   font-size: 13px;
-  color: #777;
+  color: var(--ink-3);
 }
 
 .bp-checkout-info strong {
@@ -1358,7 +1735,7 @@ footer {
 
 .bp-checkout-add {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 13px 18px;
   background: var(--red);
   color: white;
@@ -1368,7 +1745,7 @@ footer {
 }
 
 .bp-checkout-add:disabled {
-  background: #ccc;
+  background: var(--rule-2);
   cursor: not-allowed;
 }
 
@@ -1393,25 +1770,25 @@ footer {
 
 .bp-meter {
   height: 10px;
-  background: #eee;
-  border-radius: 999px;
+  background: var(--rule);
+  border-radius: var(--r);
   overflow: hidden;
 }
 
 .bp-meter span {
   display: block;
   height: 100%;
-  background: #1e8e3e;
-  border-radius: 999px;
+  background: var(--ok);
+  border-radius: var(--r);
 }
 
 .bp-meter span.over {
-  background: #c0392b;
+  background: var(--danger);
 }
 
 .bp-power-note {
   font-size: 12px;
-  color: #777;
+  color: var(--ink-3);
   margin-top: 4px;
 }
 
@@ -1439,7 +1816,7 @@ body.bp-picker-open {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: var(--sheet);
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
   animation: bp-slide-in 0.2s ease-out;
 }
@@ -1474,8 +1851,8 @@ body.bp-picker-open {
 .bp-search {
   margin: 16px 20px 0;
   padding: 10px 14px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
   font: inherit;
 }
 
@@ -1484,7 +1861,7 @@ body.bp-picker-open {
   gap: 18px;
   flex-wrap: wrap;
   padding: 12px 20px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--rule);
 }
 
 .bp-tab {
@@ -1496,7 +1873,7 @@ body.bp-picker-open {
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  color: #777;
+  color: var(--ink-3);
 }
 
 .bp-tab.active {
@@ -1511,7 +1888,7 @@ body.bp-picker-open {
 }
 
 .bp-group {
-  color: #999;
+  color: var(--ink-3);
   font-weight: bold;
   font-size: 12px;
   letter-spacing: 1px;
@@ -1527,11 +1904,11 @@ body.bp-picker-open {
   gap: 16px;
   padding: 12px 14px;
   margin-bottom: 8px;
-  background: white;
+  background: var(--sheet);
   border: 1px solid #e6e6e6;
-  border-radius: 10px;
+  border-radius: var(--r);
   font: inherit;
-  color: #222;
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
 }
@@ -1542,7 +1919,7 @@ body.bp-picker-open {
 
 .bp-option.chosen {
   border-color: var(--red);
-  background: #fdf0f1;
+  background: var(--stamp-tint);
 }
 
 .bp-option:disabled {
@@ -1558,7 +1935,7 @@ body.bp-picker-open {
 .bp-option-name small {
   display: block;
   font-weight: normal;
-  color: #777;
+  color: var(--ink-3);
   font-size: 12px;
   margin-top: 2px;
 }
@@ -1578,7 +1955,7 @@ body.bp-picker-open {
 .bp-hidden-note,
 .bp-empty {
   font-size: 13px;
-  color: #777;
+  color: var(--ink-3);
   text-align: center;
   margin-top: 16px;
 }
@@ -1593,7 +1970,12 @@ body.bp-picker-open {
      bottom; the floating WhatsApp and chat buttons move up out of its way. */
   .has-bp-bar { padding-bottom: 84px; }
   .has-bp-bar .whatsapp-btn,
-  .has-bp-bar .chatbot-wrapper { bottom: 96px; }
+  .has-bp-bar .chatbot-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 100;
+}
   .bp-checkout {
     position: fixed;
     left: 0;
@@ -1603,7 +1985,7 @@ body.bp-picker-open {
     flex-direction: row;
     align-items: center;
     padding: 12px 16px;
-    background: white;
+    background: var(--sheet);
     border-bottom: none;
     box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.1);
   }
@@ -1620,7 +2002,7 @@ body.bp-picker-open {
 
 .compat-message {
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: var(--r);
   margin-top: 10px;
   font-size: 14px;
 }
@@ -1628,26 +2010,26 @@ body.bp-picker-open {
 /* The "all checks passed" / "2 problems found" line above the check list */
 .compat-summary {
   padding: 12px 14px;
-  border-radius: 6px;
+  border-radius: var(--r);
   margin-bottom: 4px;
   font-size: 15px;
   font-weight: bold;
 }
 
 .compat-ok {
-  background-color: #e3f8e8;
-  color: #1e8e3e;
+  background-color: var(--ok-tint);
+  color: var(--ok);
 }
 
 .compat-warn {
-  background-color: #fde8e8;
-  color: #c0392b;
+  background-color: var(--danger-tint);
+  color: var(--danger);
 }
 
 /* Works, but not at its best — never blocks the order */
 .compat-caution {
-  background-color: #fff4dd;
-  color: #96690b;
+  background-color: var(--warn-tint);
+  color: var(--warn);
 }
 
 /* Small heading above each group of messages */
@@ -1656,7 +2038,7 @@ body.bp-picker-open {
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--ink-3);
   margin-top: 16px;
 }
 
@@ -1670,9 +2052,9 @@ body.bp-picker-open {
 }
 
 .prebuilt-card {
-  background-color: white;
-  border-radius: 10px;
-  border-top: 3px solid var(--red);
+  background-color: var(--sheet);
+  border-radius: var(--r);
+  border-top: 1px solid var(--rule);
   padding: 24px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
@@ -1687,14 +2069,14 @@ body.bp-picker-open {
   color: white;
   font-size: 12px;
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: var(--r);
   margin-bottom: 10px;
 }
 
 .prebuilt-specs {
   list-style: none;
   font-size: 13px;
-  color: #555;
+  color: var(--ink-2);
   margin: 10px 0;
 }
 
@@ -1716,7 +2098,7 @@ body.bp-picker-open {
    value. The list is one line per specification now that it is built from
    the product's own attributes rather than a hardcoded array of strings. */
 .prebuilt-specs .spec-key {
-  color: #333;
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -1724,7 +2106,7 @@ body.bp-picker-open {
    Read-only: see the note in js/prebuilt.js. */
 .prebuilt-upgrades {
   margin: 4px 0 0;
-  color: #555;
+  color: var(--ink-2);
   line-height: 1.5;
 }
 
@@ -1741,13 +2123,13 @@ body.bp-picker-open {
 .prebuilt-waiting {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #777;
+  color: var(--ink-3);
 }
 
 .addon-list .addon-hint {
   margin: 2px 0 8px;
   font-size: 12px;
-  color: #888;
+  color: var(--ink-3);
 }
 
 /* One tickable upgrade: name on the left, what it adds on the right. */
@@ -1757,7 +2139,7 @@ body.bp-picker-open {
   gap: 8px;
   padding: 5px 0;
   cursor: pointer;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--rule);
 }
 
 .addon-option span {
@@ -1781,7 +2163,7 @@ body.bp-picker-open {
 .prebuilt-price-basis {
   margin: -6px 0 10px;
   font-size: 12px;
-  color: #888;
+  color: var(--ink-3);
 }
 
 /* The same upgrades once they are in the basket, under the line they
@@ -1791,7 +2173,7 @@ body.bp-picker-open {
   margin: 6px 0 0;
   padding: 0;
   font-size: 12px;
-  color: #555;
+  color: var(--ink-2);
 }
 
 .cart-upgrades li {
@@ -1806,7 +2188,7 @@ body.bp-picker-open {
 .upgrade-drop {
   border: none;
   background: none;
-  color: #aaa;
+  color: var(--ink-3);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -1839,8 +2221,8 @@ body.bp-picker-open {
   font-size: 12px;
   letter-spacing: 0.4px;
   color: #8a4b00;
-  background: #fff4e0;
-  border-radius: 5px;
+  background: var(--warn-tint);
+  border-radius: var(--r);
   padding: 4px 8px;
   display: inline-block;
   margin-bottom: 12px;
@@ -1878,8 +2260,8 @@ body.bp-picker-open {
 }
 
 .deal-card {
-  background-color: white;
-  border-radius: 10px;
+  background-color: var(--sheet);
+  border-radius: var(--r);
   padding: 22px;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -1888,7 +2270,7 @@ body.bp-picker-open {
 .deal-percent {
   font-size: 26px;
   font-weight: bold;
-  color: #e74c3c;
+  color: var(--danger);
   margin: 10px 0;
 }
 
@@ -1921,10 +2303,10 @@ body.bp-picker-open {
   align-items: flex-start;
   gap: 10px;
   padding: 14px;
-  border: 1px solid #dcdfe3;
-  border-radius: 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   cursor: pointer;
-  background: white;
+  background: var(--sheet);
 }
 
 .pay-option:has(input:checked) {
@@ -1939,14 +2321,14 @@ body.bp-picker-open {
 }
 
 .pay-option small {
-  color: #777;
+  color: var(--ink-3);
   font-size: 12px;
 }
 
 .pay-panel {
   background: #fbfbfc;
   border: 1px solid #e6e8ec;
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 16px 18px;
   margin-bottom: 8px;
 }
@@ -1959,7 +2341,7 @@ body.bp-picker-open {
 /* The number people are about to type into a banking app. Monospace so
    a 0 cannot be read as an O, and selectable in one go. */
 .pay-line strong {
-  font-family: Consolas, "Courier New", monospace;
+  font-family: var(--font-data);
   letter-spacing: 0.5px;
   user-select: all;
 }
@@ -1969,14 +2351,14 @@ body.bp-picker-open {
   max-width: 240px;
   margin: 10px 0;
   border: 1px solid #e6e8ec;
-  border-radius: 6px;
+  border-radius: var(--r);
 }
 
 .pay-qr-missing {
   font-size: 13px;
-  color: #96690b;
-  background: #fff4e0;
-  border-radius: 6px;
+  color: var(--warn);
+  background: var(--warn-tint);
+  border-radius: var(--r);
   padding: 10px 12px;
   margin: 10px 0;
 }
@@ -1987,13 +2369,13 @@ body.bp-picker-open {
   display: inline-block;
   font-size: 12px;
   padding: 3px 10px;
-  border-radius: 11px;
+  border-radius: var(--r);
   white-space: nowrap;
 }
 
-.pay-badge.pending  { background: #fff4e0; color: #96690b; }
-.pay-badge.approved { background: #e3f8e8; color: #1e8e3e; }
-.pay-badge.rejected { background: #fde8e8; color: #c0392b; }
+.pay-badge.pending  { background: var(--warn-tint); color: var(--warn); }
+.pay-badge.approved { background: var(--ok-tint); color: var(--ok); }
+.pay-badge.rejected { background: var(--danger-tint); color: var(--danger); }
 
 /* ============================================================
    Powered by ASUS: the showcase gallery.
@@ -2011,8 +2393,8 @@ body.bp-picker-open {
 
 .rig-card {
   position: relative;
-  background: white;
-  border-radius: 10px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
@@ -2025,15 +2407,15 @@ body.bp-picker-open {
   top: 12px;
   right: 12px;
   z-index: 1;
-  background: #1c1c1e;
+  background: var(--ink);
   color: white;
   font-size: 11px;
   font-weight: bold;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   padding: 5px 10px;
-  border-radius: 4px;
-  border-left: 3px solid var(--red);
+  border-radius: var(--r);
+  border: 1px solid var(--rule-2);
 }
 
 /* Several photos of one build, scrolling sideways inside their own box
@@ -2051,25 +2433,25 @@ body.bp-picker-open {
   height: 190px;
   width: auto;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: var(--r);
   object-fit: cover;
 }
 
 .rig-builder {
   font-size: 12px;
-  color: #888;
+  color: var(--ink-3);
   margin-bottom: 8px;
 }
 
 .rig-description {
   font-size: 13.5px;
-  color: #444;
+  color: var(--ink-2);
   line-height: 1.55;
   margin-bottom: 12px;
 }
 
 .rig-parts {
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid var(--rule);
   padding-top: 10px;
   font-size: 13px;
 }
@@ -2092,7 +2474,7 @@ body.bp-picker-open {
 }
 
 .rig-part-brand {
-  color: #999;
+  color: var(--ink-3);
   font-size: 11.5px;
   white-space: nowrap;
 }
@@ -2107,9 +2489,9 @@ body.bp-picker-open {
 
 .rig-part-option {
   text-align: left;
-  background: white;
+  background: var(--sheet);
   border: 1px solid #e2e5e9;
-  border-radius: 6px;
+  border-radius: var(--r);
   padding: 8px 10px;
   font-size: 13px;
   cursor: pointer;
@@ -2131,7 +2513,7 @@ body.bp-picker-open {
 
 .rig-part-chip {
   background: #f0f2f5;
-  border-radius: 14px;
+  border-radius: var(--r);
   padding: 5px 8px 5px 12px;
   font-size: 12.5px;
   display: inline-flex;
@@ -2144,16 +2526,16 @@ body.bp-picker-open {
   background: none;
   cursor: pointer;
   font-size: 15px;
-  color: #888;
+  color: var(--ink-3);
   line-height: 1;
 }
 
 .rig-badge-preview {
   width: 100%;
   font-size: 12.5px;
-  color: #1e8e3e;
-  background: #e3f8e8;
-  border-radius: 6px;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-radius: var(--r);
   padding: 8px 10px;
   margin-bottom: 4px;
 }
@@ -2162,8 +2544,8 @@ body.bp-picker-open {
 .faq-item {
   max-width: 700px;
   margin: 0 auto 10px auto;
-  background-color: white;
-  border-radius: 8px;
+  background-color: var(--sheet);
+  border-radius: var(--r);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
@@ -2182,7 +2564,7 @@ body.bp-picker-open {
   overflow: hidden;
   transition: max-height 0.2s ease, padding 0.2s ease;
   font-size: 14px;
-  color: #555;
+  color: var(--ink-2);
 }
 
 .faq-item.open .faq-answer {
@@ -2193,19 +2575,22 @@ body.bp-picker-open {
 /* ---------- WhatsApp floating button ---------- */
 .whatsapp-btn {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background-color: #25d366;
+  bottom: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background-color: #1a7a43;
   color: white;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
   z-index: 100;
+}
+
+.whatsapp-btn .ui-icon {
+  width: 24px;
+  height: 24px;
 }
 
 /* ---------- Chatbot widget ---------- */
@@ -2217,15 +2602,25 @@ body.bp-picker-open {
 }
 
 .chatbot-toggle {
-  background-color: var(--red-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 16px 0 14px;
+  background-color: var(--ink);
   color: white;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
   border: none;
-  font-size: 24px;
+  border-radius: var(--r);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow);
+}
+
+.chatbot-toggle .ui-icon {
+  width: 18px;
+  height: 18px;
+  color: #9fb4ff;
 }
 
 .chatbot-panel {
@@ -2236,8 +2631,8 @@ body.bp-picker-open {
   width: 370px;
   max-width: calc(100vw - 48px);
   height: 460px;
-  background-color: white;
-  border-radius: 10px;
+  background-color: var(--sheet);
+  border-radius: var(--r);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   flex-direction: column;
   overflow: hidden;
@@ -2248,11 +2643,11 @@ body.bp-picker-open {
 }
 
 .chatbot-header {
-  background-color: var(--red-dark);
+  background-color: var(--stamp);
   color: white;
-  padding: 12px;
+  padding: 12px 14px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .chat-log {
@@ -2264,7 +2659,7 @@ body.bp-picker-open {
 
 .chat-bubble {
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--r);
   margin-bottom: 8px;
   max-width: 85%;
 }
@@ -2293,7 +2688,7 @@ body.bp-picker-open {
   margin-bottom: 6px;
   background-color: #fff;
   border: 1px solid #e3e5e8;
-  border-radius: 8px;
+  border-radius: var(--r);
   cursor: pointer;
 }
 
@@ -2323,7 +2718,7 @@ body.bp-picker-open {
 
 .chat-rec-meta {
   font-size: 11px;
-  color: #666;
+  color: var(--ink-3);
 }
 
 .chat-rec-price {
@@ -2359,7 +2754,7 @@ body.bp-picker-open {
 }
 
 .chat-build td:first-child {
-  color: #777;
+  color: var(--ink-3);
   white-space: nowrap;
   padding-right: 8px;
 }
@@ -2381,7 +2776,7 @@ body.bp-picker-open {
   color: white;
   border: none;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--r);
   font-size: 12px;
   cursor: pointer;
   width: 100%;
@@ -2398,7 +2793,7 @@ body.bp-picker-open {
 
 .chat-input-row {
   display: flex;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--rule);
 }
 
 .chat-input-row input {
@@ -2420,23 +2815,33 @@ body.bp-picker-open {
 /* Slides up from the bottom so it never covers the navbar. */
 .toast {
   position: fixed;
-  bottom: -100px;
+  bottom: -120px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--red-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--ink);
   color: white;
-  padding: 14px 22px;
-  border-radius: 8px;
+  padding: 13px 18px;
+  border-radius: var(--r);
   font-size: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  transition: bottom 0.3s ease;
+  box-shadow: var(--shadow);
+  transition: bottom 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
   z-index: 200;
 }
 
+.toast .ui-icon {
+  width: 18px;
+  height: 18px;
+  color: #ff9cc5;
+}
+
 .toast a {
-  color: var(--red);
-  margin-left: 10px;
-  font-weight: bold;
+  color: white;
+  margin-left: 6px;
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .toast.show {
@@ -2451,8 +2856,8 @@ body.privacy-notice-open .toast.show {
 
 /* Shown if the catalogue can't be fetched (Apache or MySQL not running) */
 .load-error {
-  background-color: #fde8e8;
-  color: #c0392b;
+  background-color: var(--danger-tint);
+  color: var(--danger);
   padding: 14px 20px;
   text-align: center;
   font-size: 14px;
@@ -2483,8 +2888,8 @@ body.privacy-notice-open .toast.show {
 }
 
 .product-modal {
-  background-color: white;
-  border-radius: 10px;
+  background-color: var(--sheet);
+  border-radius: var(--r);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 760px;
@@ -2528,9 +2933,9 @@ body.privacy-notice-open .toast.show {
 .product-modal-figure {
   flex: 1 1 260px;
   align-self: flex-start;   /* don't stretch to the height of the spec table */
-  background-color: #fafbfc;
-  border: 1px solid #e8eaed;
-  border-radius: 8px;
+  background-color: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   padding: 14px;
 }
 
@@ -2547,7 +2952,7 @@ body.privacy-notice-open .toast.show {
 
 .product-modal-meta {
   font-size: 13px;
-  color: #666;
+  color: var(--ink-3);
   margin-bottom: 8px;
 }
 
@@ -2573,7 +2978,7 @@ body.privacy-notice-open .toast.show {
 
 .product-modal-desc {
   font-size: 14px;
-  color: #444;
+  color: var(--ink-2);
   margin: 12px 0;
 }
 
@@ -2593,7 +2998,7 @@ body.privacy-notice-open .toast.show {
 }
 
 .product-modal-specs th {
-  color: #666;
+  color: var(--ink-3);
   font-weight: normal;
   width: 45%;
 }
@@ -2610,8 +3015,8 @@ body.privacy-notice-open .toast.show {
 
 .product-modal-colour select {
   padding: 8px 10px;
-  border: 1px solid #dcdfe3;
-  border-radius: 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   font-size: 14px;
   font-weight: normal;
 }
@@ -2619,7 +3024,7 @@ body.privacy-notice-open .toast.show {
 .cart-colour {
   display: block;
   font-size: 12px;
-  color: #555;
+  color: var(--ink-2);
 }
 
 .product-modal-actions {
@@ -2635,8 +3040,8 @@ body.privacy-notice-open .toast.show {
 
 .product-modal-wish {
   background: none;
-  border: 1px solid #dcdfe3;
-  border-radius: 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
   font-size: 20px;
   line-height: 1;
   padding: 8px 12px;
@@ -2682,7 +3087,7 @@ body.privacy-notice-open .toast.show {
   flex-shrink: 0;
   padding: 9px 20px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r);
   background: #2f80ed;
   color: #fff;
   font-size: 13.5px;
@@ -2800,7 +3205,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 .or-divider {
   text-align: center;
   font-size: 12px;
-  color: #999;
+  color: var(--ink-3);
   margin: 14px 0 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2814,7 +3219,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   background-color: #25d366;
   color: white;
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--r);
   font-size: 15px;
   text-decoration: none;
 }
@@ -2839,8 +3244,8 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   margin: 14px 0 18px;
   padding: 12px 14px;
   background: #f4f7fb;
-  border-left: 4px solid #2c5d8f;
-  border-radius: 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
 }
 
 .pickup-note strong {
@@ -2853,14 +3258,14 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   margin: 0 0 6px;
   font-size: 14px;
   line-height: 1.5;
-  color: #444;
+  color: var(--ink-2);
 }
 
 .pickup-note p:last-child { margin-bottom: 0; }
 
 .pickup-note .pickup-hours {
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
 }
 
 /* ---------- Prebuilt cards: the way into a machine's own page ---------- */
@@ -2893,7 +3298,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   text-align: center;
   padding: 10px 16px;
   border: 1px solid var(--red);
-  border-radius: 6px;
+  border-radius: var(--r);
   color: var(--red);
   font-size: 14px;
   text-decoration: none;
@@ -2921,8 +3326,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   gap: 24px;
   flex-wrap: wrap;
   padding: 26px 30px;
-  border-radius: 14px;
-  background: linear-gradient(120deg, var(--red-darker), var(--red-dark) 60%, var(--red));
+  border-radius: var(--r);
   color: white;
   margin-bottom: 24px;
 }
@@ -2971,12 +3375,12 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 }
 
 .pd-save {
-  background: white;
+  background: var(--sheet);
   color: var(--red-dark);
   font-size: 12px;
   font-weight: bold;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r);
 }
 
 .pd-deal-ends {
@@ -2995,8 +3399,8 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
-  background: white;
-  border-radius: 14px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
@@ -3006,7 +3410,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   align-items: center;
   justify-content: center;
   background: #f7f7f9;
-  border-radius: 10px;
+  border-radius: var(--r);
   padding: 16px;
 }
 
@@ -3041,7 +3445,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .pd-spec th {
   width: 38%;
-  color: #777;
+  color: var(--ink-3);
   font-weight: normal;
 }
 
@@ -3057,7 +3461,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 }
 
 .pd-steps-hint {
-  color: #777;
+  color: var(--ink-3);
   font-size: 14px;
   margin-bottom: 6px;
 }
@@ -3100,12 +3504,12 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: white;
+  background: var(--sheet);
   border: 1px solid #e2e2e2;
-  border-radius: 10px;
+  border-radius: var(--r);
   cursor: pointer;
   font: inherit;
-  color: #333;
+  color: var(--ink);
   text-align: left;
 }
 
@@ -3115,7 +3519,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .pd-tile.chosen {
   border-color: var(--red);
-  background: #fdf0f1;
+  background: var(--stamp-tint);
 }
 
 .pd-tile:disabled {
@@ -3133,7 +3537,8 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .pd-tile.chosen .pd-tile-mark {
   border-color: var(--red);
-  background: radial-gradient(circle, var(--red) 45%, transparent 50%);
+  background: var(--stamp);
+  box-shadow: inset 0 0 0 3px var(--sheet);
 }
 
 .pd-tile-icon {
@@ -3167,11 +3572,11 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 .pd-receipt {
   position: sticky;
   top: 16px;
-  background: white;
-  border-radius: 14px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  border-top: 5px solid var(--red);
+  border-top: 1px solid var(--rule);
 }
 
 .section .pd-receipt h2,
@@ -3194,17 +3599,17 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 }
 
 .pd-line-up {
-  color: #555;
+  color: var(--ink-2);
 }
 
 .pd-line-none {
   font-size: 13px;
-  color: #999;
+  color: var(--ink-3);
   padding: 4px 0;
 }
 
 .pd-total {
-  border-top: 1px dashed #ccc;
+  border-top: 1px dashed var(--rule-2);
   margin-top: 8px;
   padding-top: 12px;
   font-size: 20px;
@@ -3221,8 +3626,8 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .pd-description {
   margin-top: 30px;
-  background: white;
-  border-radius: 14px;
+  background: var(--sheet);
+  border-radius: var(--r);
   padding: 24px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
@@ -3234,7 +3639,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 }
 
 .pd-description p {
-  color: #555;
+  color: var(--ink-2);
   line-height: 1.7;
 }
 
@@ -3283,8 +3688,8 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 .build-card {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 12px;
+  background: var(--sheet);
+  border-radius: var(--r);
   overflow: hidden;
   color: inherit;
   text-decoration: none;
@@ -3327,12 +3732,12 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   color: white;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r);
 }
 
 .build-body {
   padding: 14px 16px 16px;
-  border-top: 3px solid var(--red);
+  border-top: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -3353,9 +3758,9 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .build-specs li {
   font-size: 12px;
-  background: #f4f5f7;
+  background: var(--paper);
   border: 1px solid #e3e5ea;
-  border-radius: 999px;
+  border-radius: var(--r);
   padding: 3px 9px;
 }
 
@@ -3380,7 +3785,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 .role-picker p {
   font-size: 14px;
-  color: #444;
+  color: var(--ink-2);
   margin-bottom: 12px;
 }
 
@@ -3396,7 +3801,7 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
   gap: 4px;
   padding: 14px 12px;
   border: 1px solid #ddd;
-  border-radius: 10px;
+  border-radius: var(--r);
   background: #fff;
   cursor: pointer;
   font: inherit;
@@ -3404,11 +3809,1962 @@ body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 }
 
 .role-chip strong { font-size: 15px; }
-.role-chip span   { font-size: 12px; color: #666; }
+.role-chip span   { font-size: 12px; color: var(--ink-3); }
 
 .role-chip:hover:not(:disabled) { border-color: var(--red); }
 .role-chip:disabled { opacity: 0.6; cursor: default; }
 
 @media (max-width: 640px) {
   .role-picker-buttons { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   Home: the department index, the shop's own rigs, and the till.
+   ============================================================ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* A link styled as the primary action, used outside product cards. */
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--r);
+  background-color: var(--stamp);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hero-btn:hover {
+  background-color: var(--stamp-deep);
+}
+
+.home {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+.home-main .section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.home-intro {
+  padding: 34px 0 8px;
+}
+
+.home-intro h1 {
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 800;
+  font-stretch: 84%;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+
+.home-lede {
+  margin: 12px 0 22px;
+  font-size: 16px;
+  color: var(--ink-3);
+  max-width: 60ch;
+}
+
+/* Two columns of receipt lines: name, dot leader, count. */
+.dept-index {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 40px;
+  border-top: 1px solid var(--ink);
+  padding-top: 6px;
+}
+
+.dept-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--rule-2);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dept-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dept-name::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  background-color: var(--row-hue, var(--ink));
+  flex-shrink: 0;
+}
+
+.dept-leader {
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 2px dotted var(--rule-2);
+  transform: translateY(-4px);
+}
+
+.dept-count {
+  font-family: var(--font-data);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.dept-row:hover .dept-name {
+  color: var(--stamp);
+}
+
+.dept-row:hover .dept-leader {
+  border-bottom-color: var(--stamp);
+}
+
+.dept-all .dept-name {
+  font-weight: 800;
+}
+
+.dept-all .dept-name::before {
+  background-color: var(--ink);
+}
+
+/* ---------- Built by eTech: a strip of real workshop photos ---------- */
+.home > .builds-section {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin: 0;
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.builds-section .builds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  max-width: none;
+  margin: 0;
+}
+
+.builds-section .build-card {
+  scroll-snap-align: start;
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.builds-section .build-card:hover,
+.builds-section .build-card:focus-visible {
+  transform: none;
+  border-color: var(--rule-2);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- The till ---------- */
+.home-side {
+  position: sticky;
+  top: 118px;
+  padding-top: 34px;
+}
+
+.till {
+  position: relative;
+  background-color: var(--sheet);
+  padding: 18px 18px 22px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  /* The torn foot of a receipt: a zigzag cut along the bottom edge. */
+  --tear: 9px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+  padding-bottom: calc(22px + var(--tear));
+}
+
+.till-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed var(--rule-2);
+  color: var(--ink);
+}
+
+.till-head .logo-mark {
+  font-size: 18px;
+}
+
+.till-meta {
+  font-family: var(--font-data);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+.till-empty {
+  color: var(--ink-3);
+  margin: 4px 0 16px;
+}
+
+.till-lines {
+  list-style: none;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.till-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 7px 0;
+  font-family: var(--font-data);
+  font-size: 12.5px;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.till-qty {
+  color: var(--ink-3);
+}
+
+.till-name {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+
+.till-name small {
+  color: var(--ink-3);
+}
+
+.till-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.till-price.on-deal {
+  color: var(--roll);
+}
+
+/* A new line feeds out of the printer: it unrolls from the top. */
+.till-line.printing {
+  animation: till-print 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes till-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    background-color: var(--paper-2);
+  }
+  60% {
+    clip-path: inset(0 0 0 0);
+    background-color: var(--paper-2);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .till-line.printing { animation: none; }
+}
+
+.till-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 0 14px;
+  margin-top: 4px;
+  border-top: 2px solid var(--ink);
+  font-weight: 800;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.till-total small {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  color: var(--ink-3);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.till-sum {
+  font-family: var(--font-data);
+  font-size: 19px;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.till-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.till-sub {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--stamp);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-2);
+}
+
+@media (max-width: 1080px) {
+  .home {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  /* On a narrow screen the till follows the department index. */
+  .home-side {
+    position: static;
+    order: 0;
+    padding-top: 8px;
+  }
+  .home-main { display: contents; }
+  .home-intro { order: -2; }
+  .home-side { order: -1; }
+}
+
+@media (max-width: 760px) {
+  .home { padding: 0 16px; }
+  .home-intro { padding-top: 22px; }
+  .dept-index { grid-template-columns: minmax(0, 1fr); }
+  .builds-section .builds-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 10px;
+  }
+}
+
+/* ============================================================
+   Shop: the catalogue, its filters, and the product view.
+   ============================================================ */
+.shop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: none;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-2);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 4px 0 14px;
+  margin-bottom: 14px;
+}
+
+.section h2.shop-title {
+  font-size: clamp(26px, 2.6vw, 34px);
+  font-weight: 800;
+  font-stretch: 86%;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.shop-count {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-data);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.attr-select,
+#sort-select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  font-size: 14px;
+}
+
+.shop-side {
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  box-shadow: none;
+  padding: 0 16px 14px;
+  top: 128px;
+  max-height: calc(100vh - 148px);
+}
+
+.shop-side-head {
+  margin: 0 -16px 14px;
+  padding: 12px 16px;
+  background-color: var(--ink);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 0;
+}
+
+.shop-search {
+  height: 40px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  padding: 0 12px;
+}
+
+.shop-facet {
+  border-top: 1px dashed var(--rule);
+  padding: 12px 0 6px;
+}
+
+.shop-facet summary {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.shop-tick {
+  border-radius: 2px;
+  padding: 5px 8px;
+}
+
+.shop-tick:hover {
+  background-color: var(--stamp-tint);
+}
+
+.shop-tick input {
+  accent-color: var(--stamp);
+}
+
+.shop-tick em {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--ink-3);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.shop-more,
+.shop-clear {
+  color: var(--stamp);
+  font-weight: 600;
+}
+
+/* ---------- The product view ---------- */
+.product-modal-backdrop {
+  background-color: rgba(28, 28, 30, 0.5);
+  padding: 32px 20px;
+}
+
+.product-modal {
+  max-width: 880px;
+  border-radius: var(--r);
+  box-shadow: 0 30px 80px -30px rgba(28, 28, 30, 0.55);
+}
+
+.product-modal-head {
+  background-color: var(--sheet);
+  color: var(--ink);
+  padding: 18px 20px 14px;
+  border-bottom: 1px dashed var(--rule-2);
+}
+
+.product-modal-head h2 {
+  font-size: 22px;
+  font-weight: 800;
+  font-stretch: 90%;
+  letter-spacing: -0.01em;
+}
+
+.product-modal-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  color: var(--ink);
+}
+
+.product-modal-close:hover {
+  background-color: var(--paper);
+}
+
+.product-modal-body {
+  gap: 24px;
+  padding: 20px;
+}
+
+.product-modal-figure {
+  background-color: var(--sheet);
+  border: 1px solid var(--rule);
+  padding: 18px;
+}
+
+.product-modal-figure img {
+  height: 280px;
+}
+
+.product-modal-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.product-modal-price {
+  font-family: var(--font-data);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.product-modal-official {
+  color: var(--stamp);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-2);
+}
+
+/* The spec sheet, set as receipt lines. */
+.product-modal-specs th,
+.product-modal-specs td {
+  padding: 7px 0;
+  border-bottom: 1px dotted var(--rule-2);
+}
+
+.product-modal-specs td {
+  font-family: var(--font-data);
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.product-modal-actions .add-btn {
+  min-height: 46px;
+  font-size: 15px;
+}
+
+.product-modal-wish.wishlist-btn {
+  position: static;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  background-color: var(--sheet);
+}
+
+.product-modal-wish .ui-icon {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 760px) {
+  .product-modal-backdrop { padding: 0; }
+  .product-modal { min-height: 100%; }
+  .product-modal-figure img { height: 220px; }
+}
+
+/* ============================================================
+   PC builder, prebuilt PCs and one prebuilt's page.
+
+   --path marks the step the customer is on, and nothing else: the next
+   part to choose in the builder, the current stage at checkout.
+   ============================================================ */
+.bp-hero,
+.pd-hero {
+  background: none;
+  color: var(--ink);
+  border-radius: 0;
+  padding: 4px 0 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px dashed var(--rule-2);
+}
+
+.section .bp-hero h2,
+.pd-title {
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 800;
+  font-stretch: 86%;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  border: 0;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.bp-hero p {
+  opacity: 1;
+  color: var(--ink-3);
+}
+
+.bp-progress-label {
+  font-family: var(--font-data);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.bp-progress-track span {
+  height: 6px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+
+.bp-progress-track span.on {
+  background: var(--ink);
+}
+
+.bp-progress-track span.on + span:not(.on),
+.bp-progress-track span:first-child:not(.on) {
+  background: var(--path);
+}
+
+.bp-tool {
+  color: var(--stamp);
+}
+
+.bp-slot-main {
+  border: 1px dashed var(--rule-2);
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.bp-slot-main:hover {
+  border-color: var(--stamp);
+}
+
+.bp-slot.picked .bp-slot-main {
+  border: 1px solid var(--rule);
+  box-shadow: none;
+}
+
+/* The next part to choose. */
+.bp-slots > .bp-slot:first-child:not(.picked) .bp-slot-main,
+.bp-slot.picked + .bp-slot:not(.picked) .bp-slot-main {
+  border: 2px solid var(--path);
+}
+
+.bp-slots > .bp-slot:first-child:not(.picked) .bp-slot-no,
+.bp-slot.picked + .bp-slot:not(.picked) .bp-slot-no {
+  background: var(--path);
+}
+
+.bp-slot-no {
+  border-radius: 2px;
+  background: var(--ink-4);
+  font-family: var(--font-data);
+  font-size: 11px;
+}
+
+.bp-slot.picked .bp-slot-no {
+  background: var(--ink);
+}
+
+.bp-slot-icon {
+  border-radius: var(--r);
+  background: var(--paper);
+  color: var(--ink-2);
+}
+
+.bp-slot-price,
+.bp-option-side {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The build's running total, printed as a receipt. */
+.bp-side {
+  border-top: 0;
+  box-shadow: var(--shadow);
+  top: 128px;
+  --tear: 9px;
+  padding-bottom: calc(20px + var(--tear));
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+}
+
+.bp-checkout-info strong {
+  font-family: var(--font-data);
+  font-size: 28px;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bp-checkout-add {
+  background: var(--stamp);
+}
+
+.bp-checkout-add:hover:not(:disabled) {
+  background: var(--stamp-deep);
+}
+
+.bp-checkout-add:disabled {
+  background: var(--paper-2);
+  color: var(--ink-3);
+}
+
+.bp-checkout-talk {
+  color: var(--ok);
+}
+
+.bp-picker-box {
+  border-radius: 0;
+}
+
+.bp-picker-head {
+  background: var(--ink);
+}
+
+.bp-tab {
+  border-radius: var(--r);
+}
+
+/* ---------- Prebuilt list ---------- */
+.prebuilt-price,
+.prebuilt-card .product-price {
+  font-family: var(--font-data);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.prebuilt-card {
+  border: 1px solid var(--rule);
+  box-shadow: none;
+}
+
+.prebuilt-card:hover {
+  box-shadow: var(--shadow);
+}
+
+/* ---------- One prebuilt ---------- */
+.pd-crumbs {
+  opacity: 1;
+  color: var(--ink-3);
+}
+
+.pd-crumbs a {
+  color: var(--stamp);
+}
+
+.pd-price-now {
+  font-family: var(--font-data);
+  font-size: 34px;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-was {
+  opacity: 1;
+  color: var(--ink-3);
+  font-family: var(--font-data);
+}
+
+.pd-save {
+  background: var(--roll-tint);
+  color: var(--roll);
+}
+
+.pd-deal-ends {
+  opacity: 1;
+  color: var(--roll);
+}
+
+.pd-receipt {
+  border-top: 0;
+}
+
+.pd-tile-price,
+.pd-receipt strong {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Receipts: the cart page, the checkout summary, the order.
+   The same sheet the home page's till prints on.
+   ============================================================ */
+.data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt {
+  position: relative;
+  background-color: var(--sheet);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  --tear: 9px;
+  padding-bottom: calc(22px + var(--tear));
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+}
+
+.page-empty,
+#cart-empty {
+  text-align: left;
+  color: var(--ink-3);
+  font-size: 16px;
+  padding: 24px 0;
+}
+
+.page-empty a,
+#cart-empty a {
+  color: var(--stamp);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ---------- Cart page ---------- */
+.cart-receipt {
+  max-width: 980px;
+}
+
+.cart-table {
+  max-width: none;
+  background: none;
+  font-size: 14.5px;
+}
+
+.cart-table th {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.cart-table td {
+  padding: 14px 10px;
+  border-bottom: 1px dashed var(--rule-2);
+  vertical-align: middle;
+}
+
+.cart-table td:nth-child(2),
+.cart-table td:nth-child(4) {
+  font-family: var(--font-data);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cart-table td:nth-child(4) {
+  font-weight: 700;
+}
+
+.cart-img {
+  width: 64px;
+  height: 52px;
+  border-radius: 2px;
+  background-color: var(--sheet);
+}
+
+.qty-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  font-family: var(--font-data);
+}
+
+.qty-btn:hover {
+  border-color: var(--ink);
+}
+
+.qty-value {
+  font-family: var(--font-data);
+  font-weight: 700;
+}
+
+/* Removing is set apart: outlined, and only red when meant. */
+.remove-btn {
+  background: none;
+  color: var(--ink-3);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.remove-btn:hover,
+.remove-btn:focus-visible {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.cart-summary {
+  max-width: none;
+  margin: 8px 0 0;
+  text-align: left;
+  font-size: inherit;
+  display: grid;
+  gap: 14px;
+  justify-items: end;
+}
+
+.cart-summary .till-total {
+  width: min(100%, 380px);
+}
+
+.cart-checkout {
+  min-width: 220px;
+}
+
+/* ---------- Checkout ---------- */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 32px;
+  align-items: start;
+}
+
+.checkout-grid .checkout-receipt {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 128px;
+}
+
+.checkout-grid .checkout-form {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  max-width: none;
+}
+
+.checkout-receipt .till-lines {
+  max-height: 50vh;
+}
+
+/* Each stage of the form, divided like the sections of a receipt. */
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 12px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--rule-2);
+  font-size: 18px;
+  font-weight: 800;
+  font-stretch: 92%;
+}
+
+.checkout-form > .step-head:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.step-head::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  background-color: var(--ink-4);
+}
+
+/* ---------- Forms everywhere ---------- */
+.form-page {
+  border: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  border-radius: var(--r);
+  box-shadow: none;
+  background-color: var(--sheet);
+  padding: 28px;
+}
+
+.form-page h2 {
+  text-align: left;
+  font-size: 26px;
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.01em;
+}
+
+.form-page label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.form-page input,
+.form-page textarea,
+.form-page select {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  font-size: 15px;
+}
+
+.form-page input:focus-visible,
+.form-page textarea:focus-visible,
+.form-page select:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 0;
+  border-color: var(--stamp);
+}
+
+.form-page button {
+  min-height: 46px;
+  border-radius: var(--r);
+  background-color: var(--stamp);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.form-page button:hover {
+  background-color: var(--stamp-deep);
+}
+
+.form-note {
+  text-align: left;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.form-note a,
+.form-page a {
+  color: var(--stamp);
+  font-weight: 600;
+}
+
+.form-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.form-ok-text,
+.confirm-saved {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.pay-option:has(input:checked) {
+  border-color: var(--stamp);
+  background-color: var(--stamp-tint);
+}
+
+/* ---------- The order, placed ---------- */
+#checkout-confirmation {
+  position: relative;
+  max-width: 560px;
+}
+
+#checkout-confirmation h2 {
+  margin: 6px 0 14px;
+}
+
+.confirm-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--rule-2);
+  font-size: 15px;
+}
+
+.confirm-line strong {
+  font-size: 17px;
+}
+
+/* A rubber stamp, set once, at a slight angle, the way a cashier hits it. */
+.order-stamp {
+  display: inline-block;
+  padding: 5px 12px 6px;
+  border: 3px solid var(--stamp);
+  border-radius: var(--r);
+  color: var(--stamp);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  animation: stamp-down 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes stamp-down {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-stamp { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .checkout-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .checkout-grid .checkout-receipt,
+  .checkout-grid .checkout-form {
+    grid-column: 1;
+    position: static;
+  }
+  .checkout-grid .checkout-receipt { grid-row: 1; }
+  .checkout-grid .checkout-form { grid-row: 2; }
+}
+
+@media (max-width: 760px) {
+  .receipt { padding-left: 14px; padding-right: 14px; }
+  .form-page { padding: 20px 16px; }
+  .cart-table thead { display: none; }
+  .cart-table,
+  .cart-table tbody,
+  .cart-table tr,
+  .cart-table td { display: block; width: 100%; }
+  .cart-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--rule-2);
+  }
+  .cart-table td { border: 0; padding: 0; }
+  .cart-table td:first-child { grid-column: 1 / -1; }
+  .cart-summary { justify-items: stretch; }
+  .cart-summary .till-total { width: 100%; }
+}
+
+/* Radios and tick boxes keep their own size inside forms. */
+.form-page input[type="radio"],
+.form-page input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--stamp);
+}
+
+.form-page input[type="file"] {
+  padding: 8px;
+}
+
+.form-page .btn-whatsapp,
+.btn-whatsapp {
+  background-color: #1a7a43;
+  color: white;
+  font-weight: 700;
+}
+
+.btn-whatsapp:hover {
+  background-color: #17703d;
+}
+
+.order-stamp {
+  margin-bottom: 14px;
+}
+
+/* Filter rows, FAQ and notes start at the heading's left edge. */
+.filter-bar {
+  justify-content: flex-start;
+}
+
+.filter-btn {
+  border-radius: var(--r);
+  border-color: var(--rule-2);
+  background-color: var(--sheet);
+  font-weight: 600;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background-color: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+
+.faq-list,
+.faq-item {
+  max-width: 820px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.faq-item {
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  box-shadow: none;
+}
+
+.faq-question {
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+}
+
+.faq-question .ui-icon {
+  flex: none;
+  color: var(--stamp);
+  transition: transform 0.2s ease;
+}
+
+.faq-item.open .faq-question .ui-icon {
+  transform: rotate(180deg);
+}
+
+.faq-question:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: -2px;
+}
+
+#no-results,
+#wishlist-empty {
+  text-align: left;
+  color: var(--ink-3);
+  padding: 24px 0;
+}
+
+/* Services, as lines on a price list rather than three boxes. */
+.service-list {
+  list-style: none;
+  max-width: 820px;
+  margin: 0 0 40px;
+  border-top: 1px solid var(--ink);
+}
+
+.service-list li {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 6px 24px;
+  padding: 14px 0;
+  border-bottom: 1px dashed var(--rule-2);
+}
+
+.service-list strong {
+  font-size: 16px;
+}
+
+.service-list span {
+  color: var(--ink-3);
+}
+
+@media (max-width: 760px) {
+  .service-list li { grid-template-columns: minmax(0, 1fr); }
+}
+
+.countdown-banner {
+  background-color: var(--ink);
+  color: white;
+}
+
+.countdown-banner #countdown {
+  font-family: var(--font-data);
+  color: #ff9cc5;
+}
+
+/* ============================================================
+   Finish-review fixes, 9 Oct 2026.
+   ============================================================ */
+
+/* ---------- Receipt lines: qty, name and code, leader, price ---------- */
+.till-line {
+  grid-template-columns: auto minmax(0, max-content) minmax(14px, 1fr) auto;
+  gap: 8px;
+}
+
+.till-name {
+  display: flex;
+  flex-direction: column;
+}
+
+.till-code {
+  font-family: var(--font-data);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: 0;
+}
+
+.till-leader {
+  align-self: end;
+  margin-bottom: 5px;
+  border-bottom: 2px dotted var(--rule-2);
+}
+
+.cart-product .till-code {
+  display: block;
+  margin-top: 2px;
+}
+
+/* ---------- The product card as a receipt item ---------- */
+.product-card {
+  cursor: pointer;
+}
+
+.product-card-open {
+  all: unset;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-open:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 2px;
+}
+
+.product-card:hover .product-card-open {
+  color: var(--stamp);
+}
+
+.product-card-buy {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.product-card-buy .product-price {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.product-card-buy .deal-countdown {
+  display: none;
+}
+
+.product-card-leader {
+  flex: 1;
+  min-width: 10px;
+  margin-bottom: 7px;
+  border-bottom: 2px dotted var(--rule-2);
+}
+
+.card-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--stamp);
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  color: var(--stamp);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.card-add .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.card-add:hover {
+  background-color: var(--stamp);
+  color: white;
+}
+
+.card-add:disabled {
+  border-color: var(--rule-2);
+  color: var(--ink-3);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  background: none;
+}
+
+.product-card .stock-badge {
+  margin-top: 2px;
+}
+
+/* ---------- Home: products first ---------- */
+.home-intro {
+  padding: 28px 0 0;
+}
+
+.home-intro h1 {
+  font-size: clamp(24px, 2.4vw, 32px);
+  max-width: none;
+}
+
+.home-lede {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+.home-main .section {
+  padding-top: 26px;
+  padding-bottom: 26px;
+}
+
+.home-side {
+  padding-top: 28px;
+}
+
+/* The till as a bar on a phone. */
+.till-bar {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .home-side { display: none; }
+  .home-intro { order: 0; }
+
+  .till-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background-color: var(--sheet);
+    color: var(--ink);
+    border-top: 1px dashed var(--rule-2);
+    box-shadow: 0 -10px 24px -16px rgba(28, 28, 30, 0.45);
+  }
+  .till-bar-count { font-size: 13px; color: var(--ink-3); }
+  .till-bar-sum {
+    font-family: var(--font-data);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    justify-self: end;
+  }
+  .till-bar-go {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--r);
+    background-color: var(--stamp);
+    color: white;
+    font-weight: 700;
+  }
+  .till-bar-toggle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .till-bar-toggle .till-bar-sum { margin-left: auto; }
+  .till-bar-chevron {
+    color: var(--ink-3);
+    transform: rotate(180deg);
+    transition: transform 0.2s ease;
+  }
+  body.till-open .till-bar-chevron { transform: none; }
+  .till-bar-sum.pulse { animation: till-pulse 0.7s ease-out; }
+  body.has-till-bar { padding-bottom: 72px; }
+
+  /* The receipt as a sheet above the bar. */
+  body.till-open .home-side {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    z-index: 105;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    padding: 0 12px;
+    animation: till-sheet 0.22s ease-out;
+  }
+  body.till-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(20, 22, 30, 0.35);
+  }
+  body.till-open .till .till-sub,
+  body.till-open .till .till-action { display: none; }
+}
+
+@keyframes till-sheet {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes till-pulse {
+  0% { color: var(--roll); transform: scale(1.12); }
+  100% { color: inherit; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.till-open .home-side,
+  .till-bar-sum.pulse { animation: none; }
+}
+
+/* ---------- Build advice panel: opened from the header, docked bottom-right ---------- */
+.chatbot-wrapper {
+  left: auto;
+  right: 20px;
+  bottom: 20px;
+}
+
+.chatbot-panel {
+  left: auto;
+  right: 0;
+  bottom: 0;
+}
+
+/* ---------- Cart: Remove stands apart; rows re-flow on a phone ---------- */
+.cart-table td.cart-remove {
+  padding-left: 28px;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .cart-table tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product product"
+      "each    sub"
+      "qty     remove";
+    gap: 8px 12px;
+  }
+  .cart-table td.cart-product { grid-area: product; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .cart-table td.cart-each { grid-area: each; }
+  .cart-table td.cart-sub { grid-area: sub; text-align: right; }
+  .cart-table td.cart-qty { grid-area: qty; }
+  .cart-table td.cart-remove { grid-area: remove; padding-left: 0; }
+  .cart-table td[data-label]::before {
+    content: attr(data-label) " ";
+    font-family: var(--font-ui);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-right: 6px;
+  }
+  .cart-table td.cart-qty::before { display: none; }
+}
+
+/* ---------- Checkout step rail ---------- */
+.step-rail {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0 0 22px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--ink);
+  counter-reset: step;
+}
+
+.step-rail li {
+  counter-increment: step;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.step-rail li::before {
+  content: counter(step);
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid var(--rule-2);
+  font-family: var(--font-data);
+  font-size: 11px;
+}
+
+.step-rail li.done {
+  color: var(--ink);
+}
+
+.step-rail li.done::before {
+  background-color: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+
+.step-rail li[aria-current="step"] {
+  color: var(--ink);
+}
+
+.step-rail li[aria-current="step"]::before {
+  background-color: var(--path);
+  border-color: var(--path);
+  color: white;
+}
+
+.step-head::before {
+  display: none;
+}
+
+.step-head {
+  margin-top: 30px;
+}
+
+.checkout-form > .step-rail + .step-head {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* ---------- Collection notice, as receipt lines ---------- */
+.pickup-note {
+  background-color: var(--sheet);
+  border: 1px dashed var(--rule-2);
+}
+
+.pickup-note strong {
+  display: inline;
+  margin: 0;
+  color: inherit;
+}
+
+.pickup-note .pickup-title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.pickup-note a {
+  color: var(--stamp);
+  text-decoration: underline;
+}
+
+/* ---------- Aisle hues, beyond the swatch ---------- */
+.aisle[style*="--aisle-hue"]:hover {
+  box-shadow: inset 0 -3px 0 var(--aisle-hue);
+}
+
+/* ---------- Filter disclosures: the site's own chevron ---------- */
+.shop-facet summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+  .shop-side-toggle {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.shop-facet summary::-webkit-details-marker,
+.shop-side-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.shop-facet summary::after,
+.shop-side-toggle::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--ink-3);
+  border-bottom: 2px solid var(--ink-3);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.shop-facet:not([open]) summary::after,
+.shop-side:not([open]) .shop-side-toggle::after {
+  transform: rotate(-45deg);
+}
+
+/* Leaders run along the first line of a receipt line, wherever the name wraps. */
+.till-line {
+  align-items: start;
+}
+
+.till-leader {
+  align-self: start;
+  margin: 0.95em 0 0;
+}
+
+/* A card's price never breaks between RM and the figure. */
+.product-card-buy .product-price {
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.product-card-buy .price-was {
+  font-size: 11.5px;
+}
+
+.product-card-leader {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .product-card-buy {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .product-card-buy .product-price {
+    flex: 1 0 100%;
+  }
+  .product-card-leader {
+    display: none;
+  }
+  .card-add {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Home sections fill their column; auto margins in a grid would shrink them. */
+.home-main .section,
+.home-intro {
+  margin: 0;
+  width: 100%;
+}
+
+/* ============================================================
+   Finish-review fixes, round 3.
+   ============================================================ */
+
+/* Help and WhatsApp are header actions; nothing floats over content. */
+body { padding-bottom: 0; }
+.site-foot { margin-bottom: 0; padding-bottom: 0; }
+body.has-till-bar { padding-bottom: 72px; }
+
+.chatbot-wrapper {
+  position: fixed;
+  top: 112px;
+  right: 20px;
+  bottom: auto;
+  left: auto;
+  z-index: 120;
+}
+
+.chatbot-panel {
+  position: static;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--rule);
+}
+
+.chatbot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chatbot-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  color: white;
+  cursor: pointer;
+}
+
+.chatbot-close .ui-icon { width: 18px; height: 18px; }
+
+@media (max-width: 760px) {
+  .chatbot-wrapper {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  .chatbot-panel {
+    width: 100%;
+    max-width: none;
+    height: 78vh;
+  }
+}
+
+/* The card's add control: one square, so the leader can run across. */
+.card-add {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.card-add .ui-icon { width: 18px; height: 18px; }
+
+.product-card-leader {
+  min-width: 18px;
+}
+
+@media (max-width: 760px) {
+  .product-card-buy { flex-wrap: nowrap; gap: 6px; }
+  .product-card-buy .product-price { flex: 0 1 auto; font-size: 15px; }
+  .product-card-leader { display: block; min-width: 6px; }
+  .card-add { flex: 0 0 34px; width: 34px; height: 34px; }
+}
+
+/* Every aisle carries its hue along its foot, not only in the swatch. */
+.aisle[style*="--aisle-hue"] {
+  box-shadow: inset 0 -2px 0 var(--aisle-hue);
+}
+
+.aisle[style*="--aisle-hue"]:hover,
+.aisle[style*="--aisle-hue"][aria-current="page"] {
+  box-shadow: inset 0 -4px 0 var(--aisle-hue);
+}
+
+/* Step rail: one line on a phone. */
+@media (max-width: 760px) {
+  .step-rail { flex-wrap: nowrap; gap: 14px; overflow-x: auto; }
+  .step-rail li { font-size: 12.5px; white-space: nowrap; }
+}
+
+/* Disclosures point down when closed (they open in place) and up when open. */
+.shop-facet summary::after,
+.shop-side-toggle::after {
+  transform: translateY(-2px) rotate(-135deg);
+}
+
+.shop-facet:not([open]) summary::after,
+.shop-side:not([open]) .shop-side-toggle::after {
+  transform: translateY(-3px) rotate(45deg);
+}
+
+/* Five header actions on one line on a phone. */
+@media (max-width: 760px) {
+  .shell-actions { flex-wrap: nowrap; gap: 0; }
+  .shell-action { padding: 0 6px; gap: 4px; }
+  .shell-action .badge { min-width: 17px; height: 17px; padding: 0 4px; font-size: 10.5px; }
+}
+
+@media (max-width: 360px) {
+  .shell-whatsapp { display: none; }
+}
+
+/* ---------- Receipt headers: condensed caps, never mono ----------
+   Mono is for data (prices, codes, dates). Headings printed on a
+   receipt or a table use Archivo pulled narrow, the way a till prints
+   its section lines. */
+.till-meta,
+.cart-table th,
+.cart-table td[data-label]::before,
+.shop-facet summary,
+.bp-group,
+.compat-group-title {
+  font-family: var(--font-ui);
+  font-stretch: 72%;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.till-meta {
+  font-size: 12px;
+}
+
+.till-meta .till-date {
+  font-family: var(--font-data);
+  font-stretch: normal;
+  font-weight: 400;
+  font-size: 11px;
+}
+
+/* ---------- Aisles on a phone: the coloured departments come first ---------- */
+@media (max-width: 760px) {
+  .aisles .aisle-rule { order: 1; }
+  .aisles .aisle-tool { order: 2; }
+  .aisles .mega-tab { order: 3; }
+}
+
+/* The till sticks only beside the products: the aside fills its grid
+   row and the receipt is sticky inside it, so it stops before the
+   full-width workshop rigs instead of sliding over them. */
+@media (min-width: 1081px) {
+  .home-side {
+    position: static;
+    align-self: stretch;
+  }
+  .home-side .till {
+    position: sticky;
+    top: 118px;
+  }
 }

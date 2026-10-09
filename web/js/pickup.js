@@ -64,7 +64,7 @@ function pickupNoticeHtml() {
   if (!pickupReady()) {
     return `
       <div class="pickup-note">
-        <strong>Collection at the shop</strong>
+        <strong class="pickup-title">Collection at the shop</strong>
         <p>
           Your order is put aside for you and we will message the phone
           number above with the address and the pickup time as soon as it
@@ -75,7 +75,7 @@ function pickupNoticeHtml() {
 
   return `
     <div class="pickup-note">
-      <strong>Collection at the shop</strong>
+      <strong class="pickup-title">Collection at the shop</strong>
       <p>
         Collect your order from
         <strong>${escapeHtml(PICKUP_DETAILS.shopName)}</strong>,

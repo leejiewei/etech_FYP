@@ -196,7 +196,7 @@ function addToCart(productId, upgradeIds, colour) {
     if (error) { alert(dbMessage(error, "Could not add that to your cart.")); return; }
     if (!picked.length) {
       fetchCart().then(() => {
-        if (product) alert(product.name + (colour ? " (" + colour + ")" : "") + " added to cart!");
+        if (product) confirmAdded(product.name + (colour ? " (" + colour + ")" : ""));
       });
       return;
     }
@@ -207,11 +207,23 @@ function addToCart(productId, upgradeIds, colour) {
           alert("Added, but the upgrades could not be saved: " +
                 dbMessage(upgradeError, "please try again from your cart."));
         } else if (product) {
-          alert(product.name + " added with " + picked.length +
-                (picked.length === 1 ? " upgrade!" : " upgrades!"));
+          confirmAdded(product.name + " with " + picked.length +
+                       (picked.length === 1 ? " upgrade" : " upgrades"));
         }
       }));
   });
+}
+
+// "Added" as a toast with a way to the cart, where layout.js is loaded;
+// a plain alert anywhere it is not, so nothing is added silently.
+function confirmAdded(what) {
+  if (typeof showToast === "function") {
+    showToast(`${typeof uiIcon === "function" ? uiIcon("cart") : ""}
+      <span>Added to cart: <strong>${escapeHtml(what)}</strong></span>
+      <a href="cart.html">View cart</a>`);
+  } else {
+    alert(what + " added to cart!");
+  }
 }
 
 function saveUpgrades(productId, upgradeIds) {
@@ -282,6 +294,8 @@ function updateCartCount() {
   if (countEl) {
     countEl.textContent = cartItems.reduce((sum, item) => sum + item.qty, 0);
   }
+  // The till on the home page prints from the same list.
+  if (typeof renderTill === "function") renderTill();
 }
 
 // Builds the cart table on cart.html.
@@ -319,35 +333,36 @@ function drawCartTable() {
         <img class="cart-img" src="${safeUrl(firstSrc)}" alt="${escapeHtml(item.name)}"
           onerror="this.onerror=null; this.src='${safeUrl(fallbackSrc)}';" />
         <span>${escapeHtml(item.name)}${item.colour
-          ? `<small class="cart-colour">${/ Switch$/.test(item.colour) ? "" : "Colour: "}${escapeHtml(item.colour)}</small>` : ""}</span>
+          ? `<small class="cart-colour">${/ Switch$/.test(item.colour) ? "" : "Colour: "}${escapeHtml(item.colour)}</small>` : ""}
+          <small class="till-code">No. ${escapeHtml(String(item.id))}</small></span>
         ${item.upgrades && item.upgrades.length ? `
         <ul class="cart-upgrades">
           ${item.upgrades.map((u) => `
-            <li>+ ${escapeHtml(u.label)} <em>RM ${u.priceDelta.toFixed(2)}</em>
+            <li>+ ${escapeHtml(u.label)} <em>${money(u.priceDelta)}</em>
                 <button type="button" class="upgrade-drop"
                         title="Remove this upgrade"
                         onclick="removeUpgrade(${item.id}, ${u.id})">&times;</button>
             </li>`).join("")}
         </ul>` : ""}
       </td>
-      <td>
+      <td class="cart-each" data-label="Each">
         ${item.onDeal
-          ? `<span class="price-was">RM ${item.listPrice.toFixed(2)}</span>
-             <span class="price-now">RM ${item.price.toFixed(2)}</span>`
-          : `RM ${item.price.toFixed(2)}`}
+          ? `<span class="price-was">${money(item.listPrice)}</span>
+             <span class="price-now">${money(item.price)}</span>`
+          : `${money(item.price)}`}
       </td>
-      <td>
-        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+      <td class="cart-qty" data-label="Qty">
+        <button type="button" class="qty-btn" aria-label="One fewer" onclick="changeQty(${item.id}, -1)">&minus;</button>
         <span class="qty-value">${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+        <button type="button" class="qty-btn" aria-label="One more" onclick="changeQty(${item.id}, 1)">+</button>
       </td>
-      <td>RM ${item.lineTotal.toFixed(2)}</td>
-      <td><button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button></td>
+      <td class="cart-sub" data-label="Subtotal">${money(item.lineTotal)}</td>
+      <td class="cart-remove"><button type="button" class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button></td>
     `;
     cartBody.appendChild(row);
   });
 
-  totalEl.textContent = "RM " + cartTotal.toFixed(2);
+  totalEl.textContent = money(cartTotal);
 }
 
 // Kept so cart.html's existing call still works.

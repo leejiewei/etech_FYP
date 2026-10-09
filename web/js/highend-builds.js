@@ -77,7 +77,7 @@ function renderHighendBuilds() {
         <ul class="build-specs">
           ${(build.specs || []).map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
         </ul>
-        <span class="build-link">View on Facebook &#8599;</span>
+        <span class="build-link">View on Facebook ${typeof uiIcon === "function" ? uiIcon("external") : ""}</span>
       </div>
     </a>`).join("");
 

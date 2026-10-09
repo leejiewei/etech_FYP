@@ -4,40 +4,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>eTech Computer Accessories</title>
+  <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <div id="site-header"></div>
 
-  <section class="hero">
-    <h1>Build Your Dream PC</h1>
-    <p>Quality computer parts, laptops and gaming gear at student-friendly prices.</p>
-    <a href="shop.html" class="hero-btn">Shop Now</a>
-  </section>
+  <main class="home">
+    <div class="home-main">
 
-  <!-- Personalised recommendations, signed-in customers only. Filled
-       by js/home.js from recommend_for_me(); hidden for everyone else. -->
-  <section class="section picks-section" id="picks-section" hidden>
-    <h2>Picked for you</h2>
-    <p class="section-sub" id="picks-sub"></p>
-    <div class="role-picker" id="role-picker" hidden>
-      <p>Tell us how you shop and we'll tune these picks:</p>
-      <div class="role-picker-buttons" id="role-picker-buttons"></div>
+      <!-- What the shop is, in one line, then straight to products. -->
+      <header class="home-intro">
+        <h1 id="home-title">eTech Computer Accessories</h1>
+        <p class="home-lede">Computer parts, PCs and laptops, priced in RM. Collect from the shop in Bukit Jambul, Penang, or have it delivered.</p>
+      </header>
+
+      <!-- Personalised recommendations for signed-in customers
+           (recommend_for_me(), js/home.js); everyone else sees the
+           shop's featured row in the same place. -->
+      <section class="section picks-section" id="picks-section" hidden>
+        <h2>Picked for you</h2>
+        <p class="section-sub" id="picks-sub"></p>
+        <div class="role-picker" id="role-picker" hidden>
+          <p>Tell us how you shop and we'll tune these picks:</p>
+          <div class="role-picker-buttons" id="role-picker-buttons"></div>
+        </div>
+        <div class="product-grid" id="picks-grid"></div>
+      </section>
+
+      <section class="section featured-section" id="featured-section">
+        <h2>One from every aisle</h2>
+        <div class="product-grid" id="featured-grid"></div>
+      </section>
+
+      <!-- The shop's departments as receipt lines: name, dot leader, how
+           many products. Counts come from the loaded catalogue. -->
+      <section class="section dept-section" aria-labelledby="dept-title">
+        <h2 id="dept-title">Departments</h2>
+        <nav class="dept-index" id="dept-index" aria-label="Departments"></nav>
+      </section>
+
     </div>
-    <div class="product-grid" id="picks-grid"></div>
-  </section>
 
-  <section class="section builds-section" id="builds-section" hidden>
-    <h2>Built by eTech</h2>
-    <p class="section-sub">High-end rigs from our workshop. Tap one to see every photo on our Facebook page.</p>
-    <div class="builds-grid" id="builds-grid"></div>
-  </section>
+    <!-- The live cart, printed like a till roll. js/home.js redraws it
+         every time the cart changes. -->
+    <aside class="home-side" id="home-side" aria-label="Your cart">
+      <div class="till" id="till"></div>
+    </aside>
 
-  <section class="section">
-    <h2>Featured Products</h2>
-    <div class="product-grid" id="featured-grid"></div>
-  </section>
+    <!-- Full width under the products and the till. -->
+    <section class="section builds-section" id="builds-section" hidden>
+      <h2>Built by eTech</h2>
+      <p class="section-sub">Rigs from our own workshop. Each one opens its Facebook post with every photo.</p>
+      <div class="builds-grid" id="builds-grid"></div>
+    </section>
+  </main>
 
   <div id="site-footer"></div>
 

@@ -87,13 +87,13 @@ function orderCard(order) {
       <p style="font-weight:bold; color:${colour};">${status}</p>
       <ul class="prebuilt-specs">
         ${order.order_items.map((item) =>
-          `<li>${item.quantity} x ${escapeHtml(item.product_name)} - RM ${Number(item.line_total).toFixed(2)}</li>`
+          `<li>${item.quantity} x ${escapeHtml(item.product_name)} - ${money(Number(item.line_total))}</li>`
         ).join("")}
       </ul>
       ${Number(order.discount) > 0
-        ? `<p class="product-category">Coupon ${escapeHtml(order.coupon_code)}: -RM ${Number(order.discount).toFixed(2)}</p>`
+        ? `<p class="product-category">Coupon ${escapeHtml(order.coupon_code)}: -${money(Number(order.discount))}</p>`
         : ""}
-      <p class="prebuilt-price">Total: RM ${Number(order.total).toFixed(2)}</p>
+      <p class="prebuilt-price">Total: ${money(Number(order.total))}</p>
       ${collectionLine(order)}
       ${paymentSection(order)}
     </div>`;

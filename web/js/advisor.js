@@ -420,8 +420,8 @@ function formatBuildReply(request, result) {
   html += `<br><br><strong>Why these parts:</strong> ${whyText(request, parts)}`;
 
   html += problems.length === 0
-    ? `<br><br>✔ All 7 compatibility checks passed.`
-    : `<br><br>⚠ Please double-check: ${problems.join(", ")}.`;
+    ? `<br><br>All 7 compatibility checks passed.`
+    : `<br><br>Please double-check: ${problems.join(", ")}.`;
 
   const ids = builderSlots.map((slot) => parts[slot].id).join(",");
   html += `<br><br><button class="chat-load-btn" onclick="loadRecommendedBuild('${ids}')">Open this build in the PC Builder</button>`;

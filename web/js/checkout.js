@@ -52,9 +52,8 @@ function renderCheckoutSummary() {
     return;
   }
 
-  listEl.innerHTML = items.map((item) =>
-    `<li>${item.qty} x ${escapeHtml(item.name)}${item.colour ? " (" + escapeHtml(item.colour) + ")" : ""} — RM ${item.lineTotal.toFixed(2)}</li>`).join("");
-  totalEl.textContent = "RM " + items.reduce((s, i) => s + i.lineTotal, 0).toFixed(2);
+  listEl.innerHTML = items.map((item) => receiptLineHtml(item)).join("");
+  totalEl.textContent = money(items.reduce((s, i) => s + i.lineTotal, 0));
 }
 
 function prefillFromProfile() {
@@ -145,7 +144,7 @@ function placeOrder(event) {
     document.getElementById("checkout-form-section").style.display = "none";
     document.getElementById("checkout-confirmation").style.display = "block";
     document.getElementById("confirm-order-id").textContent = data.orderId;
-    document.getElementById("confirm-total").textContent = "RM " + Number(data.total).toFixed(2);
+    document.getElementById("confirm-total").textContent = money(Number(data.total));
 
     // The same instructions again, because this is the screen somebody
     // is looking at while their banking app is open.
@@ -187,7 +186,7 @@ function placeOrder(event) {
     if (waButton) {
       waButton.href = whatsappShopLink(
         "Hi eTech, this is my payment receipt for order #" + data.orderId +
-        ", RM " + Number(data.total).toFixed(2) + "."
+        ", " + money(data.total) + "."
       );
     }
 
@@ -195,7 +194,7 @@ function placeOrder(event) {
     if (savedEl) {
       savedEl.style.display = discount > 0 ? "block" : "none";
       savedEl.textContent = discount > 0
-        ? `Coupon ${data.coupon} saved you RM ${discount.toFixed(2)}.` : "";
+        ? `Coupon ${data.coupon} saved you ${money(discount)}.` : "";
     }
 
     // The basket was emptied down in the database, so refresh our copy.
@@ -293,4 +292,31 @@ onAppReady(() => {
     applyPaymentAvailability();
     showPaymentPanel(chosenPaymentMethod());
   });
+});
+
+// ------------------------------------------------------------
+// The step rail above the form. Whichever stage the customer is filling
+// in -- the one whose heading comes last above the field in focus --
+// takes the path colour; the stages before it read as done.
+// ------------------------------------------------------------
+function followCheckoutStep(event) {
+  const form = event.currentTarget;
+  const heads = Array.from(form.querySelectorAll(".step-head[data-step]"));
+  let current = heads[0];
+  heads.forEach((h) => {
+    if (h.compareDocumentPosition(event.target) & Node.DOCUMENT_POSITION_FOLLOWING) current = h;
+  });
+  if (!current) return;
+  const order = heads.map((h) => h.dataset.step);
+  const at = order.indexOf(current.dataset.step);
+  form.querySelectorAll("#step-rail li").forEach((li) => {
+    const i = order.indexOf(li.dataset.step);
+    if (i === at) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    li.classList.toggle("done", i < at);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector(".checkout-form");
+  if (form) form.addEventListener("focusin", followCheckoutStep);
 });

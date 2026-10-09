@@ -172,7 +172,7 @@ function recommendationCard(product) {
         <span class="chat-rec-name">${escapeHtml(product.name)}</span>
         <span class="chat-rec-meta">${escapeHtml(product.subcategory || product.category)} ·
           <span class="stock-${product.stock}">${stockLabel(product.stock)}</span></span>
-        <span class="chat-rec-price">RM ${product.price.toFixed(2)}</span>
+        <span class="chat-rec-price">${money(product.price)}</span>
       </div>
       <button class="add-btn chat-rec-add" ${outOfStock ? "disabled" : ""}
         onclick="event.stopPropagation(); addToCart(${product.id})">
@@ -191,7 +191,7 @@ function renderRecommendations(ids) {
 
   const total = found.reduce((sum, p) => sum + p.price, 0);
   const totalLine = found.length > 1
-    ? `<p class="chat-rec-total">Total: RM ${total.toFixed(2)}</p>` : "";
+    ? `<p class="chat-rec-total">Total: ${money(total)}</p>` : "";
 
   return `<div class="chat-recs">${found.map(recommendationCard).join("")}${totalLine}</div>`;
 }

@@ -10,29 +10,34 @@
 
   <div id="site-header"></div>
 
-  <section class="section">
-    <h2>Your Cart</h2>
+  <section class="section cart-page">
+    <h2>Your cart</h2>
 
     <p id="cart-empty">Your cart is empty. <a href="shop.html">Go shopping</a></p>
 
-    <table class="cart-table">
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Price</th>
-          <th>Quantity</th>
-          <th>Subtotal</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="cart-body"></tbody>
-    </table>
+    <div class="receipt cart-receipt">
+      <div class="till-head">
+        <span class="logo-mark">eTech</span>
+        <span class="till-meta">Computer Accessories<br>Prices in RM</span>
+      </div>
 
-    <div class="cart-summary">
-      <p>Total: <strong id="cart-total">RM 0.00</strong></p>
-      <p style="margin-top: 14px;">
-        <a href="checkout.html" class="hero-btn" style="display:inline-block;">Proceed to Checkout</a>
-      </p>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Subtotal</th>
+            <th><span class="visually-hidden">Remove</span></th>
+          </tr>
+        </thead>
+        <tbody id="cart-body"></tbody>
+      </table>
+
+      <div class="cart-summary">
+        <div class="till-total"><span>Total</span><span class="till-sum" id="cart-total">RM 0.00</span></div>
+        <a href="checkout.html" class="hero-btn cart-checkout">Check out</a>
+      </div>
     </div>
   </section>
 

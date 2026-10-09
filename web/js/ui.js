@@ -24,8 +24,12 @@ function productImageTag(product, cssClass) {
 // being recovered by arithmetic, because when the clock runs out the
 // card has to put it back.
 // ============================================================
+// Thousands grouped (RM 2,899.00), so a column of prices reads at a glance.
 function money(amount) {
-  return "RM " + Number(amount).toFixed(2);
+  return "RM " + Number(amount).toLocaleString("en-MY", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function priceBlockHtml(product, cssClass) {
@@ -118,9 +122,54 @@ function colourImageOf(product, colour) {
   return slug ? main.replace(/\.webp$/, "-" + slug + ".webp") : null;
 }
 
+// Which aisle a product lives in, as the name of its section hue
+// (--hue-* in style.css). The same colour marks that aisle in the header
+// strip and the shop's chips, so a GPU card and the Components tab agree.
+const AISLE_HUE = {
+  "Components": "components", "Case Fans": "components",
+  "Laptops": "laptops",
+  "Gaming Gear": "gaming", "Webcams": "gaming",
+  "Monitors": "monitors", "Projectors": "monitors", "Monitor Arms": "monitors",
+  "Printers": "printers", "Consumables": "printers",
+  "Networking": "networking",
+  "Accessories": "accessories",
+  "Branded PC": "pcs", "All-in-One PC": "pcs", "Prebuilt PC": "pcs",
+};
+
+function aisleHue(product) {
+  return AISLE_HUE[product && product.category] || "components";
+}
+
+// The product's number in the shop's catalogue. It is the same number on
+// the card, in the product view and on the customer's receipt, so a
+// customer reading one out over WhatsApp is understood.
+function productCode(product) {
+  return "No. " + product.id;
+}
+
+// One line of a receipt: "2x  AMD Ryzen 5 7500F  No. 2104 ...... RM 1,298.00".
+// The till, the cart and the checkout summary all print through this,
+// so a line reads the same wherever the customer meets it.
+function receiptLineHtml(item, extraClass) {
+  return `
+    <li class="till-line${extraClass ? " " + extraClass : ""}">
+      <span class="till-qty">${item.qty}&times;</span>
+      <span class="till-name">${escapeHtml(item.name)}${
+        item.colour ? ` <small>${escapeHtml(item.colour)}</small>` : ""}
+        <span class="till-code">No. ${escapeHtml(String(item.id))}</span></span>
+      <span class="till-leader" aria-hidden="true"></span>
+      <span class="till-price${item.onDeal ? " on-deal" : ""}">${money(item.lineTotal)}</span>
+    </li>`;
+}
+
+function heartIcon() {
+  return typeof uiIcon === "function" ? uiIcon("heart") : "&#9825;";
+}
+
 function buildProductCard(product) {
-  const card = document.createElement("div");
+  const card = document.createElement("article");
   card.className = "product-card";
+  card.style.setProperty("--card-hue", `var(--hue-${aisleHue(product)})`);
 
   // stockOf, not product.stock: one of the shop's own builds is only
   // available when its parts are, and it must read the same here as it
@@ -129,40 +178,43 @@ function buildProductCard(product) {
   const stockClass = "stock-" + stock; // stock-in / stock-low / stock-out
   const heartFilled = typeof isInWishlist === "function" && isInWishlist(product.id);
   const outOfStock = stock === "out";
+  const options = colourOptionsOf(product);
 
+  // A card reads like one item on a receipt: code and aisle, the name,
+  // then the price run out to the right edge with the add control beside
+  // it. The whole card opens the product; only the heart and Add do
+  // something else.
   card.innerHTML = `
-    <button class="wishlist-btn ${heartFilled ? "active" : ""}" onclick="toggleWishlist(${product.id})" title="Add to wishlist">
-      ${heartFilled ? "❤️" : "🤍"}
+    <button type="button" class="wishlist-btn ${heartFilled ? "active" : ""}"
+      onclick="toggleWishlist(${product.id})"
+      aria-pressed="${heartFilled}" aria-label="${heartFilled ? "Remove from" : "Save to"} wishlist">
+      ${heartIcon()}
     </button>
     <div class="product-img-wrap">
       ${productImageTag(product, "product-img")}
     </div>
-    <h3>${escapeHtml(product.name)}</h3>
-    <p class="product-category">${escapeHtml(product.category)}${product.subcategory ? " · " + escapeHtml(product.subcategory) : ""}</p>
-    <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
-    ${priceBlockHtml(product, "product-price")}
-    ${product.officialUrl
-      ? `<a class="product-card-official" href="${safeUrl(product.officialUrl)}"
-           target="_blank" rel="noopener noreferrer"
-           title="Full specifications on the maker's own site">Full specs ↗</a>`
-      : ""}
-    <button class="add-btn" ${outOfStock ? "disabled" : ""}
-      onclick="${colourOptionsOf(product).length
-        ? `openProductModal(${product.id})` : `addToCart(${product.id})`}">
-      ${outOfStock ? "Out of Stock" : colourOptionsOf(product).length
-        ? "Choose " + optionKindOf(colourOptionsOf(product)) : "Add to Cart"}
-    </button>
+    <div class="product-card-body">
+      <p class="product-category"><span class="product-code">${escapeHtml(productCode(product))}</span>
+        ${escapeHtml(product.subcategory || product.category || "")}</p>
+      <h3><button type="button" class="product-card-open">${escapeHtml(product.name)}</button></h3>
+      <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
+      <div class="product-card-buy">
+        ${priceBlockHtml(product, "product-price")}
+        <span class="product-card-leader" aria-hidden="true"></span>
+        <button type="button" class="card-add" ${outOfStock ? "disabled" : ""}
+          title="${outOfStock ? "Out of stock" : options.length ? "Choose " + optionKindOf(options).toLowerCase() : "Add to cart"}"
+          aria-label="${outOfStock ? "Out of stock" : (options.length ? "Choose " + optionKindOf(options).toLowerCase() + " for " : "Add to cart: ") + escapeHtml(product.name)}"
+          onclick="event.stopPropagation(); ${options.length ? `openProductModal(${product.id})` : `addToCart(${product.id})`}">
+          ${outOfStock ? "&times;" : (typeof uiIcon === "function" ? uiIcon("cart") : "+")}
+        </button>
+      </div>
+    </div>
   `;
 
-  // The picture and the name both open the detail modal. The picture has
-  // always looked clickable; until the modal existed, clicking it only
-  // recorded a view and left the shopper exactly where they were.
-  card.querySelector(".product-img-wrap").addEventListener("click", () => {
+  card.addEventListener("click", (event) => {
+    if (event.target.closest(".wishlist-btn, .card-add")) return;
     openProductModal(product.id);
   });
-  const heading = card.querySelector("h3");
-  heading.style.cursor = "pointer";
-  heading.addEventListener("click", () => openProductModal(product.id));
 
   return card;
 }
@@ -256,21 +308,23 @@ function productModalContent(product) {
   return `
     <div class="product-modal-head">
       <h2>${escapeHtml(product.name)}</h2>
-      <button class="product-modal-close" title="Close" aria-label="Close">&times;</button>
+      <button type="button" class="product-modal-close" title="Close" aria-label="Close">${
+        typeof uiIcon === "function" ? uiIcon("close") : "&times;"}</button>
     </div>
     <div class="product-modal-body">
       <div class="product-modal-figure">
         ${productImageTag(product, "")}
       </div>
       <div class="product-modal-facts">
-        <p class="product-modal-meta">${escapeHtml(product.brand)} · ${escapeHtml(product.category)}${
+        <p class="product-modal-meta"><span class="product-code">${escapeHtml(productCode(product))}</span>
+          ${escapeHtml(product.brand)} · ${escapeHtml(product.category)}${
           product.subcategory ? " · " + escapeHtml(product.subcategory) : ""
         }</p>
         <p class="stock-badge stock-${stock}">${stockLabel(stock)}</p>
         ${priceBlockHtml(product, "product-modal-price")}
         ${product.officialUrl
           ? `<a class="product-modal-official" href="${safeUrl(product.officialUrl)}"
-               target="_blank" rel="noopener noreferrer">Full specs on the official site ↗</a>`
+               target="_blank" rel="noopener noreferrer">Full specifications on the maker's site</a>`
           : ""}
         ${product.description
           ? `<p class="product-modal-desc">${escapeHtml(product.description)}</p>`
@@ -289,10 +343,11 @@ function productModalContent(product) {
           : ""}
         <div class="product-modal-actions">
           <button class="add-btn product-modal-add" ${outOfStock ? "disabled" : ""}>
-            ${outOfStock ? "Out of Stock" : "Add to Cart"}
+            ${outOfStock ? "Out of stock" : "Add to cart"}
           </button>
-          <button class="product-modal-wish" title="Add to wishlist">
-            ${saved ? "❤️" : "🤍"}
+          <button type="button" class="product-modal-wish wishlist-btn ${saved ? "active" : ""}"
+            aria-pressed="${saved}" aria-label="${saved ? "Remove from" : "Save to"} wishlist">
+            ${heartIcon()}
           </button>
         </div>
       </div>
@@ -341,8 +396,10 @@ function wireProductModalActions(product) {
     // has come back, since until then isInWishlist still holds the old
     // answer.
     Promise.resolve(toggleWishlist(product.id)).then(() => {
-      heart.textContent =
-        (typeof isInWishlist === "function" && isInWishlist(product.id)) ? "❤️" : "🤍";
+      const on = typeof isInWishlist === "function" && isInWishlist(product.id);
+      heart.classList.toggle("active", on);
+      heart.setAttribute("aria-pressed", String(on));
+      heart.setAttribute("aria-label", (on ? "Remove from" : "Save to") + " wishlist");
     });
   });
 }

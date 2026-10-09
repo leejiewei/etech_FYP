@@ -73,3 +73,13 @@ flutter:
   # removes that dependency entirely.
   assets:
     - assets/images/
+
+  # Azeret Mono (SIL Open Font License), the face the website sets prices
+  # in, so the same number reads the same on both.
+  fonts:
+    - family: AzeretMono
+      fonts:
+        - asset: assets/fonts/AzeretMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/AzeretMono-Bold.ttf
+          weight: 700

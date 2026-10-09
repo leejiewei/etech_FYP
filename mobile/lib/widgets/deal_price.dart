@@ -104,11 +104,7 @@ class _DealPriceTextState extends State<DealPriceText> {
     final now = money(widget.shop.priceOf(widget.product) + widget.extra);
 
     if (deal == null) {
-      return Text(now,
-          style: TextStyle(
-              fontSize: widget.size,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.redDark));
+      return Text(now, style: AppTheme.price(widget.size));
     }
 
     return Column(
@@ -116,16 +112,11 @@ class _DealPriceTextState extends State<DealPriceText> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(money(widget.product.price + widget.extra),
-            style: TextStyle(
-              fontSize: widget.size - 3,
-              color: Colors.grey.shade500,
-              decoration: TextDecoration.lineThrough,
-            )),
-        Text(now,
-            style: TextStyle(
-                fontSize: widget.size,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.red)),
+            style: AppTheme.price(widget.size - 3,
+                    color: const Color(0xFF5C5C57), weight: FontWeight.w500)
+                .copyWith(decoration: TextDecoration.lineThrough)),
+        // A dropped price is a change, so it takes the roll's pink.
+        Text(now, style: AppTheme.price(widget.size, color: AppTheme.roll)),
         if (widget.showCountdown) ...[
           const SizedBox(height: 6),
           _countdownPill(deal.timeLeft),

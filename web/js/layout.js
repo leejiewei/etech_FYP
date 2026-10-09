@@ -4,6 +4,46 @@
 // <div id="site-footer"></div> placeholders — this file fills them in,
 // so the navbar only has to be edited in one place.
 
+// ------------------------------------------------------------
+// Interface icons. Same rules as CATEGORY_ICONS below: Lucide paths
+// (lucide.dev, ISC licence) copied in, 24x24 at a 2px stroke, drawn in
+// currentColor. They replaced emoji, which every phone draws differently.
+// ------------------------------------------------------------
+const UI_ICONS = {
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  sparkle: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+};
+
+function uiIcon(name, extraClass) {
+  return `<svg class="ui-icon${extraClass ? " " + extraClass : ""}" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${UI_ICONS[name] || ""}</svg>`;
+}
+
+// The aisles shown in the header strip. Each owns one section hue
+// (--hue-* in style.css), the same colour its chips and cards carry in
+// the shop, so a customer can tell which aisle they are in at a glance.
+// "All categories" opens the full menu for the rest.
+const HEADER_AISLES = [
+  { label: "Components", href: "shop.html?category=Components", hue: "components" },
+  { label: "Laptops", href: "shop.html?category=Laptops", hue: "laptops" },
+  { label: "Gaming Gear", href: "shop.html?category=Gaming%20Gear", hue: "gaming" },
+  { label: "Monitors", href: "shop.html?category=Monitors", hue: "monitors" },
+  { label: "Printers", href: "shop.html?category=Printers", hue: "printers" },
+  { label: "Networking", href: "shop.html?category=Networking", hue: "networking" },
+  { label: "Accessories", href: "shop.html?category=Accessories", hue: "accessories" },
+];
+
 function injectHeader() {
   const header = document.getElementById("site-header");
   if (!header) return;
@@ -11,17 +51,21 @@ function injectHeader() {
   const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
   const cartCount = typeof getCart === "function" ? getCart().reduce((s, i) => s + i.qty, 0) : 0;
   const wishlistCount = typeof getWishlist === "function" ? getWishlist().length : 0;
+  const here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  const current = (file) => (here === file ? ' aria-current="page"' : "");
 
   const accountMenu = user
     ? `<div class="account-menu">
-         <span>Hi, ${escapeHtml(user.name.split(" ")[0])}</span>
+         <button type="button" class="shell-action" aria-haspopup="true">
+           ${uiIcon("user")}<span class="shell-action-label">${escapeHtml(user.name.split(" ")[0])}</span>
+         </button>
          <div class="account-dropdown">
            <a href="profile.html">Profile</a>
-           <a href="orders.html">Order History</a>
-           <a href="#" onclick="logoutUser(); return false;">Logout</a>
+           <a href="orders.html">Order history</a>
+           <a href="#" onclick="logoutUser(); return false;">Log out</a>
          </div>
        </div>`
-    : `<a href="login.html">Login</a> / <a href="register.html">Register</a>`;
+    : `<a class="shell-action" href="login.html">${uiIcon("user")}<span class="shell-action-label">Log in</span></a>`;
 
   // Messages about the customer's orders -- see js/notifications.js,
   // which fills the list and the count once the header is on the page.
@@ -29,9 +73,9 @@ function injectHeader() {
   // shows a bell that does nothing.
   const notificationBell = user && typeof startNotifications === "function"
     ? `<li class="notif-menu" id="notif-menu">
-         <button type="button" class="notif-bell" id="notif-bell"
+         <button type="button" class="notif-bell shell-action" id="notif-bell"
                  aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
-           🔔<span class="badge" id="notif-count" hidden>0</span>
+           ${uiIcon("bell")}<span class="badge" id="notif-count" hidden>0</span>
          </button>
          <div class="notif-panel" id="notif-panel" hidden>
            <div class="notif-head">Notifications</div>
@@ -41,28 +85,54 @@ function injectHeader() {
     : "";
 
   header.innerHTML = `
-    <nav class="navbar">
-      <a href="index.html" class="logo">e<span>Tech</span> <small>Computer Accessories</small></a>
+    <div class="shell">
+      <nav class="navbar" aria-label="Shop">
+        <a href="index.html" class="logo" aria-label="eTech home">
+          <span class="logo-mark">eTech</span>
+          <small>Computer Accessories</small>
+        </a>
 
-      <input type="text" id="global-search" class="search-box" placeholder="Search products or brands..."
-        onkeyup="if(event.key==='Enter'){ window.location.href='shop.html?search=' + encodeURIComponent(this.value); }" />
+        <form class="search" role="search" action="shop.html">
+          ${uiIcon("search", "search-icon")}
+          <input type="search" id="global-search" name="search" class="search-box"
+                 placeholder="Search parts, laptops, brands" autocomplete="off"
+                 aria-label="Search the shop" />
+        </form>
 
-      <ul class="nav-links">
-        <li><a href="build.html">Build PC</a></li>
-        <li><a href="prebuilt.html">Prebuilt</a></li>
-        <li><a href="deals.html">Deals</a></li>
-        <li><a href="rigs.html">Rigs</a></li>
-        <li><a href="wishlist.html">Wishlist <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
-        <li><a href="cart.html">Cart <span class="badge" id="cart-count">${cartCount}</span></a></li>
-        ${notificationBell}
-        <li>${accountMenu}</li>
-      </ul>
-    </nav>
+        <ul class="nav-links shell-actions">
+          <li><button type="button" class="shell-action shell-help" aria-controls="chatbot-panel"
+                onclick="document.getElementById('chatbot-panel').classList.toggle('open')">
+            ${uiIcon("help")}<span class="shell-action-label">Build advice</span></button></li>
+          <li><a class="shell-action shell-whatsapp" href="${whatsappShopLink("Hi, I have a question about a product on eTech.")}"
+                target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+            ${uiIcon("chat")}<span class="shell-action-label">WhatsApp</span></a></li>
+          <li><a class="shell-action" href="wishlist.html"${current("wishlist.html")} aria-label="Wishlist">
+            ${uiIcon("heart")}<span class="shell-action-label">Wishlist</span>
+            <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
+          ${notificationBell}
+          <li>${accountMenu}</li>
+          <li><a class="shell-action shell-cart" href="cart.html"${current("cart.html")} aria-label="Cart">
+            ${uiIcon("cart")}<span class="shell-action-label">Cart</span>
+            <span class="badge" id="cart-count">${cartCount}</span></a></li>
+        </ul>
+      </nav>
 
-    <!-- Second bar: the two mega-menu buttons (Brands / Categories) -->
-    <div class="mega-bar">
-      <button class="mega-tab" id="tab-brands" onclick="toggleMegaMenu('brands')">&#9776; BRANDS</button>
-      <button class="mega-tab" id="tab-categories" onclick="toggleMegaMenu('categories')">&#9776; CATEGORIES</button>
+      <div class="mega-bar">
+        <nav class="aisles" aria-label="Departments">
+          <a class="aisle aisle-tool" href="build.html"${current("build.html")}>Build a PC</a>
+          <a class="aisle aisle-tool" href="prebuilt.html"${current("prebuilt.html")}>Prebuilt PCs</a>
+          <a class="aisle aisle-tool" href="rigs.html"${current("rigs.html")}>Workshop rigs</a>
+          <a class="aisle aisle-tool aisle-deals" href="deals.html"${current("deals.html")}>${uiIcon("tag")}Deals</a>
+          <span class="aisle-rule" aria-hidden="true"></span>
+          ${HEADER_AISLES.map((a) => `
+            <a class="aisle" href="${a.href}" style="--aisle-hue: var(--hue-${a.hue})"
+               data-mega-kind="category" data-mega-value="${escapeHtml(a.label)}">${escapeHtml(a.label)}</a>`).join("")}
+          <button class="mega-tab" id="tab-categories" type="button" aria-expanded="false"
+                  onclick="toggleMegaMenu('categories')">All categories ${uiIcon("chevron")}</button>
+          <button class="mega-tab" id="tab-brands" type="button" aria-expanded="false"
+                  onclick="toggleMegaMenu('brands')">Brands ${uiIcon("chevron")}</button>
+        </nav>
+      </div>
     </div>
 
     <div class="mega-menu" id="mega-brands">${buildBrandsMenu()}</div>
@@ -75,6 +145,11 @@ function injectHeader() {
   if (searchBox && params.get("search")) {
     searchBox.value = params.get("search");
   }
+
+  // An empty search goes nowhere rather than to an unfiltered shop.
+  header.querySelector(".search").addEventListener("submit", (e) => {
+    if (!searchBox.value.trim()) e.preventDefault();
+  });
 
   wireMegaItems(header);
 }
@@ -89,7 +164,7 @@ function injectHeader() {
 // "we are already where this link points" -- and there the click filters
 // the grid in place and scrolls to it.
 function wireMegaItems(root) {
-  root.querySelectorAll(".mega-item[data-mega-kind]").forEach((item) => {
+  root.querySelectorAll(".mega-item[data-mega-kind], .aisle[data-mega-kind]").forEach((item) => {
     item.addEventListener("click", (e) => {
       if (typeof applyMegaFilter !== "function") return;
       // Leave the modified clicks alone -- ctrl/cmd-click and middle-click
@@ -123,13 +198,6 @@ function buildBrandsMenu() {
 
   return `
     <div class="mega-inner">
-      <div class="mega-left">
-        <h3>BRANDS</h3>
-        <p>We will never stop exploring and expanding the brands we carry.
-           Stay tuned with us for more exciting updates.</p>
-        <hr />
-        <span class="mega-tagline">PASSION DRIVEN</span>
-      </div>
       <div class="mega-grid">
         ${brands.map((brand) => `
           <a class="mega-item" href="shop.html?brand=${encodeURIComponent(brand)}"
@@ -218,25 +286,19 @@ function buildCategoriesMenu() {
 
   return `
     <div class="mega-inner">
-      <div class="mega-left">
-        <h3>CATEGORIES</h3>
-        <p>You want it, we have it.</p>
-        <hr />
-        <span class="mega-tagline">PASSION CREATES</span>
-      </div>
       <div class="mega-grid">
         ${mainCategories.map((c) => `
           <a class="mega-item" href="shop.html?category=${encodeURIComponent(c.name)}"
              data-mega-kind="category" data-mega-value="${escapeHtml(c.name)}">
             <span class="mega-icon">${categoryIcon(c.icon)}</span>
-            <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
+            <span class="mega-label">${escapeHtml(c.name)}</span>
           </a>
         `).join("")}
         ${subCategories.map((c) => `
           <a class="mega-item" href="shop.html?subcategory=${encodeURIComponent(c.name)}"
              data-mega-kind="subcategory" data-mega-value="${escapeHtml(c.name)}">
             <span class="mega-icon">${categoryIcon(c.icon)}</span>
-            <span class="mega-label">${escapeHtml(c.name.toUpperCase())}</span>
+            <span class="mega-label">${escapeHtml(c.name)}</span>
           </a>
         `).join("")}
       </div>
@@ -254,19 +316,24 @@ function toggleMegaMenu(which) {
   document.getElementById("mega-" + other).classList.remove("open");
   document.getElementById("tab-" + other).classList.remove("active");
 
+  document.getElementById("tab-" + other).setAttribute("aria-expanded", "false");
   panel.classList.toggle("open");
   tab.classList.toggle("active");
+  tab.setAttribute("aria-expanded", String(panel.classList.contains("open")));
 }
 
 function closeMegaMenus() {
   document.querySelectorAll(".mega-menu.open").forEach((m) => m.classList.remove("open"));
-  document.querySelectorAll(".mega-tab.active").forEach((t) => t.classList.remove("active"));
+  document.querySelectorAll(".mega-tab.active").forEach((t) => {
+    t.classList.remove("active");
+    t.setAttribute("aria-expanded", "false");
+  });
 }
 
 // Clicking anywhere outside the menus closes them.
 document.addEventListener("click", (e) => {
   if (!e.target || !e.target.closest) return;
-  if (e.target.closest(".mega-bar") || e.target.closest(".mega-menu")) return;
+  if (e.target.closest(".mega-tab") || e.target.closest(".mega-menu")) return;
   closeMegaMenus();
 });
 
@@ -275,14 +342,20 @@ function injectFooter() {
   if (!footer) return;
 
   footer.innerHTML = `
-    <footer>
-      <div class="footer-links">
-        <a href="info.html">Information</a>
-        <a href="service.html">Service</a>
-        <a href="contact.html">Contact</a>
-        <a href="privacy.html">Privacy</a>
+    <footer class="site-foot">
+      <div class="site-foot-inner">
+        <div class="site-foot-brand">
+          <span class="logo-mark">eTech</span>
+          <p>Computer Accessories &middot; Malaysia</p>
+        </div>
+        <nav class="footer-links" aria-label="Shop information">
+          <a href="info.html">Information</a>
+          <a href="service.html">Service</a>
+          <a href="contact.html">Contact</a>
+          <a href="privacy.html">Privacy</a>
+        </nav>
+        <p class="site-foot-note">&copy; 2026 eTech Computer Accessories. Prices in RM.</p>
       </div>
-      <p>&copy; 2026 eTech Computer Accessories.</p>
     </footer>
   `;
 }
@@ -355,27 +428,17 @@ function injectPrivacyNotice() {
   window.addEventListener("resize", measureBar);
 }
 
-// The number itself moved to js/whatsapp.js when the staff console
-// needed it too. This is still the only place the floating button is
-// built; it just no longer owns the number.
-function injectWhatsApp() {
-  const btn = document.createElement("a");
-  btn.className = "whatsapp-btn";
-  btn.href = whatsappShopLink("Hi, I have a question about a product on eTech.");
-  btn.target = "_blank";
-  btn.rel = "noopener";
-  btn.title = "Chat with us on WhatsApp";
-  btn.textContent = "💬";
-  document.body.appendChild(btn);
-}
-
+// The WhatsApp link is a header action now (injectHeader); the number
+// itself lives in js/whatsapp.js, which the staff console shares.
 function injectChatbot() {
   const wrapper = document.createElement("div");
   wrapper.className = "chatbot-wrapper";
   wrapper.innerHTML = `
-    <button class="chatbot-toggle" onclick="document.getElementById('chatbot-panel').classList.toggle('open')">🤖</button>
-    <div class="chatbot-panel" id="chatbot-panel">
-      <div class="chatbot-header">AI Hardware Consultant</div>
+    <div class="chatbot-panel" id="chatbot-panel" role="dialog" aria-label="Build advice">
+      <div class="chatbot-header">Build advice
+        <button type="button" class="chatbot-close" aria-label="Close"
+          onclick="document.getElementById('chatbot-panel').classList.remove('open')">${uiIcon("close")}</button>
+      </div>
       <div class="chat-log" id="chat-log">
         <div class="chat-bubble bot">Hi! Tell me what the PC is for and your budget and I'll spec the whole
           thing out — try <em>"build a pc for CS2, full HD, budget 4k"</em>.</div>
@@ -388,6 +451,24 @@ function injectChatbot() {
     </div>
   `;
   document.body.appendChild(wrapper);
+}
+
+// A short message that rises from the foot of the page and leaves on its
+// own. For confirmations ("added to cart") that should not stop the
+// customer the way alert() does. Errors still use alert(): those need
+// reading.
+function showToast(html, ms) {
+  document.querySelectorAll(".toast.shop-toast").forEach((t) => t.remove());
+  const toast = document.createElement("div");
+  toast.className = "toast shop-toast";
+  toast.setAttribute("role", "status");
+  toast.innerHTML = html;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add("show")));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, ms || 3800);
 }
 
 // Shows a one-off toast if there's a live deal in the category the user has
@@ -406,7 +487,7 @@ function maybeShowDealToast() {
 
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.innerHTML = `🎉 ${deal.discountPercent}% off ${escapeHtml(deal.category)} right now! Code <strong>${escapeHtml(deal.code)}</strong>
+  toast.innerHTML = `${uiIcon("tag")} ${deal.discountPercent}% off ${escapeHtml(deal.category)} right now! Code <strong>${escapeHtml(deal.code)}</strong>
     <a href="deals.html">View deal</a>`;
   document.body.appendChild(toast);
 
@@ -417,7 +498,6 @@ function maybeShowDealToast() {
 onAppReady(() => {
   injectHeader();
   injectFooter();
-  injectWhatsApp();
   injectChatbot();
   injectPrivacyNotice();
   // The deal notification is fired by deals.js once the promotions have
