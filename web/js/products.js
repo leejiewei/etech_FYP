@@ -44,9 +44,10 @@ const OTHER_PARTS_WATTAGE = 100;
 // makes and is not working at its limit.
 const PSU_HEADROOM = 1.25;
 
-// How big a power supply a build needs: the larger of the graphics card
-// maker's recommended PSU (recommendedPsu, stored per card) and the
-// estimated draw plus headroom, rounded up to the next 50W. Shared by
+// How big a power supply a build needs: the larger of the PSU NVIDIA or
+// AMD recommends for the graphics card (recommendedPsu, stored per card)
+// and the estimated draw plus headroom, rounded up to the next 50W.
+// Shared by
 // the builder's check and its power meter so the two never disagree.
 function psuNeedFor(cpu, gpu) {
   const cpuWatts = cpu ? (cpu.attrs.tdp || 0) : 0;
