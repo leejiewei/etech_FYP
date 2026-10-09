@@ -27,19 +27,24 @@ class Compatibility {
   /// A supply should not run flat out: the draw plus a quarter again.
   static const double psuHeadroom = 1.25;
 
-  /// How big a power supply a build needs: the larger of the graphics
-  /// card maker's recommended PSU and the estimated draw plus headroom,
+  /// How big a power supply a build needs: the larger of the supply the
+  /// shop recommends for a full rig with the card (shopPsu, else NVIDIA's
+  /// or AMD's own recommendedPsu) and the estimated draw plus headroom,
   /// rounded up to the next 50W. Matches psuNeedFor() in web/js/products.js.
   static PsuNeed psuNeed(Product? cpu, Product? gpu) {
     final cpuWatts = cpu?.tdp ?? 0;
     final gpuWatts = gpu?.power ?? 0;
     final draw = cpuWatts + gpuWatts + otherPartsWattage;
     final withHeadroom = ((draw * psuHeadroom) / 50).ceil() * 50;
-    final cardMin = gpu?.recommendedPsu ?? 0;
+    final makerPsu = gpu?.recommendedPsu ?? 0;
+    final shopPsu = gpu?.shopPsu ?? 0;
+    final cardMin = shopPsu > 0 ? shopPsu : makerPsu;
     return PsuNeed(
       cpuWatts: cpuWatts,
       gpuWatts: gpuWatts,
       draw: draw,
+      makerPsu: makerPsu,
+      maker: (gpu?.attrs['chip'] ?? '').toString().startsWith('RX ') ? 'AMD' : 'NVIDIA',
       needed: cardMin > withHeadroom ? cardMin : withHeadroom,
       byCard: cardMin > 0 && cardMin >= withHeadroom,
     );
@@ -198,7 +203,8 @@ class Compatibility {
     if (psu != null && (cpu != null || gpu != null)) {
       final n = psuNeed(cpu, gpu);
       final why = n.byCard
-          ? '${gpu!.name} needs at least a ${n.needed}W supply'
+          ? 'we recommend at least ${n.needed}W for a full rig with the ${gpu!.name}'
+              '${n.makerPsu > 0 && n.makerPsu < n.needed ? " (${n.maker}'s own figure is ${n.makerPsu}W)" : ''}'
           : 'this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU '
               '${n.gpuWatts}W + ${otherPartsWattage}W other parts), so it needs '
               'at least ${n.needed}W with headroom';
@@ -286,6 +292,9 @@ class PsuNeed {
   final int gpuWatts;
   final int draw;
   final int needed;
+  /// NVIDIA's or AMD's own figure for the card, and which of the two.
+  final int makerPsu;
+  final String maker;
   /// True when the card maker's recommendation, not the draw, set [needed].
   final bool byCard;
   const PsuNeed({
@@ -293,6 +302,8 @@ class PsuNeed {
     required this.gpuWatts,
     required this.draw,
     required this.needed,
+    required this.makerPsu,
+    required this.maker,
     required this.byCard,
   });
 }

@@ -15,7 +15,7 @@ class ProductDetailScreen extends StatefulWidget {
   static const Map<String, String> _labels = {
     'socket': 'Socket', 'sockets': 'Socket Support', 'ramGen': 'RAM Type',
     'screenSize': 'Screen Size', 'storageSize': 'Storage', 'ram': 'Memory',
-    'wattage': 'Wattage', 'power': 'Power Draw (W)', 'recommendedPsu': 'Recommended PSU (W)', 'length': 'Card Length (mm)',
+    'wattage': 'Wattage', 'power': 'Power Draw (W)', 'recommendedPsu': "Maker's Recommended PSU (W)", 'shopPsu': 'eTech Recommended PSU, Full Rig (W)', 'length': 'Card Length (mm)',
     'tdp': 'Cooling Needed (W)', 'coolerRating': 'Cooler Capacity (W)',
     'formFactor': 'Board Size', 'supportedFormFactors': 'Fits Board Sizes',
     'maxGpuLength': 'Max Card Length (mm)', 'printerType': 'Printer Type',

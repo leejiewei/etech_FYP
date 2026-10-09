@@ -480,7 +480,7 @@ function whyText(request, parts) {
   why += `The ${escapeHtml(cooler.name)} is rated for ${escapeHtml(cooler.attrs.coolerRating)}W and the ${escapeHtml(cpu.name)} needs ${escapeHtml(cpu.attrs.tdp)}W, so it stays cool. `;
   const power = psuNeedFor(cpu, gpu);
   why += power.byCard
-    ? `The ${psu.attrs.wattage}W supply meets the ${power.needed}W the ${escapeHtml(gpu.name)}'s maker recommends.`
+    ? `The ${psu.attrs.wattage}W supply meets the ${power.needed}W we recommend for a full rig with the ${escapeHtml(gpu.name)}.`
     : `The build draws roughly ${power.draw}W, so the ${psu.attrs.wattage}W supply leaves room to spare.`;
   return why;
 }

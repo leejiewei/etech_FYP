@@ -45,7 +45,8 @@ function answerQuestion(message) {
   if (text.includes("psu") || text.includes("power supply") || text.includes("wattage")) {
     return "We add up your CPU wattage + graphics card wattage + about " + OTHER_PARTS_WATTAGE +
       "W for the board, drives and fans, add a quarter on top for headroom, and never go below " +
-      "the power supply NVIDIA or AMD recommends for the card -- 750W for an RTX 5070 Ti, 850W for a 5080. " +
+      "what we recommend for a full rig with the card -- 750W for an RTX 5070, 850W for a 5070 Ti, " +
+      "1000W for a 5080, a size up from NVIDIA's own figure. " +
       "The PC Builder does this for you and shows the figure.";
   }
 

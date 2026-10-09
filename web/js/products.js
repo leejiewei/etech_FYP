@@ -44,19 +44,25 @@ const OTHER_PARTS_WATTAGE = 100;
 // makes and is not working at its limit.
 const PSU_HEADROOM = 1.25;
 
-// How big a power supply a build needs: the larger of the PSU NVIDIA or
-// AMD recommends for the graphics card (recommendedPsu, stored per card)
-// and the estimated draw plus headroom, rounded up to the next 50W.
-// Shared by
+// How big a power supply a build needs: the larger of the supply the
+// shop recommends for a full rig with the graphics card and the
+// estimated draw plus headroom, rounded up to the next 50W. Shared by
 // the builder's check and its power meter so the two never disagree.
+//
+// Each card carries two figures: recommendedPsu is NVIDIA's or AMD's
+// own (shown in the spec table), shopPsu the shop's full-rig one, a
+// size up, because the makers' number assumes their own test system.
+// A card without a shopPsu falls back to the maker's figure.
 function psuNeedFor(cpu, gpu) {
   const cpuWatts = cpu ? (cpu.attrs.tdp || 0) : 0;
   const gpuWatts = gpu ? (gpu.attrs.power || 0) : 0;
   const draw = cpuWatts + gpuWatts + OTHER_PARTS_WATTAGE;
   const withHeadroom = Math.ceil(draw * PSU_HEADROOM / 50) * 50;
-  const cardMin = gpu ? (gpu.attrs.recommendedPsu || 0) : 0;
+  const makerPsu = gpu ? (gpu.attrs.recommendedPsu || 0) : 0;
+  const cardMin = gpu ? (gpu.attrs.shopPsu || makerPsu) : 0;
   return {
-    cpuWatts, gpuWatts, draw,
+    cpuWatts, gpuWatts, draw, makerPsu,
+    maker: gpu && /^RX /.test(gpu.attrs.chip || "") ? "AMD" : "NVIDIA",
     needed: Math.max(withHeadroom, cardMin),
     // Which rule set the figure, for the message.
     byCard: cardMin >= withHeadroom && cardMin > 0,
@@ -178,7 +184,7 @@ const ARRAY_SPECS = ["sockets", "supportedFormFactors", "incompatibleSockets",
 // Specifications that are numbers. Everything is stored as text, and
 // the compatibility checks compare these with < and >, so "90" has to
 // become 90 or a 90W cooler looks bigger than a 105W one.
-const NUMBER_SPECS = ["tdp", "coolerRating", "power", "recommendedPsu", "length", "wattage",
+const NUMBER_SPECS = ["tdp", "coolerRating", "power", "recommendedPsu", "shopPsu", "length", "wattage",
                       "maxGpuLength", "pcieGen", "cores", "threads"];
 
 // Some CPUs and boards accept either memory type, recorded as "DDR4/DDR5".
@@ -423,7 +429,8 @@ function attrLabel(key) {
     ram: "Memory",
     wattage: "Wattage",
     power: "Power Draw (W)",
-    recommendedPsu: "Recommended PSU (W)",
+    recommendedPsu: "Maker's Recommended PSU (W)",
+    shopPsu: "eTech Recommended PSU, Full Rig (W)",
     length: "Card Length (mm)",
     tdp: "Cooling Needed (W)",
     coolerRating: "Cooler Capacity (W)",

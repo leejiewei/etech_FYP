@@ -107,8 +107,10 @@ class Product {
   int get coolerRating => _int('coolerRating');
   int get wattage => _int('wattage');
   int get power => _int('power');
-  /// The supply the card's maker recommends, in watts (0 if unknown).
+  /// The supply NVIDIA or AMD recommends for the card, in watts (0 if unknown).
   int get recommendedPsu => _int('recommendedPsu');
+  /// The supply the shop recommends for a full rig with the card (0 if none).
+  int get shopPsu => _int('shopPsu');
   int get length => _int('length');
   int get maxGpuLength => _int('maxGpuLength');
 

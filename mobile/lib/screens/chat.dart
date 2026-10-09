@@ -184,10 +184,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.contains('psu') || text.contains('power supply') || text.contains('wattage')) {
       return 'We add your CPU wattage plus the graphics card wattage plus about '
           '${Compatibility.otherPartsWattage}W for the board, drives and fans, '
-          'add a quarter on top for headroom, and never go below the power '
-          'supply NVIDIA or AMD recommends for the card -- 750W for an RTX '
-          '5070 Ti, 850W for a 5080. The PC Builder does this for you and '
-          'shows the figure.';
+          'add a quarter on top for headroom, and never go below what we '
+          'recommend for a full rig with the card -- 750W for an RTX 5070, '
+          "850W for a 5070 Ti, 1000W for a 5080, a size up from NVIDIA's own "
+          'figure. The PC Builder does this for you and shows the figure.';
     }
 
     if (text.contains('case') || text.contains('casing') || text.contains('form factor')) {

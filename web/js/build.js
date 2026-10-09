@@ -488,7 +488,8 @@ function renderBuildSummary() {
   if (psu && (cpu || gpu)) {
     const n = psuNeedFor(cpu, gpu);
     const why = n.byCard
-      ? `${gpu.name} needs at least a ${n.needed}W supply`
+      ? `we recommend at least ${n.needed}W for a full rig with the ${gpu.name}` +
+        (n.makerPsu && n.makerPsu < n.needed ? ` (${n.maker}'s own figure is ${n.makerPsu}W)` : "")
       : `this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU ${n.gpuWatts}W + ` +
         `${OTHER_PARTS_WATTAGE}W other parts), so it needs at least ${n.needed}W with headroom`;
     psu.attrs.wattage >= n.needed
