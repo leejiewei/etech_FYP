@@ -63,3 +63,6 @@ __pycache__/
 # Python environment for the ml/ notebooks (recreate: python -m venv ml/.venv, then pip install -r ml/requirements.txt)
 ml/.venv/
 .ipynb_checkpoints/
+
+# raw product photos the user downloads; processed copies go to web/images/products
+photo-inbox/
