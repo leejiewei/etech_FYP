@@ -8,6 +8,10 @@
 // in the side panel.
 
 let currentBuild = {}; // e.g. { CPU: 101, Motherboard: 111, RAM: null, ... }
+// The colour picked for a part that comes in several (mostly cases),
+// by slot, e.g. { Case: "White" }. Kept apart from currentBuild so a
+// saved build from before colours existed still loads.
+let buildColours = {};
 
 // What each slot is called on the page, and its icon from CATEGORY_ICONS
 // in layout.js.
@@ -37,10 +41,24 @@ function loadBuild() {
       currentBuild[slot] = null;
     }
   });
+  try { buildColours = JSON.parse(localStorage.getItem("currentBuildColours")) || {}; }
+  catch (e) { buildColours = {}; }
+  dropStaleColours();
 }
 
 function saveBuild() {
+  dropStaleColours();
   localStorage.setItem("currentBuild", JSON.stringify(currentBuild));
+  localStorage.setItem("currentBuildColours", JSON.stringify(buildColours));
+}
+
+// A colour only stands while the part it was picked for is still in the
+// slot and still comes in it.
+function dropStaleColours() {
+  Object.keys(buildColours).forEach((slot) => {
+    const p = selectedProduct(slot);
+    if (!p || !colourOptionsOf(p).includes(buildColours[slot])) delete buildColours[slot];
+  });
 }
 
 function selectedProduct(slot) {
@@ -120,7 +138,7 @@ function renderBuilder() {
     const info = buildSlotInfo(slot);
     const picked = selectedProduct(slot);
     return `
-      <div class="bp-slot${picked ? " picked" : ""}">
+      <div class="bp-slot${picked ? " picked" : ""}${picked && colourOptionsOf(picked).length ? " has-colour" : ""}">
         <button type="button" class="bp-slot-main" data-slot="${escapeHtml(slot)}">
           <span class="bp-slot-no">${i + 1}</span>
           <span class="bp-slot-icon">${picked
@@ -133,6 +151,15 @@ function renderBuilder() {
             <span class="bp-slot-action">${picked ? "Change" : "Choose"}</span>
           </span>
         </button>
+        ${picked && colourOptionsOf(picked).length
+          ? `<label class="bp-slot-colour">${optionKindOf(colourOptionsOf(picked))}
+               <select data-colour-slot="${escapeHtml(slot)}">
+                 <option value="">Choose one</option>
+                 ${colourOptionsOf(picked).map((c) =>
+                   `<option value="${escapeHtml(c)}"${buildColours[slot] === c ? " selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+               </select>
+             </label>`
+          : ""}
         ${picked
           ? `<button type="button" class="bp-slot-remove" data-remove="${escapeHtml(slot)}"
                aria-label="Remove ${escapeHtml(info.title)}" title="Remove">&times;</button>`
@@ -145,6 +172,14 @@ function renderBuilder() {
   });
   container.querySelectorAll("[data-remove]").forEach((btn) => {
     btn.onclick = () => handleSlotChange(btn.dataset.remove, null);
+  });
+  container.querySelectorAll("[data-colour-slot]").forEach((sel) => {
+    sel.onchange = () => {
+      if (sel.value) buildColours[sel.dataset.colourSlot] = sel.value;
+      else delete buildColours[sel.dataset.colourSlot];
+      saveBuild();
+      sel.classList.remove("needs-choice");
+    };
   });
 
   renderProgress();
@@ -587,9 +622,21 @@ function renderBarInfo() {
 }
 
 function addBuildToCart() {
+  // A part that comes in several colours needs one picked first, or the
+  // shop has to ring to ask which case to build in.
+  const unpicked = builderSlots.find((slot) => {
+    const p = selectedProduct(slot);
+    return p && colourOptionsOf(p).length && !buildColours[slot];
+  });
+  if (unpicked) {
+    const sel = document.querySelector(`[data-colour-slot="${unpicked}"]`);
+    if (sel) { sel.classList.add("needs-choice"); sel.focus(); }
+    alert("Choose a colour for your " + buildSlotInfo(unpicked).title.toLowerCase() + " first.");
+    return;
+  }
   builderSlots.forEach((slot) => {
     const id = currentBuild[slot];
-    if (id) addToCart(id);
+    if (id) addToCart(id, null, buildColours[slot]);
   });
   window.location.href = "cart.html";
 }

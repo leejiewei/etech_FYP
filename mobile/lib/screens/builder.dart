@@ -54,12 +54,18 @@ class _BuilderScreenState extends State<BuilderScreen> {
   };
   bool _adding = false;
 
+  /// The colour picked for a part that comes in several (mostly cases),
+  /// by slot. Matches buildColours in web/js/build.js.
+  final Map<String, String> _colours = {};
+
   Shop get shop => widget.shop;
 
   void _choose(String slot, Product? part) {
     setState(() {
       _build[slot] = part;
       _dropIncompatible();
+      _colours.removeWhere((s, c) =>
+          !(_build[s]?.colourOptions.contains(c) ?? false));
     });
   }
 
@@ -158,12 +164,22 @@ class _BuilderScreenState extends State<BuilderScreen> {
 
   Future<void> _addToCart() async {
     final messenger = ScaffoldMessenger.of(context);
+    // A part that comes in several colours needs one picked first, or
+    // the shop has to ring to ask which case to build in.
+    for (final slot in Compatibility.slots) {
+      final part = _build[slot];
+      if (part != null && part.colourOptions.isNotEmpty && _colours[slot] == null) {
+        messenger.showSnackBar(SnackBar(
+            content: Text('Choose a colour for your ${_info(slot).title.toLowerCase()} first.')));
+        return;
+      }
+    }
     setState(() => _adding = true);
     int added = 0;
     for (final slot in Compatibility.slots) {
       final part = _build[slot];
       if (part == null) continue;
-      final error = await shop.addToCart(part.id);
+      final error = await shop.addToCart(part.id, colour: _colours[slot]);
       if (error != null) {
         if (mounted) setState(() => _adding = false);
         messenger.showSnackBar(SnackBar(content: Text(error)));
@@ -441,6 +457,28 @@ class _BuilderScreenState extends State<BuilderScreen> {
                           ),
                         ],
                       ),
+                      if (part != null && part.colourOptions.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            for (final c in part.colourOptions)
+                              ChoiceChip(
+                                label: Text(c, style: const TextStyle(fontSize: 12)),
+                                visualDensity: VisualDensity.compact,
+                                selected: _colours[slot] == c,
+                                onSelected: (on) => setState(() {
+                                  if (on) {
+                                    _colours[slot] = c;
+                                  } else {
+                                    _colours.remove(slot);
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

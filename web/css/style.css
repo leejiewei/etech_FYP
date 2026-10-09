@@ -5768,3 +5768,41 @@ body.has-till-bar { padding-bottom: 72px; }
     top: 118px;
   }
 }
+
+/* ---------- Builder: colour for a part that comes in several ---------- */
+/* It sits inside the bottom of the card, which makes room for it. */
+.bp-slot.has-colour .bp-slot-main {
+  padding-bottom: 60px;
+}
+
+.bp-slot-colour {
+  position: absolute;
+  left: 86px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.bp-slot-colour select {
+  padding: 6px 8px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r);
+  background-color: var(--sheet);
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.bp-slot-colour select.needs-choice {
+  border-color: var(--danger);
+  outline: 2px solid var(--danger-tint);
+}
+
+@media (max-width: 760px) {
+  .bp-slot-colour { left: 16px; }
+}
