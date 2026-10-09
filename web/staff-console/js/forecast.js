@@ -33,17 +33,47 @@ const FORECAST_DATA = "data/ml_forecast.json";
 // because "what will next month be" is the question, not "how did the
 // model do".
 //
+// The card opens on a button rather than a number. Each press predicts
+// one month further on, up to the six the export script writes; the
+// previous button steps back. The months are already in the JSON, so a
+// press only changes which one is drawn -- nothing is fitted in the
+// browser.
+//
 // It is written to be hard to quote out of context. The band, the week
 // count, the date the data stops and the basis of the year-on-year
 // comparison are all on the card rather than in a footnote, because a
 // single big number lifted into a slide with none of those attached is
 // exactly how a forecast stops being honest.
 // ------------------------------------------------------------
-function nextMonthCard(n) {
-  if (!n) return "";
+function predictionCard(months, shown) {
+  if (months.length === 0) return "";
 
-  // Down is not automatically bad news and up is not automatically good,
-  // so the arrow is coloured by direction and left to speak for itself.
+  const header = `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.04em;">
+        ${shown < 0 ? "Sales prediction" : `Predicted sales &mdash; ${e(months[shown].label)}`}
+      </div>
+      <div style="display:flex; gap:8px;">
+        ${shown > 0 ? `<button type="button" class="btn small grey" id="predict-prev">&#9664; Previous month</button>` : ""}
+        ${shown < months.length - 1
+          ? `<button type="button" class="btn small" id="predict-next">
+               ${shown < 0 ? "Predict next month" : "Predict the month after &#9654;"}</button>`
+          : ""}
+      </div>
+    </div>`;
+
+  if (shown < 0) {
+    return `
+      <div class="card" style="border-left:4px solid ${COLOUR_FORECAST};">
+        ${header}
+        <p class="hint" style="margin:10px 0 0;">
+          The sales receipts run to ${e(months[0].fittedTo)}. Press the button to predict
+          ${e(months[0].label)}, then keep pressing to look up to ${months.length} months ahead.
+        </p>
+      </div>`;
+  }
+
+  const n = months[shown];
   // The same month a year earlier, spelled the way monthLabel expects.
   const lastYear = (Number(n.month.slice(0, 4)) - 1) + n.month.slice(4);
 
@@ -59,9 +89,7 @@ function nextMonthCard(n) {
 
   return `
     <div class="card" style="border-left:4px solid ${COLOUR_FORECAST};">
-      <div style="font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.04em;">
-        Predicted sales &mdash; ${e(n.label)}
-      </div>
+      ${header}
       <div style="font-size:34px; font-weight:bold; margin:6px 0 2px; color:${COLOUR_FORECAST};">
         ${e(money(n.revenue))}
       </div>
@@ -72,13 +100,22 @@ function nextMonthCard(n) {
       </div>
       ${change}
       <div class="hint" style="margin:12px 0 0;">
-        The range is this model's own monthly error on months it had never
-        seen (WAPE ${e(pct(n.bandPct))}), not a confidence interval. Fitted on all
-        ${e(n.fittedWeeks)} weeks up to ${e(n.fittedTo)}; a week counts towards the
-        month its Monday falls in, which is why ${e(n.label)} is
+        Month ${shown + 1} of ${months.length} ahead. The range is this model's own monthly
+        error on months it had never seen (WAPE ${e(pct(n.bandPct))}), not a confidence
+        interval. Fitted on all ${e(n.fittedWeeks)} weeks up to ${e(n.fittedTo)}; a week counts
+        towards the month its Monday falls in, which is why ${e(n.label)} is
         ${e(n.weeks)} weeks and not four-and-a-bit.
       </div>
     </div>`;
+}
+
+// Draws the card into its slot and wires whichever buttons it has. Called
+// again on every press, so the listeners always belong to the buttons on
+// screen.
+function showPrediction(slot, months, shown) {
+  slot.innerHTML = predictionCard(months, shown);
+  slot.querySelector("#predict-next")?.addEventListener("click", () => showPrediction(slot, months, shown + 1));
+  slot.querySelector("#predict-prev")?.addEventListener("click", () => showPrediction(slot, months, shown - 1));
 }
 
 const COLOUR_ACTUAL = "#2c5d8f";
@@ -117,14 +154,15 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const weekly = data.forecast || [];
   const segments = data.segments || [];
   const slowest = data.slowest || [];
-  const coming = data.nextMonth || null;
+  // nextMonth (one month) is what the export wrote before the button existed.
+  const coming = data.nextMonths || (data.nextMonth ? [data.nextMonth] : []);
 
   const monthMax = Math.max(0, ...monthly.flatMap((m) => [m.actual, m.forecast]));
   const weekMax = Math.max(0, ...weekly.flatMap((w) => [w.actual, w.forecast]));
   const segMax = Math.max(0, ...segments.map((s) => s.revenue));
 
   content.innerHTML = `
-    ${nextMonthCard(coming)}
+    <div id="prediction"></div>
 
     <div class="tiles">
       <div class="tile">
@@ -247,6 +285,8 @@ adminPage("Sales Forecast", "forecast", async (content) => {
       The slowest sellers in the current range: the products that turn over least often since
       they were first sold. Worth checking before they are reordered.
     </p>`}`;
+
+  showPrediction(content.querySelector("#prediction"), coming, -1);
 });
 
 function legend() {

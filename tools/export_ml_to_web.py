@@ -30,6 +30,7 @@ RANDOM_STATE = 42
 TRAIN_FRACTION = 0.8
 MONTHS = [f"m_{i}" for i in range(2, 13)]
 FEATURES = ["t"] + MONTHS
+MONTHS_AHEAD = 6
 
 
 def load_weekly():
@@ -74,7 +75,7 @@ def fit_and_forecast(weekly):
     }, monthly
 
 
-def next_month(weekly, monthly_wape):
+def next_months(weekly, monthly_wape, count=MONTHS_AHEAD):
     """What the model expects the coming month to take.
 
     Everything else in this file is backtesting: fit on the first 80% of the
@@ -98,26 +99,37 @@ def next_month(weekly, monthly_wape):
         is the error this model actually made on months it had never seen, not
         a confidence interval from the fit, and it is the honest width to put
         around a single number.
+
+    The staff console steps through these one month at a time from a button.
+    Six months is as far as the band means anything: the backtest's test
+    block starts one week and ends eleven months after the last week the
+    model saw, so the held-out WAPE was earned on predictions at least that
+    far ahead. A year out would be outside anything it was scored on.
     """
     model = Ridge(alpha=1.0).fit(weekly[FEATURES].to_numpy(), weekly.revenue.to_numpy())
 
     last_week = weekly.weekStart.max()
-    target = last_week.to_period("M") + 1
+    first = last_week.to_period("M") + 1
+    last = first + (count - 1)
 
-    weeks, t = [], int(weekly.t.max())
-    week = last_week
+    # Every week from the end of the data to the end of the last month asked
+    # for, each carrying the trend index it would have had.
+    by_month, t, week = {}, int(weekly.t.max()), last_week
     while True:
         week = week + pd.Timedelta(days=7)
         t += 1
         period = week.to_period("M")
-        if period > target:
+        if period > last:
             break
-        if period == target:
-            weeks.append((week, t))
+        if period >= first:
+            by_month.setdefault(period, []).append((week, t))
 
-    if not weeks:
-        return None
+    return [month_forecast(model, weekly, period, weeks, monthly_wape, last_week)
+            for period, weeks in sorted(by_month.items())]
 
+
+def month_forecast(model, weekly, target, weeks, monthly_wape, last_week):
+    """One coming month: its weeks predicted, summed and set beside last year."""
     rows = []
     for week, t in weeks:
         features = {"t": t}
@@ -205,7 +217,7 @@ def segments():
 def main():
     weekly = load_weekly()
     train, test, predicted, metrics, monthly = fit_and_forecast(weekly)
-    coming = next_month(weekly, metrics["monthlyWAPE"])
+    coming = next_months(weekly, metrics["monthlyWAPE"])
     segment_rows, slowest_rows = segments()
 
     # The chart shows the last year of history for context, then the forecast block.
@@ -223,7 +235,7 @@ def main():
             "testTo": test.weekStart.max().strftime("%Y-%m-%d"),
         },
         "metrics": metrics,
-        "nextMonth": coming,
+        "nextMonths": coming,
         "history": [{"week": d.strftime("%Y-%m-%d"), "actual": round(v, 0)}
                     for d, v in zip(history.weekStart, history.revenue)],
         "forecast": [{"week": d.strftime("%Y-%m-%d"), "actual": round(a, 0), "forecast": round(f, 0)}
@@ -242,10 +254,9 @@ def main():
     print(f"  {len(payload['history'])} history weeks, {len(payload['forecast'])} forecast weeks, "
           f"{len(payload['monthly'])} months, {len(segment_rows or [])} segments")
     print(f"  weekly WAPE {metrics['weeklyWAPE']}%  monthly WAPE {metrics['monthlyWAPE']}%")
-    if coming:
-        print(f"  next month: {coming['label']} ({coming['weeks']} weeks) "
-              f"RM {coming['revenue']:,.0f} "
-              f"(RM {coming['low']:,.0f} - RM {coming['high']:,.0f})")
+    for m in coming:
+        print(f"  {m['label']:<15} ({m['weeks']} weeks) RM {m['revenue']:>9,.0f} "
+              f"(RM {m['low']:,.0f} - RM {m['high']:,.0f})")
 
 
 if __name__ == "__main__":
