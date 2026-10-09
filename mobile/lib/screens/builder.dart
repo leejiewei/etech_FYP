@@ -328,6 +328,20 @@ class _BuilderScreenState extends State<BuilderScreen> {
     );
   }
 
+  /// A chosen part's photo, in the picked colour when we have that photo.
+  Widget _slotPhoto(Product part, String? colour) {
+    final main = ProductImage(url: part.imageUrl, isSvg: part.isSvg, height: 38);
+    final url = part.colourPhotoUrl(colour);
+    if (url == null) return main;
+    return Image.network(
+      url,
+      key: ValueKey(url),
+      height: 38,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => main,
+    );
+  }
+
   Widget _slotCard(int index, String slot) {
     final info = _info(slot);
     final part = _build[slot];
@@ -382,11 +396,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                       ? Icon(info.icon, size: 22, color: Colors.grey.shade500)
                       : Padding(
                           padding: const EdgeInsets.all(4),
-                          child: ProductImage(
-                            url: part.imageUrl,
-                            isSvg: part.isSvg,
-                            height: 38,
-                          ),
+                          child: _slotPhoto(part, _colours[slot]),
                         ),
                 ),
                 const SizedBox(width: 12),

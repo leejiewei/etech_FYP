@@ -130,6 +130,16 @@ function partPrice(p) {
   return priceOf(p);
 }
 
+// A chosen part's photo, in the picked colour when we have that photo
+// (colourImageOf); a colour with no photo of its own falls back to the
+// main one.
+function slotPhotoTag(part, colour) {
+  const src = colourImageOf(part, colour);
+  if (!src) return productImageTag(part, "bp-slot-img");
+  return `<img class="bp-slot-img" src="${safeUrl(src)}" alt="${escapeHtml(part.name)}"
+    onerror="this.onerror=null; this.src='${safeUrl(productImage(part))}';" />`;
+}
+
 function renderBuilder() {
   const container = document.getElementById("builder-slots");
   if (!container) return;
@@ -142,7 +152,7 @@ function renderBuilder() {
         <button type="button" class="bp-slot-main" data-slot="${escapeHtml(slot)}">
           <span class="bp-slot-no">${i + 1}</span>
           <span class="bp-slot-icon">${picked
-            ? productImageTag(picked, "bp-slot-img")
+            ? slotPhotoTag(picked, buildColours[slot])
             : categoryIcon(info.icon)}</span>
           <span class="bp-slot-title">${escapeHtml(info.title)}</span>
           <span class="bp-slot-choice">${picked ? escapeHtml(picked.name) : "Not chosen yet"}</span>
@@ -178,6 +188,9 @@ function renderBuilder() {
       if (sel.value) buildColours[sel.dataset.colourSlot] = sel.value;
       else delete buildColours[sel.dataset.colourSlot];
       saveBuild();
+      const icon = sel.closest(".bp-slot").querySelector(".bp-slot-icon");
+      const part = selectedProduct(sel.dataset.colourSlot);
+      if (icon && part) icon.innerHTML = slotPhotoTag(part, buildColours[sel.dataset.colourSlot]);
       sel.classList.remove("needs-choice");
     };
   });

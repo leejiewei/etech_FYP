@@ -94,21 +94,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool get _isSwitchChoice =>
       product.colourOptions.every((o) => o.endsWith(' Switch'));
 
-  /// The photo of the chosen colour, by the website's naming convention:
-  /// 4504.webp is the main photo and 4504-green.webp the green one. Null
-  /// when nothing is chosen, for switches, or for a photo that is not one
-  /// of ours.
-  String? get _colourPhoto {
-    final main = product.imagePath;
-    final colour = _colour;
-    if (main == null || colour == null || _isSwitchChoice) return null;
-    if (!RegExp(r'/images/products/\d+\.webp$').hasMatch(main)) return null;
-    final slug = colour
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-    return slug.isEmpty ? null : main.replaceFirst(RegExp(r'\.webp$'), '-$slug.webp');
-  }
+  /// The photo of the chosen colour (Product.colourPhotoUrl). Null when
+  /// nothing is chosen or for switches.
+  String? get _colourPhoto =>
+      _isSwitchChoice ? null : product.colourPhotoUrl(_colour);
 
   Widget _photo() {
     final mainPhoto =

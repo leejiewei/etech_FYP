@@ -120,6 +120,21 @@ class Product {
     return 0;
   }
 
+  /// The photo of one colour, by the website's naming convention:
+  /// 4504.webp is the main photo and 4504-green.webp the green one. Null
+  /// for a switch choice or a photo that is not one of ours; a colour with
+  /// no photo of its own 404s, so callers fall back to the main photo.
+  String? colourPhotoUrl(String? colour) {
+    final main = imagePath;
+    if (main == null || colour == null || colour.endsWith(' Switch')) return null;
+    if (!RegExp(r'/images/products/\d+\.webp$').hasMatch(main)) return null;
+    final slug = colour
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    return slug.isEmpty ? null : main.replaceFirst(RegExp(r'\.webp$'), '-$slug.webp');
+  }
+
   List<String> _list(String key) {
     final v = attrs[key];
     if (v is List) return v.map((e) => e.toString()).toList();
