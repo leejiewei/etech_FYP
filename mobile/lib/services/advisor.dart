@@ -189,16 +189,15 @@ class Advisor {
     final storage = _cheapest(_inStock('Storage'));
     if (storage == null) return null;
 
-    // 25% spare on the power supply, and the RTX 50 cards want a native
-    // 12VHPWR lead rather than the adapter.
-    final needed = cpu.tdp + gpu.power + Compatibility.otherPartsWattage;
-    final wanted = (needed * 1.25).ceil();
+    // At least the card maker's recommended supply and the draw plus 25%
+    // (Compatibility.psuNeed, the builder's own rule), and the RTX 50
+    // cards want a native 12VHPWR lead rather than the adapter.
+    final wanted = Compatibility.psuNeed(cpu, gpu).needed;
     final needsHpwr = (gpu.attrs['chip'] ?? '').toString().startsWith('RTX 5');
     final psus = _inStock('PSU')
         .where((p) => !needsHpwr || p.attrs['connector12VHPWR'] != 'No')
         .toList();
-    final psu = _cheapest(psus.where((p) => p.wattage >= wanted).toList()) ??
-        _cheapest(psus.where((p) => p.wattage >= needed).toList());
+    final psu = _cheapest(psus.where((p) => p.wattage >= wanted).toList());
     if (psu == null) return null;
 
     final pcCase = _cheapest(_inStock('Case').where((c) =>

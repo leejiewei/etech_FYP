@@ -234,19 +234,18 @@ function assembleBuild(cpu, gpu) {
   const storage = cheapest(buildable(getProductsBySubcategory("Storage")));
   if (!storage) return null;
 
-  // PSU: must cover CPU + GPU + the other parts. We aim for 25% spare on top
-  // of that, because running a power supply at 100% all the time is noisy and
-  // shortens its life. If nothing that big is in stock we settle for one that
-  // just meets the minimum.
-  const wattsNeeded = (cpu.attrs.tdp || 0) + (gpu.attrs.power || 0) + OTHER_PARTS_WATTAGE;
-  const wattsWanted = Math.ceil(wattsNeeded * 1.25);
+  // PSU: at least what the graphics card's maker recommends, and the
+  // build's draw plus 25% spare -- psuNeedFor(), the same rule the PC
+  // Builder checks. Running a supply flat out is noisy, shortens its life
+  // and trips on a modern card's power spikes, so there is no settling
+  // for less: no supply that big in stock means no build.
+  const wattsWanted = psuNeedFor(cpu, gpu).needed;
   // The RTX 50 cards expect a native 12VHPWR lead, so don't pair them with
   // the one supply that hasn't got one.
   const needsHpwr = (gpu.attrs.chip || "").indexOf("RTX 5") === 0;
   const psus = buildable(getProductsBySubcategory("PSU"))
     .filter((p) => !needsHpwr || p.attrs.connector12VHPWR !== "No");
-  const psu = cheapest(psus.filter((p) => p.attrs.wattage >= wattsWanted)) ||
-              cheapest(psus.filter((p) => p.attrs.wattage >= wattsNeeded));
+  const psu = cheapest(psus.filter((p) => p.attrs.wattage >= wattsWanted));
   if (!psu) return null;
 
   // Case: must fit the board size, be long enough for the graphics card, and
@@ -259,7 +258,7 @@ function assembleBuild(cpu, gpu) {
 
   const parts = { CPU: cpu, Cooler: cooler, Motherboard: mobo, RAM: ram,
                   GPU: gpu, Storage: storage, PSU: psu, Case: pcCase };
-  return { parts: parts, total: totalOf(parts), wattsNeeded: wattsNeeded };
+  return { parts: parts, total: totalOf(parts), wattsNeeded: wattsWanted };
 }
 
 function totalOf(parts) {
@@ -370,7 +369,7 @@ function verifyBuild(parts) {
   if ((cooler.attrs.coolerRating || 0) < (cpu.attrs.tdp || 0)) problems.push("cooler too weak");
   if (!(pcCase.attrs.supportedFormFactors || []).includes(mobo.attrs.formFactor)) problems.push("board won't fit case");
   if ((gpu.attrs.length || 0) > (pcCase.attrs.maxGpuLength || 0)) problems.push("graphics card too long");
-  if (psu.attrs.wattage < (cpu.attrs.tdp || 0) + (gpu.attrs.power || 0) + OTHER_PARTS_WATTAGE) problems.push("PSU too small");
+  if (psu.attrs.wattage < psuNeedFor(cpu, gpu).needed) problems.push("PSU too small");
 
   return problems;
 }
@@ -479,7 +478,10 @@ function whyText(request, parts) {
   }
 
   why += `The ${escapeHtml(cooler.name)} is rated for ${escapeHtml(cooler.attrs.coolerRating)}W and the ${escapeHtml(cpu.name)} needs ${escapeHtml(cpu.attrs.tdp)}W, so it stays cool. `;
-  why += `The ${psu.attrs.wattage}W supply covers the roughly ${(cpu.attrs.tdp || 0) + (gpu.attrs.power || 0) + OTHER_PARTS_WATTAGE}W this build draws.`;
+  const power = psuNeedFor(cpu, gpu);
+  why += power.byCard
+    ? `The ${psu.attrs.wattage}W supply meets the ${power.needed}W the ${escapeHtml(gpu.name)}'s maker recommends.`
+    : `The build draws roughly ${power.draw}W, so the ${psu.attrs.wattage}W supply leaves room to spare.`;
   return why;
 }
 

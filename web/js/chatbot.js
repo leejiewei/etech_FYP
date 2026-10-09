@@ -44,8 +44,9 @@ function answerQuestion(message) {
 
   if (text.includes("psu") || text.includes("power supply") || text.includes("wattage")) {
     return "We add up your CPU wattage + graphics card wattage + about " + OTHER_PARTS_WATTAGE +
-      "W for the board, drives and fans, then check your PSU is at least that big. " +
-      "The PC Builder does this for you and shows the full sum.";
+      "W for the board, drives and fans, add a quarter on top for headroom, and never go below " +
+      "what the graphics card's maker recommends -- an RTX 5070 Ti or 5080 needs at least 850W. " +
+      "The PC Builder does this for you and shows the figure.";
   }
 
   // Getting this wrong destroys hardware, so it's checked before anything else.

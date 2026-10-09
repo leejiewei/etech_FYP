@@ -469,16 +469,19 @@ function renderBuildSummary() {
                  `only fits up to ${maxLength}mm.`);
   }
 
-  // 7. The PSU must cover the whole system. Too small and the PC shuts down
-  //    under load, so this one is critical rather than a warning.
+  // 7. The PSU must cover the whole system with room to spare, and be at
+  //    least what the graphics card's maker recommends (psuNeedFor). Too
+  //    small and the PC shuts down under load, so this one is critical.
   if (psu && (cpu || gpu)) {
-    const cpuWatts = cpu ? (cpu.attrs.tdp || 0) : 0;
-    const gpuWatts = gpu ? (gpu.attrs.power || 0) : 0;
-    const totalNeeded = cpuWatts + gpuWatts + OTHER_PARTS_WATTAGE;
-    const sum = `about ${totalNeeded}W (CPU ${cpuWatts}W + GPU ${gpuWatts}W + ${OTHER_PARTS_WATTAGE}W other parts)`;
-    psu.attrs.wattage >= totalNeeded
-      ? pass(`Power OK: this build draws ${sum} and your PSU is ${psu.attrs.wattage}W.`)
-      : critical(`PSU too small: this build draws ${sum} but your PSU is only ${psu.attrs.wattage}W.`);
+    const n = psuNeedFor(cpu, gpu);
+    const why = n.byCard
+      ? `${gpu.name} needs at least a ${n.needed}W supply`
+      : `this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU ${n.gpuWatts}W + ` +
+        `${OTHER_PARTS_WATTAGE}W other parts), so it needs at least ${n.needed}W with headroom`;
+    psu.attrs.wattage >= n.needed
+      ? pass(`Power OK: ${why}, and your PSU is ${psu.attrs.wattage}W.`)
+      : critical(`PSU too small: ${why}, but your PSU is only ${psu.attrs.wattage}W. ` +
+                 `Pick a ${n.needed}W or bigger supply.`);
   }
 
   // 8. We stock no SFX supplies, so a Mini-ITX build still needs a case that
@@ -579,8 +582,8 @@ function renderBuildSummary() {
   }
 }
 
-// Estimated draw against the power supply, as a bar. The same sum as
-// check 7 above: CPU + graphics card + a flat allowance for the rest.
+// Estimated draw against the power supply, as a bar, and the supply the
+// build needs. The same psuNeedFor() as check 7 above.
 function renderPowerMeter(cpu, gpu, psu) {
   const el = document.getElementById("bp-power");
   if (!el) return;
@@ -588,22 +591,26 @@ function renderPowerMeter(cpu, gpu, psu) {
     el.innerHTML = "";
     return;
   }
-  const needed = (cpu ? cpu.attrs.tdp || 0 : 0) + (gpu ? gpu.attrs.power || 0 : 0) + OTHER_PARTS_WATTAGE;
+  const n = psuNeedFor(cpu, gpu);
   const capacity = psu ? psu.attrs.wattage || 0 : 0;
-  const share = capacity ? Math.min(100, Math.round(needed / capacity * 100)) : 0;
-  const over = capacity && needed > capacity;
+  const share = capacity ? Math.min(100, Math.round(n.draw / capacity * 100)) : 0;
+  const short = capacity && capacity < n.needed;
   el.innerHTML = `
     <div class="bp-power">
       <div class="bp-power-row">
         <span>Estimated power draw</span>
-        <strong>about ${needed}W</strong>
+        <strong>about ${n.draw}W</strong>
+      </div>
+      <div class="bp-power-row">
+        <span>Recommended power supply</span>
+        <strong>${n.needed}W or more</strong>
       </div>
       ${capacity ? `
-        <div class="bp-meter"><span class="${over ? "over" : ""}" style="width:${share}%"></span></div>
-        <p class="bp-power-note">${over
-          ? `More than your ${capacity}W supply can give.`
+        <div class="bp-meter"><span class="${short ? "over" : ""}" style="width:${share}%"></span></div>
+        <p class="bp-power-note">${short
+          ? `Your ${capacity}W supply is too small for this build.`
           : `${share}% of your ${capacity}W supply.`}</p>`
-        : `<p class="bp-power-note">Choose a power supply of at least ${needed}W.</p>`}
+        : `<p class="bp-power-note">Choose a power supply of at least ${n.needed}W.</p>`}
     </div>`;
 }
 

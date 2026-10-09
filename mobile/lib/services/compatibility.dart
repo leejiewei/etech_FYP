@@ -24,6 +24,27 @@ class Compatibility {
   /// Rough extra wattage for the board, drives and fans.
   static const int otherPartsWattage = 100;
 
+  /// A supply should not run flat out: the draw plus a quarter again.
+  static const double psuHeadroom = 1.25;
+
+  /// How big a power supply a build needs: the larger of the graphics
+  /// card maker's recommended PSU and the estimated draw plus headroom,
+  /// rounded up to the next 50W. Matches psuNeedFor() in web/js/products.js.
+  static PsuNeed psuNeed(Product? cpu, Product? gpu) {
+    final cpuWatts = cpu?.tdp ?? 0;
+    final gpuWatts = gpu?.power ?? 0;
+    final draw = cpuWatts + gpuWatts + otherPartsWattage;
+    final withHeadroom = ((draw * psuHeadroom) / 50).ceil() * 50;
+    final cardMin = gpu?.recommendedPsu ?? 0;
+    return PsuNeed(
+      cpuWatts: cpuWatts,
+      gpuWatts: gpuWatts,
+      draw: draw,
+      needed: cardMin > withHeadroom ? cardMin : withHeadroom,
+      byCard: cardMin > 0 && cardMin >= withHeadroom,
+    );
+  }
+
   /// Some CPUs take either memory type, recorded as "DDR4/DDR5".
   static bool ramGenFits(String? ramGen, String? supported) {
     if (supported == null || ramGen == null) return true;
@@ -175,15 +196,16 @@ class Compatibility {
     }
 
     if (psu != null && (cpu != null || gpu != null)) {
-      final cpuWatts = cpu?.tdp ?? 0;
-      final gpuWatts = gpu?.power ?? 0;
-      final needed = cpuWatts + gpuWatts + otherPartsWattage;
-      final sum = 'about ${needed}W (CPU ${cpuWatts}W + GPU ${gpuWatts}W + '
-          '${otherPartsWattage}W other parts)';
-      psu.wattage >= needed
-          ? pass('Power OK: this build draws $sum and your PSU is ${psu.wattage}W.')
-          : critical('PSU too small: this build draws $sum but your PSU is only '
-              '${psu.wattage}W.');
+      final n = psuNeed(cpu, gpu);
+      final why = n.byCard
+          ? '${gpu!.name} needs at least a ${n.needed}W supply'
+          : 'this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU '
+              '${n.gpuWatts}W + ${otherPartsWattage}W other parts), so it needs '
+              'at least ${n.needed}W with headroom';
+      psu.wattage >= n.needed
+          ? pass('Power OK: $why, and your PSU is ${psu.wattage}W.')
+          : critical('PSU too small: $why, but your PSU is only '
+              '${psu.wattage}W. Pick a ${n.needed}W or bigger supply.');
     }
 
     // We stock no SFX supplies, so a small build still needs a case that
@@ -256,4 +278,21 @@ extension on Product {
     if (v is num) return v.toInt();
     return int.tryParse('$v') ?? 0;
   }
+}
+
+/// What [Compatibility.psuNeed] works out for a build.
+class PsuNeed {
+  final int cpuWatts;
+  final int gpuWatts;
+  final int draw;
+  final int needed;
+  /// True when the card maker's recommendation, not the draw, set [needed].
+  final bool byCard;
+  const PsuNeed({
+    required this.cpuWatts,
+    required this.gpuWatts,
+    required this.draw,
+    required this.needed,
+    required this.byCard,
+  });
 }

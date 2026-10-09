@@ -39,6 +39,29 @@ const builderSlots = ["CPU", "Cooler", "Motherboard", "RAM", "GPU", "Storage", "
 // work out how big the power supply needs to be.
 const OTHER_PARTS_WATTAGE = 100;
 
+// A supply should not run flat out: the build's estimated draw plus a
+// quarter again, so it copes with the spikes a modern graphics card
+// makes and is not working at its limit.
+const PSU_HEADROOM = 1.25;
+
+// How big a power supply a build needs: the larger of the graphics card
+// maker's recommended PSU (recommendedPsu, stored per card) and the
+// estimated draw plus headroom, rounded up to the next 50W. Shared by
+// the builder's check and its power meter so the two never disagree.
+function psuNeedFor(cpu, gpu) {
+  const cpuWatts = cpu ? (cpu.attrs.tdp || 0) : 0;
+  const gpuWatts = gpu ? (gpu.attrs.power || 0) : 0;
+  const draw = cpuWatts + gpuWatts + OTHER_PARTS_WATTAGE;
+  const withHeadroom = Math.ceil(draw * PSU_HEADROOM / 50) * 50;
+  const cardMin = gpu ? (gpu.attrs.recommendedPsu || 0) : 0;
+  return {
+    cpuWatts, gpuWatts, draw,
+    needed: Math.max(withHeadroom, cardMin),
+    // Which rule set the figure, for the message.
+    byCard: cardMin >= withHeadroom && cardMin > 0,
+  };
+}
+
 // ------------------------------------------------------------
 // Loading, and the "wait until everything is ready" helper
 // ------------------------------------------------------------
@@ -154,7 +177,7 @@ const ARRAY_SPECS = ["sockets", "supportedFormFactors", "incompatibleSockets",
 // Specifications that are numbers. Everything is stored as text, and
 // the compatibility checks compare these with < and >, so "90" has to
 // become 90 or a 90W cooler looks bigger than a 105W one.
-const NUMBER_SPECS = ["tdp", "coolerRating", "power", "length", "wattage",
+const NUMBER_SPECS = ["tdp", "coolerRating", "power", "recommendedPsu", "length", "wattage",
                       "maxGpuLength", "pcieGen", "cores", "threads"];
 
 // Some CPUs and boards accept either memory type, recorded as "DDR4/DDR5".
@@ -399,6 +422,7 @@ function attrLabel(key) {
     ram: "Memory",
     wattage: "Wattage",
     power: "Power Draw (W)",
+    recommendedPsu: "Recommended PSU (W)",
     length: "Card Length (mm)",
     tdp: "Cooling Needed (W)",
     coolerRating: "Cooler Capacity (W)",

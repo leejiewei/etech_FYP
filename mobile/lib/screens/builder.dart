@@ -619,21 +619,19 @@ class _BuilderScreenState extends State<BuilderScreen> {
     );
   }
 
-  /// Estimated draw against the power supply, as a bar. The same sum as
-  /// the PSU check: CPU + graphics card + a flat allowance for the rest.
+  /// Estimated draw against the power supply, as a bar, and the supply
+  /// the build needs. The same Compatibility.psuNeed as the PSU check.
   Widget _powerMeter() {
     final cpu = _build['CPU'];
     final gpu = _build['GPU'];
     final psu = _build['PSU'];
     if (cpu == null && gpu == null) return const SizedBox.shrink();
 
-    final needed =
-        _num(cpu?.attrs['tdp']) +
-        _num(gpu?.attrs['power']) +
-        Compatibility.otherPartsWattage;
+    final n = Compatibility.psuNeed(cpu, gpu);
+    final needed = n.needed;
     final capacity = _num(psu?.attrs['wattage']);
-    final over = capacity > 0 && needed > capacity;
-    final share = capacity > 0 ? (needed / capacity).clamp(0.0, 1.0) : 0.0;
+    final over = capacity > 0 && capacity < needed;
+    final share = capacity > 0 ? (n.draw / capacity).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       margin: const EdgeInsets.only(top: 14),
@@ -653,7 +651,24 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 style: TextStyle(fontSize: 12.5),
               ),
               Text(
-                'about ${needed.round()}W',
+                'about ${n.draw}W',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recommended power supply',
+                style: TextStyle(fontSize: 12.5),
+              ),
+              Text(
+                '${needed}W or more',
                 style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.bold,
@@ -675,13 +690,13 @@ class _BuilderScreenState extends State<BuilderScreen> {
             const SizedBox(height: 6),
             Text(
               over
-                  ? 'More than your ${capacity.round()}W supply can give.'
+                  ? 'Your ${capacity.round()}W supply is too small for this build.'
                   : '${(share * 100).round()}% of your ${capacity.round()}W supply.',
               style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
             ),
           ] else
             Text(
-              'Choose a power supply of at least ${needed.round()}W.',
+              'Choose a power supply of at least ${needed}W.',
               style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
             ),
         ],
