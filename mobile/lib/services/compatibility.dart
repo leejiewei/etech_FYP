@@ -24,6 +24,23 @@ class Compatibility {
   /// Rough extra wattage for the board, drives and fans.
   static const int otherPartsWattage = 100;
 
+  /// A cooler rated at 60% or more of the CPU's power copes, with the CPU
+  /// running hotter. Below that it is critical. Matches COOLER_MIN_SHARE.
+  static const double coolerMinShare = 0.6;
+
+  /// Total memory in GB and the number of sticks, from the kit ("2 x 16GB").
+  static ({int? sticks, int totalGb})? ramKit(Product ram) {
+    final m = RegExp(r'(\d+)\s*x\s*(\d+)\s*GB', caseSensitive: false)
+        .firstMatch((ram.attrs['kit'] ?? '').toString());
+    if (m != null) {
+      final n = int.parse(m.group(1)!);
+      return (sticks: n, totalGb: n * int.parse(m.group(2)!));
+    }
+    final cap = int.tryParse(
+        RegExp(r'\d+').stringMatch((ram.attrs['capacity'] ?? '').toString()) ?? '');
+    return cap == null ? null : (sticks: null, totalGb: cap);
+  }
+
   /// A supply should not run flat out: the draw plus a quarter again.
   static const double psuHeadroom = 1.25;
 
@@ -62,8 +79,70 @@ class Compatibility {
   static int? boardPcieGen(Product board) {
     final chipset = (board.attrs['chipset'] ?? '').toString().toUpperCase();
     if (chipset.startsWith('X870')) return 5;
-    if (['B760', 'B860', 'B850'].contains(chipset)) return 4;
-    if (['H610', 'B550'].contains(chipset)) return 3;
+    // The Strix Z790-I's ROG Hyper M.2 card in the box adds a Gen 5 slot.
+    if (chipset == 'Z790') return 5;
+    if (['B760', 'B860', 'B850', 'A620', 'B650', 'H810'].contains(chipset)) return 4;
+    if (['H610', 'B550', 'A520', 'H510'].contains(chipset)) return 3;
+    return null;
+  }
+
+  /// Intel or AMD, from the socket name.
+  static String _maker(String? socket) =>
+      (socket ?? '').startsWith('AM') ? 'AMD' : 'Intel';
+
+  /// True for the AM4 APUs (the "G" chips), which cut the graphics slot
+  /// to Gen 3 on any board.
+  static bool _isAm4Apu(Product? cpu) =>
+      cpu != null && cpu.socket == 'AM4' && RegExp(r'\d{4}G').hasMatch(cpu.name);
+
+  /// Which PCIe generation the board's graphics card slot runs at.
+  /// Matches boardGpuSlotGen() in web/js/build.js.
+  static int? boardGpuSlotGen(Product board, Product? cpu) {
+    final chipset = (board.attrs['chipset'] ?? '').toString().toUpperCase();
+    if (_isAm4Apu(cpu)) return 3;
+    if (['H61', 'H81'].contains(chipset)) return 2;
+    if (['A520', 'H110', 'H310', 'H510'].contains(chipset)) return 3;
+    if (['B550', 'A620', 'B650', 'H610', 'B760', 'H810', 'B850', 'B860']
+        .contains(chipset)) {
+      return 4;
+    }
+    if (chipset == 'Z790' || chipset.startsWith('X870')) return 5;
+    return null;
+  }
+
+  /// The PCIe generation and lane count a graphics card is built for.
+  static ({int gen, int lanes})? gpuPcie(Product gpu) {
+    final chip = (gpu.attrs['chip'] ?? '').toString();
+    if (RegExp(r'^RTX 50|^RX 90').hasMatch(chip)) {
+      return (gen: 5, lanes: RegExp(r'^RTX 50(50|60)').hasMatch(chip) ? 8 : 16);
+    }
+    if (chip.startsWith('RTX 30')) {
+      return (gen: 4, lanes: chip == 'RTX 3050' ? 8 : 16);
+    }
+    return null;
+  }
+
+  /// Rough gaming tiers, so a badly out-of-step CPU and GPU can be spotted.
+  /// Same tables as CPU_TIERS / GPU_TIERS in web/js/build.js.
+  static final List<(RegExp, int)> _cpuTiers = [
+    (RegExp(r'3200G|3400G'), 1),
+    (RegExp(r'Ryzen 5 5500|Ryzen 5 5600'), 2),
+    (RegExp(r'7800X3D|9800X3D|9950X3D'), 5),
+    (RegExp(r'7500F|i5-14400|Ultra 5 225\b|5700X|i7-12700'), 3),
+    (RegExp(r'7600X|9600X|7500X3D|5800X3D|i5-14600K|245K|i7-14700|265K|270K|9700X|9900X|285K|i9-14900'), 4),
+  ];
+  static final List<(RegExp, int)> _gpuTiers = [
+    (RegExp(r'^GT '), 0),
+    (RegExp(r'^GTX 1650|^RTX 3050'), 1),
+    (RegExp(r'^RTX 5050|^RTX 5060$|^RX 9060'), 2),
+    (RegExp(r'^RTX 5060 Ti|^RTX 5070$'), 3),
+    (RegExp(r'^RTX 5070 Ti|^RX 9070|^RTX 5080'), 4),
+    (RegExp(r'^RTX 5090'), 5),
+  ];
+  static int? _tierOf(List<(RegExp, int)> table, String text) {
+    for (final row in table) {
+      if (row.$1.hasMatch(text)) return row.$2;
+    }
     return null;
   }
 
@@ -94,12 +173,14 @@ class Compatibility {
             .toList();
       }
     }
-    // A cooler must mount on the socket AND be able to shift the heat.
-    // A 65W stock cooler on a 219W Core i7 would cook it, so it isn't offered.
+    // A cooler must mount on the socket AND cope with most of the heat.
+    // A 65W stock cooler on a 219W Core i7 would cook it, so it isn't
+    // offered; one a little under is offered with a warning.
     if (slot == 'Cooler' && cpu != null) {
       list = list
           .where((p) =>
-              p.sockets.contains(cpu.socket) && p.coolerRating >= cpu.tdp)
+              p.sockets.contains(cpu.socket) &&
+              p.coolerRating >= cpu.tdp * coolerMinShare)
           .toList();
     }
     // A back-connector board only fits a case built for it.
@@ -134,8 +215,8 @@ class Compatibility {
     if (cpu != null && mobo != null) {
       cpu.socket == mobo.socket
           ? pass('Socket match: CPU and motherboard are both ${cpu.socket}.')
-          : critical(
-              'Socket mismatch: CPU is ${cpu.socket} but motherboard is ${mobo.socket}.');
+          : critical('Socket mismatch: CPU is ${cpu.socket} but motherboard is '
+              '${mobo.socket}${_maker(cpu.socket) != _maker(mobo.socket) ? ' — an ${_maker(cpu.socket)} processor cannot go in an ${_maker(mobo.socket)} board.' : ', so this processor will not fit the board.'}');
     }
 
     if (ram != null && cpu != null && ram.incompatibleSockets.contains(cpu.socket)) {
@@ -158,15 +239,23 @@ class Compatibility {
           : critical('Cooler will not mount: ${cooler.name} does not support ${cpu.socket}.');
     }
 
-    // Cooling is a hard limit — the picker already hides coolers that cannot
-    // cope, so this only fires on a build loaded from earlier.
+    // Cooling. Well under the CPU's power is critical (the picker hides
+    // those, so that only fires on a build loaded from earlier); a little
+    // under still works, so it is a warning.
     if (cooler != null && cpu != null) {
-      cooler.coolerRating >= cpu.tdp
-          ? pass('Cooling OK: ${cooler.name} handles ${cooler.coolerRating}W, '
-              'the ${cpu.name} needs ${cpu.tdp}W.')
-          : critical('Cooler is too small for this processor: the ${cpu.name} puts out '
-              '${cpu.tdp}W but ${cooler.name} only handles ${cooler.coolerRating}W. '
-              'Please pick a cooler rated for ${cpu.tdp}W or more.');
+      if (cooler.coolerRating >= cpu.tdp) {
+        pass('Cooling OK: ${cooler.name} handles ${cooler.coolerRating}W, '
+            'the ${cpu.name} needs ${cpu.tdp}W.');
+      } else if (cooler.coolerRating < cpu.tdp * coolerMinShare) {
+        critical('Cooler is too small for this processor: the ${cpu.name} puts out '
+            '${cpu.tdp}W but ${cooler.name} only handles ${cooler.coolerRating}W. '
+            'Please pick a cooler rated for ${cpu.tdp}W or more.');
+      } else {
+        warn('Cooler below the recommended size: the ${cpu.name} can put out '
+            '${cpu.tdp}W and ${cooler.name} handles ${cooler.coolerRating}W. It will '
+            'work, but under heavy load the processor runs hotter and boosts less. '
+            'A cooler rated for ${cpu.tdp}W or more keeps it at full speed.');
+      }
     }
 
     if (cpu != null && cpu.attrs['igpu'] == 'No') {
@@ -200,6 +289,9 @@ class Compatibility {
               '${pcCase.name} only fits up to ${pcCase.maxGpuLength}mm.');
     }
 
+    // Below the estimated full-load draw the PC shuts down under load:
+    // critical. Covering the draw but short of the recommended size still
+    // runs: only a warning.
     if (psu != null && (cpu != null || gpu != null)) {
       final n = psuNeed(cpu, gpu);
       final why = n.byCard
@@ -208,10 +300,18 @@ class Compatibility {
           : 'this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU '
               '${n.gpuWatts}W + ${otherPartsWattage}W other parts), so it needs '
               'at least ${n.needed}W with headroom';
-      psu.wattage >= n.needed
-          ? pass('Power OK: $why, and your PSU is ${psu.wattage}W.')
-          : critical('PSU too small: $why, but your PSU is only '
-              '${psu.wattage}W. Pick a ${n.needed}W or bigger supply.');
+      if (psu.wattage >= n.needed) {
+        pass('Power OK: $why, and your PSU is ${psu.wattage}W.');
+      } else if (psu.wattage < n.draw) {
+        critical('PSU too small: this build draws about ${n.draw}W at full load, '
+            'but your PSU is only ${psu.wattage}W, so the PC would shut down in '
+            'games. Pick a ${n.needed}W or bigger supply.');
+      } else {
+        warn('PSU below the recommended size: $why, and your PSU is '
+            '${psu.wattage}W. It covers the estimated ${n.draw}W draw, so it will '
+            'run, but with little spare for load spikes. A ${n.needed}W supply '
+            'is the safer pick.');
+      }
     }
 
     // We stock no SFX supplies, so a small build still needs a case that
@@ -226,6 +326,34 @@ class Compatibility {
 
     // ---- WARNINGS: it builds and runs, just not at its best ----
 
+    // Memory: one stick runs single channel; too little memory stutters.
+    if (ram != null) {
+      final kit = ramKit(ram);
+      if (kit != null && kit.sticks == 1) {
+        warn('${ram.name} is a single stick, so memory runs in single channel — '
+            'noticeably slower in games and with built-in graphics. Two matching '
+            'sticks (a 2 x kit) run in dual channel.');
+      }
+      if (kit != null && kit.totalGb < 16) {
+        warn('${kit.totalGb}GB of memory is tight for Windows 11 and current games '
+            'and apps. 16GB or more is the comfortable minimum.');
+      }
+    }
+
+    // A hard drive as the only drive makes the whole PC feel slow.
+    if (storage != null && storage.attrs['driveType'] == 'HDD') {
+      warn('${storage.name} is a hard drive, so Windows and games will load slowly. '
+          'It is great for bulk storage, but an SSD as the main drive makes the '
+          'whole PC feel much faster.');
+    }
+
+    // A case with no fans needs some added, or the parts run hot.
+    if (pcCase != null &&
+        (pcCase.attrs['fansIncluded'] ?? '').toString().toLowerCase() == 'none') {
+      warn('${pcCase.name} comes with no fans. The PC will run hot without them, '
+          'so add at least two case fans (one in, one out).');
+    }
+
     if (storage != null && mobo != null && storage.attrs['pcieGen'] != null) {
       final driveGen = storage._pcieGen;
       final boardGen = boardPcieGen(mobo);
@@ -237,6 +365,37 @@ class Compatibility {
       if (driveGen == 5 && storage.attrs['heatsink'] == 'No') {
         warn('Gen 5 drives run hot: check ${mobo.name} has its own M.2 heat shield, '
             'or pick a drive with a heatsink built in.');
+      }
+    }
+
+    // A newer graphics card in a Gen 3 (or older) slot still works, with
+    // less bandwidth. The x8 cards feel it most.
+    if (gpu != null && mobo != null) {
+      final card = gpuPcie(gpu);
+      final slotGen = boardGpuSlotGen(mobo, cpu);
+      if (card != null && slotGen != null && slotGen <= 3 && card.gen > slotGen) {
+        warn('${gpu.name} is a PCIe Gen ${card.gen} card, but its slot runs at '
+            'Gen $slotGen${_isAm4Apu(cpu) ? ' with the ${cpu!.name}' : ' on ${mobo.name}'}. '
+            'It is fully compatible, but '
+            '${card.lanes == 8 ? 'this card only uses 8 lanes, so it can lose a noticeable amount of performance in some games.' : 'it can lose a little performance.'}'
+            '${_isAm4Apu(cpu) ? ' A processor without a "G" in its name runs the slot at full speed.' : ' A board with a Gen 4 or newer slot gets the most out of it.'}');
+      }
+    }
+
+    // A processor and graphics card far apart in power.
+    if (cpu != null && gpu != null) {
+      final cpuTier = _tierOf(_cpuTiers, cpu.name);
+      final gpuTier = _tierOf(_gpuTiers, (gpu.attrs['chip'] ?? '').toString());
+      if (cpuTier != null && gpuTier != null) {
+        if (gpuTier - cpuTier >= 2) {
+          warn('Bottleneck: the ${cpu.name} will hold back the ${gpu.name} in '
+              'games, so you would be paying for graphics power you cannot use. '
+              'A faster processor, or a cheaper card, would balance this build better.');
+        } else if (gpuTier >= 1 && cpuTier - gpuTier >= 3) {
+          warn('Bottleneck: the ${gpu.name} will hold back the ${cpu.name} in '
+              'games. Fine for work and light gaming, but a stronger graphics '
+              'card would make far better use of this processor.');
+        }
       }
     }
 

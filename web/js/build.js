@@ -94,14 +94,14 @@ function eligibleOptions(slot) {
     list = list.filter((p) =>
       (p.attrs.incompatibleSockets || []).indexOf(cpu.attrs.socket) === -1);
   }
-  // A cooler has to physically mount on the CPU's socket.
-  // A cooler has to mount on the CPU's socket AND be able to shift the heat
+  // A cooler has to mount on the CPU's socket AND cope with most of the heat
   // it makes. A 65W stock cooler on a 219W Core i7 would cook it, so those
-  // simply aren't offered — the same way an incompatible board isn't.
+  // aren't offered. One a little under the CPU's figure is offered, and the
+  // summary warns that the CPU will run hotter (COOLER_MIN_SHARE).
   if (slot === "Cooler" && cpu) {
     list = list.filter((p) =>
       (p.attrs.sockets || []).includes(cpu.attrs.socket) &&
-      (p.attrs.coolerRating || 0) >= (cpu.attrs.tdp || 0));
+      (p.attrs.coolerRating || 0) >= (cpu.attrs.tdp || 0) * COOLER_MIN_SHARE);
   }
 
   return list;
@@ -384,9 +384,72 @@ function wireToolbar() {
 function boardPcieGen(mobo) {
   const chipset = (mobo.attrs.chipset || "").toUpperCase();
   if (chipset.indexOf("X870") === 0) return 5;              // X870, X870E
-  if (["B760", "B860", "B850"].indexOf(chipset) !== -1) return 4;
-  if (["H610", "B550"].indexOf(chipset) !== -1) return 3;
+  if (chipset === "Z790") return 5;  // the Strix Z790-I's ROG Hyper M.2 card in the box adds a Gen 5 slot
+  if (["B760", "B860", "B850", "A620", "B650", "H810"].indexOf(chipset) !== -1) return 4;
+  if (["H610", "B550", "A520", "H510"].indexOf(chipset) !== -1) return 3;
   return null;
+}
+
+// Which PCIe generation the board's graphics card slot (the top x16 slot)
+// runs at. AM4 APUs (the "G" chips) cut that slot to Gen 3 on any board.
+// Unknown chipsets return null and the slot check is skipped.
+function boardGpuSlotGen(mobo, cpu) {
+  const chipset = (mobo.attrs.chipset || "").toUpperCase();
+  if (cpu && cpu.attrs.socket === "AM4" && /\d{4}G/.test(cpu.name)) return 3;
+  if (["H61", "H81"].indexOf(chipset) !== -1) return 2;
+  if (["A520", "H110", "H310", "H510"].indexOf(chipset) !== -1) return 3;
+  if (["B550", "A620", "B650", "H610", "B760", "H810", "B850", "B860"].indexOf(chipset) !== -1) return 4;
+  if (chipset === "Z790" || chipset.indexOf("X870") === 0) return 5;
+  return null;
+}
+
+// The PCIe generation and lane count a graphics card is built for, from its
+// chip. The x8 cards lose the most in an older slot.
+function gpuPcie(gpu) {
+  const chip = gpu.attrs.chip || "";
+  if (/^RTX 50|^RX 90/.test(chip)) return { gen: 5, lanes: /^RTX 50(50|60)/.test(chip) ? 8 : 16 };
+  if (/^RTX 30/.test(chip)) return { gen: 4, lanes: chip === "RTX 3050" ? 8 : 16 };
+  return null;
+}
+
+// Rough gaming tiers, so the summary can spot a processor and graphics card
+// that are badly out of step. Only the models we stock are listed; anything
+// else returns null and the bottleneck check is skipped.
+const CPU_TIERS = [
+  [/3200G|3400G/, 1],
+  [/Ryzen 5 5500|Ryzen 5 5600/, 2],
+  [/7800X3D|9800X3D|9950X3D/, 5],
+  [/7500F|i5-14400|Ultra 5 225\b|5700X|i7-12700/, 3],
+  [/7600X|9600X|7500X3D|5800X3D|i5-14600K|245K|i7-14700|265K|270K|9700X|9900X|285K|i9-14900/, 4],
+];
+const GPU_TIERS = [
+  [/^GT /, 0],
+  [/^GTX 1650|^RTX 3050/, 1],
+  [/^RTX 5050|^RTX 5060$|^RX 9060/, 2],
+  [/^RTX 5060 Ti|^RTX 5070$/, 3],
+  [/^RTX 5070 Ti|^RX 9070|^RTX 5080/, 4],
+  [/^RTX 5090/, 5],
+];
+function tierOf(table, text) {
+  const hit = table.find((row) => row[0].test(text));
+  return hit ? hit[1] : null;
+}
+
+// A cooler rated at 60% or more of the CPU's power copes, just with the CPU
+// running hotter and boosting less. Below that it is critical.
+const COOLER_MIN_SHARE = 0.6;
+
+// Total memory in GB, and how many sticks, from the kit ("2 x 16GB").
+function ramKit(ram) {
+  const m = /(\d+)\s*x\s*(\d+)\s*GB/i.exec(ram.attrs.kit || "");
+  if (m) return { sticks: +m[1], totalGb: +m[1] * +m[2] };
+  const cap = parseInt(ram.attrs.capacity, 10);
+  return cap ? { sticks: null, totalGb: cap } : null;
+}
+
+// Intel or AMD, from the socket name.
+function socketMaker(socket) {
+  return /^AM/.test(socket || "") ? "AMD" : "Intel";
 }
 
 function renderBuildSummary() {
@@ -422,7 +485,10 @@ function renderBuildSummary() {
   if (cpu && mobo) {
     cpu.attrs.socket === mobo.attrs.socket
       ? pass(`Socket match: CPU and motherboard are both ${cpu.attrs.socket}.`)
-      : critical(`Socket mismatch: CPU is ${cpu.attrs.socket} but motherboard is ${mobo.attrs.socket}.`);
+      : critical(`Socket mismatch: CPU is ${cpu.attrs.socket} but motherboard is ${mobo.attrs.socket}` +
+          (socketMaker(cpu.attrs.socket) !== socketMaker(mobo.attrs.socket)
+            ? ` — an ${socketMaker(cpu.attrs.socket)} processor can't go in an ${socketMaker(mobo.attrs.socket)} board.`
+            : `, so this processor won't fit the board.`));
   }
 
   // 1b. A few memory kits are known from shop testing not to work with
@@ -482,20 +548,28 @@ function renderBuildSummary() {
                  `only fits up to ${maxLength}mm.`);
   }
 
-  // 7. The PSU must cover the whole system with room to spare, and be at
-  //    least what the graphics card's maker recommends (psuNeedFor). Too
-  //    small and the PC shuts down under load, so this one is critical.
+  // 7. The PSU. Below the build's estimated full-load draw the PC shuts down
+  //    under load, so that is critical. Covering the draw but falling short
+  //    of the recommended size (the card maker's minimum, or the draw plus
+  //    headroom — psuNeedFor) still runs, so that is only a warning.
   if (psu && (cpu || gpu)) {
     const n = psuNeedFor(cpu, gpu);
+    const watts = psu.attrs.wattage || 0;
     const why = n.byCard
       ? `we recommend at least ${n.needed}W for a full rig with the ${gpu.name}` +
         (n.makerPsu && n.makerPsu < n.needed ? ` (${n.maker}'s own figure is ${n.makerPsu}W)` : "")
       : `this build draws about ${n.draw}W (CPU ${n.cpuWatts}W + GPU ${n.gpuWatts}W + ` +
         `${OTHER_PARTS_WATTAGE}W other parts), so it needs at least ${n.needed}W with headroom`;
-    psu.attrs.wattage >= n.needed
-      ? pass(`Power OK: ${why}, and your PSU is ${psu.attrs.wattage}W.`)
-      : critical(`PSU too small: ${why}, but your PSU is only ${psu.attrs.wattage}W. ` +
-                 `Pick a ${n.needed}W or bigger supply.`);
+    if (watts >= n.needed) {
+      pass(`Power OK: ${why}, and your PSU is ${watts}W.`);
+    } else if (watts < n.draw) {
+      critical(`PSU too small: this build draws about ${n.draw}W at full load, but your PSU is only ` +
+               `${watts}W, so the PC would shut down in games. Pick a ${n.needed}W or bigger supply.`);
+    } else {
+      warn(`PSU below the recommended size: ${why}, and your PSU is ${watts}W. It covers the ` +
+           `estimated ${n.draw}W draw, so it will run, but with little spare for load spikes. ` +
+           `A ${n.needed}W supply is the safer pick.`);
+    }
   }
 
   // 8. We stock no SFX supplies, so a Mini-ITX build still needs a case that
@@ -508,16 +582,48 @@ function renderBuildSummary() {
 
   // ---- WARNINGS: it will build and run, just not at its best ----
 
-  // Cooling is a hard limit. The dropdown already hides coolers that can't
-  // cope, so this only fires on a build loaded from earlier — but we won't
-  // sell the pairing, because it would run far too hot to be usable.
+  // Cooling. Well under the CPU's power is critical — it would run far too
+  // hot to be usable (the dropdown hides those, so that only fires on a build
+  // loaded from earlier). A little under still works: the CPU just runs
+  // hotter and boosts less.
   if (cooler && cpu) {
     const needed = cpu.attrs.tdp || 0;
     const capacity = cooler.attrs.coolerRating || 0;
-    capacity >= needed
-      ? pass(`Cooling OK: ${cooler.name} handles ${capacity}W, the ${cpu.name} needs ${needed}W.`)
-      : critical(`Cooler is too small for this processor: the ${cpu.name} puts out ${needed}W but ` +
-                 `${cooler.name} only handles ${capacity}W. Please pick a cooler rated for ${needed}W or more.`);
+    if (capacity >= needed) {
+      pass(`Cooling OK: ${cooler.name} handles ${capacity}W, the ${cpu.name} needs ${needed}W.`);
+    } else if (capacity < needed * COOLER_MIN_SHARE) {
+      critical(`Cooler is too small for this processor: the ${cpu.name} puts out ${needed}W but ` +
+               `${cooler.name} only handles ${capacity}W. Please pick a cooler rated for ${needed}W or more.`);
+    } else {
+      warn(`Cooler below the recommended size: the ${cpu.name} can put out ${needed}W and ` +
+           `${cooler.name} handles ${capacity}W. It will work, but under heavy load the processor ` +
+           `runs hotter and boosts less. A cooler rated for ${needed}W or more keeps it at full speed.`);
+    }
+  }
+
+  // Memory. One stick runs in single channel, and too little memory stutters.
+  if (ram) {
+    const kit = ramKit(ram);
+    if (kit && kit.sticks === 1) {
+      warn(`${ram.name} is a single stick, so memory runs in single channel — noticeably slower ` +
+        `in games and with built-in graphics. Two matching sticks (a 2 x kit) run in dual channel.`);
+    }
+    if (kit && kit.totalGb < 16) {
+      warn(`${kit.totalGb}GB of memory is tight for Windows 11 and current games and apps. ` +
+        `16GB or more is the comfortable minimum.`);
+    }
+  }
+
+  // Storage. A hard drive as the only drive makes the whole PC feel slow.
+  if (storage && storage.attrs.driveType === "HDD") {
+    warn(`${storage.name} is a hard drive, so Windows and games will load slowly. It is great for ` +
+      `bulk storage, but an SSD as the main drive makes the whole PC feel much faster.`);
+  }
+
+  // Case airflow. A case with no fans needs some added, or the parts run hot.
+  if (pcCase && /^none$/i.test(pcCase.attrs.fansIncluded || "")) {
+    warn(`${pcCase.name} comes with no fans. The PC will run hot without them, so add at least ` +
+      `two case fans (one in, one out).`);
   }
 
   // A newer drive in an older M.2 slot is fully compatible, just slower.
@@ -531,6 +637,39 @@ function renderBuildSummary() {
     if (storage.attrs.pcieGen === 5 && storage.attrs.heatsink === "No") {
       warn(`Gen 5 drives run hot: check ${mobo.name} has its own M.2 heat shield, ` +
         `or pick a drive with a heatsink built in.`);
+    }
+  }
+
+  // A newer graphics card in a Gen 3 (or older) slot still works, just with
+  // less bandwidth. The x8 cards (RTX 5050/5060/5060 Ti, RTX 3050) feel it most.
+  if (gpu && mobo) {
+    const card = gpuPcie(gpu);
+    const slotGen = boardGpuSlotGen(mobo, cpu);
+    if (card && slotGen && slotGen <= 3 && card.gen > slotGen) {
+      const apu = cpu && cpu.attrs.socket === "AM4" && /\d{4}G/.test(cpu.name);
+      warn(`${gpu.name} is a PCIe Gen ${card.gen} card, but its slot runs at Gen ${slotGen}` +
+        (apu ? ` with the ${cpu.name}` : ` on ${mobo.name}`) + `. It is fully compatible, but ` +
+        (card.lanes === 8
+          ? `this card only uses 8 lanes, so it can lose a noticeable amount of performance in some games.`
+          : `it can lose a little performance.`) +
+        (apu ? ` A processor without a "G" in its name runs the slot at full speed.`
+             : ` A board with a Gen 4 or newer slot gets the most out of it.`));
+    }
+  }
+
+  // A processor and graphics card far apart in power — one holds the other back.
+  if (cpu && gpu) {
+    const cpuTier = tierOf(CPU_TIERS, cpu.name);
+    const gpuTier = tierOf(GPU_TIERS, gpu.attrs.chip || "");
+    if (cpuTier !== null && gpuTier !== null) {
+      if (gpuTier - cpuTier >= 2) {
+        warn(`Bottleneck: the ${cpu.name} will hold back the ${gpu.name} in games, so you'd be ` +
+          `paying for graphics power you can't use. A faster processor, or a cheaper card, ` +
+          `would balance this build better.`);
+      } else if (gpuTier >= 1 && cpuTier - gpuTier >= 3) {
+        warn(`Bottleneck: the ${gpu.name} will hold back the ${cpu.name} in games. Fine for work ` +
+          `and light gaming, but a stronger graphics card would make far better use of this processor.`);
+      }
     }
   }
 
@@ -608,7 +747,8 @@ function renderPowerMeter(cpu, gpu, psu) {
   const n = psuNeedFor(cpu, gpu);
   const capacity = psu ? psu.attrs.wattage || 0 : 0;
   const share = capacity ? Math.min(100, Math.round(n.draw / capacity * 100)) : 0;
-  const short = capacity && capacity < n.needed;
+  const short = capacity && capacity < n.draw;
+  const tight = capacity && !short && capacity < n.needed;
   el.innerHTML = `
     <div class="bp-power">
       <div class="bp-power-row">
@@ -620,10 +760,12 @@ function renderPowerMeter(cpu, gpu, psu) {
         <strong>${n.needed}W or more</strong>
       </div>
       ${capacity ? `
-        <div class="bp-meter"><span class="${short ? "over" : ""}" style="width:${share}%"></span></div>
+        <div class="bp-meter"><span class="${short ? "over" : tight ? "tight" : ""}" style="width:${share}%"></span></div>
         <p class="bp-power-note">${short
           ? `Your ${capacity}W supply is too small for this build.`
-          : `${share}% of your ${capacity}W supply.`}</p>`
+          : tight
+            ? `${share}% of your ${capacity}W supply — below the ${n.needed}W we recommend.`
+            : `${share}% of your ${capacity}W supply.`}</p>`
         : `<p class="bp-power-note">Choose a power supply of at least ${n.needed}W.</p>`}
     </div>`;
 }

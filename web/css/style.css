@@ -1796,6 +1796,10 @@ html {
   background: var(--danger);
 }
 
+.bp-meter span.tight {
+  background: var(--warn);
+}
+
 .bp-power-note {
   font-size: var(--text-xs);
   color: var(--ink-3);
