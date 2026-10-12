@@ -3119,12 +3119,10 @@ body.privacy-notice-open .toast.show {
    "~" only reaches forwards, so the WhatsApp button was never actually
    being lifted clear of it. */
 body.privacy-notice-open { padding-bottom: 96px; }
-body.privacy-notice-open .whatsapp-btn { bottom: 96px; }
 
 @media (max-width: 600px) {
   .privacy-notice { font-size: var(--text-xs); padding: var(--space-3) var(--space-4); gap: var(--space-3); }
   body.privacy-notice-open { padding-bottom: 150px; }
-  body.privacy-notice-open .whatsapp-btn { bottom: 150px; }
 }
 
 
@@ -6318,3 +6316,129 @@ body {
 .step-head::before { content: none; }
 
 .bp-progress-track span.on { background: var(--ink-2); }
+
+/* ---------- The two corners: eTech AI left, Contact us right ----------
+   --float-lift raises both when something is pinned along the foot of
+   the page (the privacy notice, the phone cart bar, the builder total). */
+:root {
+  --whatsapp: #1a7a43;       /* WhatsApp's own green, so it reads as WhatsApp; white on it 5.3:1 */
+  --float-lift: 0px;
+}
+
+body.has-till-bar { --float-lift: 72px; }
+body.has-bp-bar { --float-lift: 84px; }
+body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
+
+.chatbot-wrapper,
+.has-bp-bar .chatbot-wrapper {
+  position: fixed;
+  top: auto;
+  right: auto;
+  left: var(--space-5);
+  bottom: calc(var(--space-5) + var(--float-lift));
+  z-index: 120;
+}
+
+.chatbot-toggle,
+.whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: auto;
+  height: 48px;
+  padding: 0 var(--space-4) 0 var(--space-3);
+  border: 0;
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  font-size: var(--text-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.chatbot-toggle:hover,
+.whatsapp-btn:hover { transform: translateY(-2px); }
+
+.chatbot-toggle {
+  background-color: var(--ink);
+  color: white;
+}
+
+.chatbot-toggle .ui-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--brand);
+}
+
+.chatbot-toggle[aria-expanded="true"] { background-color: var(--ink-2); }
+
+.whatsapp-btn,
+.has-bp-bar .whatsapp-btn {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: var(--space-5);
+  bottom: calc(var(--space-5) + var(--float-lift));
+  z-index: 110;
+  background-color: var(--whatsapp);
+  color: white;
+}
+
+.whatsapp-btn .ui-icon { width: 20px; height: 20px; }
+
+/* The consultant opens just above its button. */
+.chatbot-panel {
+  position: absolute;
+  left: 0;
+  bottom: 60px;
+  width: 380px;
+  max-width: calc(100vw - 2 * var(--space-5));
+  height: min(560px, calc(100vh - 160px));
+  flex-direction: column;
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.chatbot-panel.open { display: flex; }
+
+.chatbot-header {
+  background-color: var(--ink);
+  color: white;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.chatbot-header small {
+  margin-left: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-log { flex: 1; overflow-y: auto; }
+
+@media (max-width: 760px) {
+  .chatbot-wrapper,
+  .has-bp-bar .chatbot-wrapper { left: var(--space-3); right: auto; bottom: calc(var(--space-3) + var(--float-lift)); }
+  .whatsapp-btn,
+  .has-bp-bar .whatsapp-btn { right: var(--space-3); bottom: calc(var(--space-3) + var(--float-lift)); }
+  .chatbot-toggle,
+  .whatsapp-btn { height: 44px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+  .chatbot-toggle span { display: inline; }
+  .chatbot-toggle { width: auto; justify-content: flex-start; }
+  /* On a phone the consultant is a sheet from the bottom edge. */
+  .chatbot-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    height: 78vh;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+}

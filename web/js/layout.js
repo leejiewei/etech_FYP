@@ -99,12 +99,6 @@ function injectHeader() {
         </form>
 
         <ul class="nav-links shell-actions">
-          <li><button type="button" class="shell-action shell-help" aria-controls="chatbot-panel"
-                onclick="document.getElementById('chatbot-panel').classList.toggle('open')">
-            ${uiIcon("help")}<span class="shell-action-label">Build advice</span></button></li>
-          <li><a class="shell-action shell-whatsapp" href="${whatsappShopLink("Hi, I have a question about a product on eTech.")}"
-                target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
-            ${uiIcon("chat")}<span class="shell-action-label">WhatsApp</span></a></li>
           <li><a class="shell-action" href="wishlist.html"${current("wishlist.html")} aria-label="Wishlist">
             ${uiIcon("heart")}<span class="shell-action-label">Wishlist</span>
             <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
@@ -428,16 +422,19 @@ function injectPrivacyNotice() {
   window.addEventListener("resize", measureBar);
 }
 
-// The WhatsApp link is a header action now (injectHeader); the number
-// itself lives in js/whatsapp.js, which the staff console shares.
+// The two corners of every page: eTech AI, the build consultant, bottom
+// left; Contact us on WhatsApp, bottom right. The number lives in
+// js/whatsapp.js, which the staff console shares.
 function injectChatbot() {
   const wrapper = document.createElement("div");
   wrapper.className = "chatbot-wrapper";
   wrapper.innerHTML = `
-    <div class="chatbot-panel" id="chatbot-panel" role="dialog" aria-label="Build advice">
-      <div class="chatbot-header">Build advice
+    <button type="button" class="chatbot-toggle" aria-controls="chatbot-panel" aria-expanded="false"
+      onclick="toggleChatbot()">${uiIcon("sparkle")}<span>eTech AI</span></button>
+    <div class="chatbot-panel" id="chatbot-panel" role="dialog" aria-label="eTech AI build consultant">
+      <div class="chatbot-header"><span>eTech AI <small>Build consultant</small></span>
         <button type="button" class="chatbot-close" aria-label="Close"
-          onclick="document.getElementById('chatbot-panel').classList.remove('open')">${uiIcon("close")}</button>
+          onclick="toggleChatbot(false)">${uiIcon("close")}</button>
       </div>
       <div class="chat-log" id="chat-log">
         <div class="chat-bubble bot">Hi! Tell me what the PC is for and your budget and I'll spec the whole
@@ -451,6 +448,27 @@ function injectChatbot() {
     </div>
   `;
   document.body.appendChild(wrapper);
+
+  if (typeof whatsappShopLink === "function") {
+    const contact = document.createElement("a");
+    contact.className = "whatsapp-btn";
+    contact.href = whatsappShopLink("Hi, I have a question about a product on eTech.");
+    contact.target = "_blank";
+    contact.rel = "noopener";
+    contact.setAttribute("aria-label", "Contact us on WhatsApp");
+    contact.innerHTML = `${uiIcon("chat")}<span>Contact us</span>`;
+    document.body.appendChild(contact);
+  }
+}
+
+// Opens or closes the consultant; with no argument, flips it.
+function toggleChatbot(open) {
+  const panel = document.getElementById("chatbot-panel");
+  if (!panel) return;
+  const now = panel.classList.toggle("open", open);
+  const toggle = document.querySelector(".chatbot-toggle");
+  if (toggle) toggle.setAttribute("aria-expanded", String(now));
+  if (now) document.getElementById("chat-input")?.focus();
 }
 
 // A short message that rises from the foot of the page and leaves on its
