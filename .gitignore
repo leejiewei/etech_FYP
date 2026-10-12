@@ -66,3 +66,7 @@ ml/.venv/
 
 # raw product photos the user downloads; processed copies go to web/images/products
 photo-inbox/
+
+# Design-loop screenshots are regenerated every run
+design/screenshots/*
+!design/screenshots/.gitkeep
