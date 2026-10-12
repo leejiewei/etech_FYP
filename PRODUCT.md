@@ -7,7 +7,7 @@
 web
 
 The same shop also ships a native Android app (Flutter, `mobile/`), which has its own record in
-`mobile/PRODUCT.md`. The two share product truth and the eTech name, not a design language.
+`mobile/PRODUCT.md`. Since 12 Oct 2026 the two share one design language too (Shop Catalogue, design/TASTE.md).
 
 ## Users
 

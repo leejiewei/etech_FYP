@@ -122,32 +122,14 @@ function colourImageOf(product, colour) {
   return slug ? main.replace(/\.webp$/, "-" + slug + ".webp") : null;
 }
 
-// Which aisle a product lives in, as the name of its section hue
-// (--hue-* in style.css). The same colour marks that aisle in the header
-// strip and the shop's chips, so a GPU card and the Components tab agree.
-const AISLE_HUE = {
-  "Components": "components", "Case Fans": "components",
-  "Laptops": "laptops",
-  "Gaming Gear": "gaming", "Webcams": "gaming",
-  "Monitors": "monitors", "Projectors": "monitors", "Monitor Arms": "monitors",
-  "Printers": "printers", "Consumables": "printers",
-  "Networking": "networking",
-  "Accessories": "accessories",
-  "Branded PC": "pcs", "All-in-One PC": "pcs", "Prebuilt PC": "pcs",
-};
-
-function aisleHue(product) {
-  return AISLE_HUE[product && product.category] || "components";
-}
-
 // The product's number in the shop's catalogue. It is the same number on
-// the card, in the product view and on the customer's receipt, so a
+// the card, in the product view and on the customer's order, so a
 // customer reading one out over WhatsApp is understood.
 function productCode(product) {
-  return "No. " + product.id;
+  return "Item " + product.id;
 }
 
-// One line of a receipt: "2x  AMD Ryzen 5 7500F  No. 2104 ...... RM 1,298.00".
+// One order line: "2x  AMD Ryzen 5 7500F  Item 2104  RM 1,298.00".
 // The till, the cart and the checkout summary all print through this,
 // so a line reads the same wherever the customer meets it.
 function receiptLineHtml(item, extraClass) {
@@ -156,7 +138,7 @@ function receiptLineHtml(item, extraClass) {
       <span class="till-qty">${item.qty}&times;</span>
       <span class="till-name">${escapeHtml(item.name)}${
         item.colour ? ` <small>${escapeHtml(item.colour)}</small>` : ""}
-        <span class="till-code">No. ${escapeHtml(String(item.id))}</span></span>
+        <span class="till-code">Item ${escapeHtml(String(item.id))}</span></span>
       <span class="till-leader" aria-hidden="true"></span>
       <span class="till-price${item.onDeal ? " on-deal" : ""}">${money(item.lineTotal)}</span>
     </li>`;
@@ -169,7 +151,6 @@ function heartIcon() {
 function buildProductCard(product) {
   const card = document.createElement("article");
   card.className = "product-card";
-  card.style.setProperty("--card-hue", `var(--hue-${aisleHue(product)})`);
 
   // stockOf, not product.stock: one of the shop's own builds is only
   // available when its parts are, and it must read the same here as it
@@ -180,10 +161,9 @@ function buildProductCard(product) {
   const outOfStock = stock === "out";
   const options = colourOptionsOf(product);
 
-  // A card reads like one item on a receipt: code and aisle, the name,
-  // then the price run out to the right edge with the add control beside
-  // it. The whole card opens the product; only the heart and Add do
-  // something else.
+  // Category, name, item number, stock, then the price over a labelled
+  // Add to cart. The whole card opens the product; only the heart and
+  // the button do something else.
   card.innerHTML = `
     <button type="button" class="wishlist-btn ${heartFilled ? "active" : ""}"
       onclick="toggleWishlist(${product.id})"
@@ -194,18 +174,16 @@ function buildProductCard(product) {
       ${productImageTag(product, "product-img")}
     </div>
     <div class="product-card-body">
-      <p class="product-category"><span class="product-code">${escapeHtml(productCode(product))}</span>
-        ${escapeHtml(product.subcategory || product.category || "")}</p>
+      <p class="product-category">${escapeHtml(product.subcategory || product.category || "")}</p>
       <h3><button type="button" class="product-card-open">${escapeHtml(product.name)}</button></h3>
+      <p class="product-code">${escapeHtml(productCode(product))}</p>
       <p class="stock-badge ${stockClass}">${stockLabel(stock)}</p>
       <div class="product-card-buy">
         ${priceBlockHtml(product, "product-price")}
-        <span class="product-card-leader" aria-hidden="true"></span>
         <button type="button" class="card-add" ${outOfStock ? "disabled" : ""}
-          title="${outOfStock ? "Out of stock" : options.length ? "Choose " + optionKindOf(options).toLowerCase() : "Add to cart"}"
           aria-label="${outOfStock ? "Out of stock" : (options.length ? "Choose " + optionKindOf(options).toLowerCase() + " for " : "Add to cart: ") + escapeHtml(product.name)}"
           onclick="event.stopPropagation(); ${options.length ? `openProductModal(${product.id})` : `addToCart(${product.id})`}">
-          ${outOfStock ? "&times;" : (typeof uiIcon === "function" ? uiIcon("cart") : "+")}
+          ${outOfStock || typeof uiIcon !== "function" ? "" : uiIcon("cart")}<span>${outOfStock ? "Out of stock" : (options.length ? "Choose " + optionKindOf(options).toLowerCase() : "Add to cart")}</span>
         </button>
       </div>
     </div>

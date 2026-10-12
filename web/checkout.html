@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Checkout - eTech Computer Accessories</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="images/brand/etech-logo-180.png" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -21,10 +23,7 @@
       <!-- The order as it will print: the same lines and total the shop
            charges, filled by js/checkout.js. -->
       <aside class="receipt checkout-receipt" aria-label="Order summary">
-        <div class="till-head">
-          <span class="logo-mark">eTech</span>
-          <span class="till-meta">Order summary<br>Computer Accessories</span>
-        </div>
+        <h2 class="till-head">Order summary</h2>
         <ol id="checkout-items" class="till-lines"></ol>
         <div class="till-total"><span>Total</span><span class="till-sum" id="checkout-total">RM 0.00</span></div>
       </aside>

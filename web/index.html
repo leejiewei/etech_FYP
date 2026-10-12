@@ -4,21 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>eTech Computer Accessories</title>
-  <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="images/brand/etech-logo-180.png" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <div id="site-header"></div>
 
+  <!-- The shop's name over a slowly turning ROG Hyperion, drawn in
+       three.js by js/hero3d.js. The copy stands on its own: with no
+       WebGL, or reduced motion, the band is a still photo of the case. -->
+  <section class="hero" aria-labelledby="home-title">
+    <div class="hero-stage" id="hero-stage" aria-hidden="true">
+      <img class="hero-still" src="images/products/1527.webp" alt="" />
+    </div>
+    <div class="hero-copy">
+      <h1 id="home-title">eTech Computer Accessories</h1>
+      <p class="home-lede">Computer parts, PCs and laptops, priced in RM. Collect from the shop in Bukit Jambul, Penang, or have it delivered.</p>
+      <div class="hero-actions">
+        <a class="add-btn" href="shop.html">Shop all products</a>
+        <a class="ghost-btn" href="build.html">Build a PC</a>
+      </div>
+    </div>
+  </section>
+
   <main class="home">
     <div class="home-main">
 
-      <!-- What the shop is, in one line, then straight to products. -->
-      <header class="home-intro">
-        <h1 id="home-title">eTech Computer Accessories</h1>
-        <p class="home-lede">Computer parts, PCs and laptops, priced in RM. Collect from the shop in Bukit Jambul, Penang, or have it delivered.</p>
-      </header>
+      <section class="section dept-section" aria-labelledby="dept-title">
+        <h2 id="dept-title">Shop by department</h2>
+        <nav class="dept-index" id="dept-index" aria-label="Departments"></nav>
+      </section>
 
       <!-- Personalised recommendations for signed-in customers
            (recommend_for_me(), js/home.js); everyone else sees the
@@ -34,21 +51,13 @@
       </section>
 
       <section class="section featured-section" id="featured-section">
-        <h2>One from every aisle</h2>
+        <h2>Featured products</h2>
         <div class="product-grid" id="featured-grid"></div>
-      </section>
-
-      <!-- The shop's departments as receipt lines: name, dot leader, how
-           many products. Counts come from the loaded catalogue. -->
-      <section class="section dept-section" aria-labelledby="dept-title">
-        <h2 id="dept-title">Departments</h2>
-        <nav class="dept-index" id="dept-index" aria-label="Departments"></nav>
       </section>
 
     </div>
 
-    <!-- The live cart, printed like a till roll. js/home.js redraws it
-         every time the cart changes. -->
+    <!-- The live cart. js/home.js redraws it every time the cart changes. -->
     <aside class="home-side" id="home-side" aria-label="Your cart">
       <div class="till" id="till"></div>
     </aside>
@@ -83,5 +92,6 @@
   <script src="js/home.js"></script>
   <script src="js/highend-builds.js"></script>
   <script src="js/app.js"></script>
+  <script type="module" src="js/hero3d.js"></script>
 </body>
 </html>

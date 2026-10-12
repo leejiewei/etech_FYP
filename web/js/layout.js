@@ -30,18 +30,16 @@ function uiIcon(name, extraClass) {
     aria-hidden="true">${UI_ICONS[name] || ""}</svg>`;
 }
 
-// The aisles shown in the header strip. Each owns one section hue
-// (--hue-* in style.css), the same colour its chips and cards carry in
-// the shop, so a customer can tell which aisle they are in at a glance.
-// "All categories" opens the full menu for the rest.
+// The aisles shown in the header strip. "All categories" opens the full
+// menu for the rest.
 const HEADER_AISLES = [
-  { label: "Components", href: "shop.html?category=Components", hue: "components" },
-  { label: "Laptops", href: "shop.html?category=Laptops", hue: "laptops" },
-  { label: "Gaming Gear", href: "shop.html?category=Gaming%20Gear", hue: "gaming" },
-  { label: "Monitors", href: "shop.html?category=Monitors", hue: "monitors" },
-  { label: "Printers", href: "shop.html?category=Printers", hue: "printers" },
-  { label: "Networking", href: "shop.html?category=Networking", hue: "networking" },
-  { label: "Accessories", href: "shop.html?category=Accessories", hue: "accessories" },
+  { label: "Components", href: "shop.html?category=Components" },
+  { label: "Laptops", href: "shop.html?category=Laptops" },
+  { label: "Gaming Gear", href: "shop.html?category=Gaming%20Gear" },
+  { label: "Monitors", href: "shop.html?category=Monitors" },
+  { label: "Printers", href: "shop.html?category=Printers" },
+  { label: "Networking", href: "shop.html?category=Networking" },
+  { label: "Accessories", href: "shop.html?category=Accessories" },
 ];
 
 function injectHeader() {
@@ -88,6 +86,7 @@ function injectHeader() {
     <div class="shell">
       <nav class="navbar" aria-label="Shop">
         <a href="index.html" class="logo" aria-label="eTech home">
+          <img class="logo-img" src="images/brand/etech-logo-96.png" width="44" height="44" alt="" />
           <span class="logo-mark">eTech</span>
           <small>Computer Accessories</small>
         </a>
@@ -125,7 +124,7 @@ function injectHeader() {
           <a class="aisle aisle-tool aisle-deals" href="deals.html"${current("deals.html")}>${uiIcon("tag")}Deals</a>
           <span class="aisle-rule" aria-hidden="true"></span>
           ${HEADER_AISLES.map((a) => `
-            <a class="aisle" href="${a.href}" style="--aisle-hue: var(--hue-${a.hue})"
+            <a class="aisle" href="${a.href}"
                data-mega-kind="category" data-mega-value="${escapeHtml(a.label)}">${escapeHtml(a.label)}</a>`).join("")}
           <button class="mega-tab" id="tab-categories" type="button" aria-expanded="false"
                   onclick="toggleMegaMenu('categories')">All categories ${uiIcon("chevron")}</button>
@@ -345,6 +344,7 @@ function injectFooter() {
     <footer class="site-foot">
       <div class="site-foot-inner">
         <div class="site-foot-brand">
+          <img class="logo-img" src="images/brand/etech-logo-96.png" width="44" height="44" alt="" />
           <span class="logo-mark">eTech</span>
           <p>Computer Accessories &middot; Malaysia</p>
         </div>

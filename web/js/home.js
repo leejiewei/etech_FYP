@@ -101,19 +101,18 @@ function renderPicks() {
 }
 
 // ------------------------------------------------------------
-// The department index: each aisle with a dot leader running to its
-// product count, the way a receipt runs a line to its price. The counts
+// The department tiles: each aisle with its product count. The counts
 // are the catalogue's own, so they are true the moment the page loads.
 // ------------------------------------------------------------
 const HOME_DEPARTMENTS = [
-  { name: "Components", hue: "components", param: "category" },
-  { name: "Laptops", hue: "laptops", param: "category" },
-  { name: "Gaming Gear", hue: "gaming", param: "category" },
-  { name: "Monitors", hue: "monitors", param: "category" },
-  { name: "Printers", hue: "printers", param: "category" },
-  { name: "Networking", hue: "networking", param: "category" },
-  { name: "Accessories", hue: "accessories", param: "category" },
-  { name: "Branded PC", hue: "pcs", param: "category" },
+  { name: "Components", param: "category" },
+  { name: "Laptops", param: "category" },
+  { name: "Gaming Gear", param: "category" },
+  { name: "Monitors", param: "category" },
+  { name: "Printers", param: "category" },
+  { name: "Networking", param: "category" },
+  { name: "Accessories", param: "category" },
+  { name: "Branded PC", param: "category" },
 ];
 
 function renderDepartmentIndex() {
@@ -125,26 +124,22 @@ function renderDepartmentIndex() {
     .filter((d) => d.count > 0);
 
   index.innerHTML = rows.map((d) => `
-    <a class="dept-row" href="shop.html?${d.param}=${encodeURIComponent(d.name)}"
-       style="--row-hue: var(--hue-${d.hue})">
+    <a class="dept-row" href="shop.html?${d.param}=${encodeURIComponent(d.name)}">
       <span class="dept-name">${escapeHtml(d.name)}</span>
-      <span class="dept-leader" aria-hidden="true"></span>
       <span class="dept-count">${d.count}<span class="visually-hidden"> products</span></span>
     </a>`).join("") + `
     <a class="dept-row dept-all" href="shop.html">
       <span class="dept-name">Everything</span>
-      <span class="dept-leader" aria-hidden="true"></span>
       <span class="dept-count">${products.length}<span class="visually-hidden"> products</span></span>
     </a>`;
 }
 
 // ------------------------------------------------------------
-// The till: the customer's cart, printed down the side of the home
-// page like a receipt coming off the roll.
+// Your cart, down the side of the home page.
 //
 // Redrawn whenever the cart changes (cart.js calls renderTill from
 // updateCartCount). Lines that were not there on the last draw are
-// "printed": they feed in from the top, once. Nothing else moves.
+// marked new and fade in, once. Nothing else moves.
 // ------------------------------------------------------------
 let tillPrinted = null;   // ids on the last draw; null before the first
 
@@ -154,19 +149,12 @@ function renderTill() {
 
   const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
   const items = typeof getCart === "function" ? getCart() : [];
-  const now = new Date();
-  const stamp = now.toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" });
-
-  const head = `
-    <div class="till-head">
-      <span class="logo-mark">eTech</span>
-      <span class="till-meta">Computer Accessories<br><span class="till-date">${escapeHtml(stamp)}</span></span>
-    </div>`;
+  const head = `<h2 class="till-head">${typeof uiIcon === "function" ? uiIcon("cart") : ""}Your cart</h2>`;
 
   if (!user) {
     renderTillBar(0, 0);
     till.innerHTML = head + `
-      <p class="till-empty">Your receipt starts here. Log in and every part you add prints on this roll.</p>
+      <p class="till-empty">Log in to start a cart. What you add stays saved on your account.</p>
       <a class="add-btn till-action" href="login.html">Log in</a>
       <a class="till-sub" href="register.html">New here? Create an account</a>`;
     tillPrinted = [];
@@ -176,7 +164,7 @@ function renderTill() {
   if (items.length === 0) {
     renderTillBar(0, 0);
     till.innerHTML = head + `
-      <p class="till-empty">Nothing printed yet. Add a part and it prints here.</p>`;
+      <p class="till-empty">Your cart is empty. Add a part and it shows here.</p>`;
     tillPrinted = [];
     return;
   }
