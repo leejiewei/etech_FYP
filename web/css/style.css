@@ -626,7 +626,7 @@ html {
   aspect-ratio: 4 / 3;
   display: grid;
   place-items: center;
-  padding: 14px;
+  padding: var(--space-4);
   background-color: var(--sheet);
   border-bottom: 1px dashed var(--rule);
   cursor: pointer;
@@ -649,7 +649,7 @@ html {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px 14px 14px;
+  padding: var(--space-3) var(--space-4) var(--space-4);
   flex: 1;
 }
 
@@ -948,9 +948,9 @@ html {
   .section h2 { font-size: 22px; }
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--space-3);
   }
-  .product-card-body { padding: 10px 10px 12px; }
+  .product-card-body { padding: var(--space-3) var(--space-2); }
   .product-card h3 { font-size: var(--text-md); }
   .product-price { font-size: var(--text-lg); }
   .product-card-official { display: none; }
