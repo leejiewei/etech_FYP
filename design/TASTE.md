@@ -28,6 +28,14 @@ eTech is a real local computer shop, and the site speaks in receipt grammar.
 - Missing product photos must look deliberate, never broken.
 - The Android app stays native Material 3; it borrows the colours and fonts as accents only.
 
+## The local market we stand apart from
+
+`design/references/00-avoid-*` are five Malaysian PC shops and ROG. They all
+open with a rig-photo hero banner, then carousels, stat counters, icon-circle
+"why us" rows and review sliders, mostly dark with neon. eTech must not be
+mistakable for any of them. The one thing worth taking is in
+`01-sku-price-list-suncycle.png`: maker SKU on its own line, price aligned right.
+
 ## Banned by default
 
 - Gradient text and gradient backgrounds

@@ -70,3 +70,5 @@ photo-inbox/
 # Design-loop screenshots are regenerated every run
 design/screenshots/*
 !design/screenshots/.gitkeep
+# Competitor screenshots: other companies' pages, kept local
+design/references/*.png
