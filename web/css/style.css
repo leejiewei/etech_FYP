@@ -1510,7 +1510,7 @@ html {
    as numbered cards, a picker that slides in from the right, and the
    total with its buttons at the top of the side panel. */
 .bp {
-  max-width: 1200px;
+  max-width: var(--container);
   margin: 0 auto;
 }
 
