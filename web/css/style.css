@@ -6442,3 +6442,84 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
     border-radius: var(--r) var(--r) 0 0;
   }
 }
+
+/* ---------- eTech AI: the recommended-product cards ----------
+   The Add button also carries .add-btn, whose width: 100% and 40px
+   min-height are meant for product cards. In this row that made the
+   button as wide as the card: the details column was squeezed to 0px,
+   the button ran past the card and the panel, and the chat log scrolled
+   sideways. On desktop the card is a three-column grid: picture, details that
+   may shrink, and a button only as wide as its word. Desktop only
+   (the user, 12 Oct): the phone layout stays as it is. */
+@media (min-width: 761px) {
+  .chat-rec {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+    margin-bottom: var(--space-2);
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+  }
+
+  .chat-rec:hover { border-color: var(--brand); }
+
+  .chat-rec-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  .chat-rec-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-0);
+    min-width: 0;
+  }
+
+  .chat-rec-name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+  }
+
+  .chat-rec-meta {
+    font-size: var(--text-2xs);
+    color: var(--ink-3);
+  }
+
+  .chat-rec-meta span { white-space: nowrap; }
+
+  .chat-rec-price {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .chat-rec .chat-rec-add {
+    width: auto;
+    min-height: 0;
+    height: 32px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+
+  .chat-rec-total {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+
+  /* The panel clips its edges, so a ring drawn outside the box lost three
+     of its sides. Draw it inside. */
+  .chat-input-row input:focus-visible { outline-offset: -2px; }
+
+  .chat-input-row button {
+    min-width: 64px;
+    font-weight: 600;
+  }
+}
