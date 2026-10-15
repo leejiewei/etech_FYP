@@ -533,8 +533,10 @@ async function generate(
 
   let res: Response | null = null;
   let usedModel = MODEL;
+  let skipToFallback = false;
 
   for (const attempt of attempts) {
+    if (skipToFallback && attempt.model !== FALLBACK_MODEL) continue;
     if (attempt.waitMs) await new Promise((done) => setTimeout(done, attempt.waitMs));
     try {
       res = await fetch(`${GEMINI_URL}/${attempt.model}:generateContent`, {
@@ -553,8 +555,17 @@ async function generate(
     const detail = await res.text();
     console.error("Gemini returned", res.status, "on", attempt.model, detail);
 
-    // 429 is our quota, not their capacity: retrying will not help.
-    if (res.status === 429) return json({ error: "AI quota exhausted." }, 502, req);
+    // 429 is our quota, not their capacity: retrying the same model will
+    // not help. The free tier allows only 20 gemini-2.5-flash calls a day
+    // (measured 15 Oct), but each model has its own quota, so go straight
+    // to the lighter one rather than giving up.
+    if (res.status === 429) {
+      if (attempt.model !== FALLBACK_MODEL) {
+        skipToFallback = true;
+        continue;
+      }
+      return json({ error: "AI quota exhausted." }, 502, req);
+    }
     if (res.status !== 503) return json({ error: "The AI service refused." }, 502, req);
   }
 
@@ -602,7 +613,7 @@ const REVIEW_SYSTEM = `You are the senior technician at eTech Computer Accessori
 
 You are given:
 - BUILD: one line per part, slot|id|name|specifications. These come from our own database.
-- CHECKS: the results of the shop's compatibility rules for this build, each marked CRITICAL, WARNING or PASS. They arrive between two ${CHECKS_FENCE} markers.
+- CHECKS: the results of the shop's compatibility rules for this build, each marked CRITICAL or PASS. The rules only answer "will it work?"; everything that works but is not ideal is for you to find. They arrive between two ${CHECKS_FENCE} markers.
 - CATALOGUE: everything the shop sells, one product per line: id|name|type|brand|price|stock.
 
 Rules, in order of importance:
@@ -613,6 +624,7 @@ Rules, in order of importance:
    - "critical" only when the PC truly will not work as it stands: it will not boot, will not display, cannot be assembled, or shuts down under load. That means parts that cannot physically fit or connect, a CPU with no graphics and no graphics card, a power supply that cannot cover the parts, a cooler that cannot cope with the processor at all. Use it only when you are sure. Ask yourself "does this PC still turn on and run?" -- if yes, it is NOT critical, however unbalanced or slow it is. A bottleneck, however large, is never critical. Slow memory, one stick, a slow slot, a slow drive, weak cooling that still copes: never critical.
    - "warning" for anything that runs but is not ideal: one part holding another back, money spent where it adds little, a power supply or cooler that copes but with little to spare, memory that is too little or a single stick, a slow drive, poor airflow, a fast part in a slower slot.
    For every issue, first set still_runs: true if the PC would still turn on, display and run with this problem, false only if it would not. An issue with still_runs true is always a "warning".
+   Go through every part and its specifications and check at least: processor and graphics card balance; power supply wattage against the parts' draw and the card maker's recommended supply (recommendedPsu), and whether it has the 12VHPWR lead an RTX 50 card expects; cooler rating (coolerRating) against the processor's power (tdp); memory total and stick count (kit), where one stick means single channel and under 16GB is tight; a hard drive (driveType HDD) as the main drive; a drive faster than the board's M.2 slot (pcieGen against the chipset), and a Gen 5 drive without a heatsink; a graphics card in a slower PCIe slot than it is built for (an AM4 "G" processor cuts the slot to Gen 3, and an A520 or H510 board runs Gen 3); a case with no fans (fansIncluded None). Each one you find is a warning.
    The processor and graphics card balance must always be judged: if one clearly holds the other back, that is a warning saying which one and roughly how much. Do not restate a CHECK word for word; the customer already sees those. Each issue is one or two sentences. If there is nothing wrong, give no issues.
 4. verdict: "fix_first" if any CHECK is CRITICAL or any of your issues is critical. Otherwise "great" when the build is well balanced with nothing worth changing, "good" when it works well but one or two changes would help, "rethink" when it works but is badly unbalanced or wastes a lot of money.
 5. summary: one or two short sentences in plain English that a first-time builder understands, including how well the processor and graphics card suit each other.
