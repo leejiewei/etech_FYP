@@ -68,7 +68,8 @@ workshop rigs ("Built by eTech") are photographed and posted on its Facebook pag
 - Real workshop rig photos (Built by eTech) with Facebook post links.
 - Real product photos on Vercel (`web/images/products/`) for most, not all, products.
 - Reviews and numbers on the home page (15 Oct 2026, the user's call): six real 5-star Google
-  reviews copied word for word, the Google rating (4.4 from 72), and the shop's own figures
+  reviews copied word for word under five stars (no average is shown;
+  Google's is 4.4), and the shop's own figures
   (20+ years, 1,000+ PCs built, 100% new parts). Nothing else of the kind: no invented
   testimonials, ratings, awards or sales figures, and the data agreement still bars customer
   data, supplier details, cost prices and margins.

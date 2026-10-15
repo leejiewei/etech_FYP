@@ -279,8 +279,9 @@ function renderRecentlyViewed() {
 //
 // The reviews are real 5-star Google reviews of the shop, copied word
 // for word on 15 Oct 2026 (the user picked 5-star only). The listing
-// stood at 4.4 from 72 reviews that day. The three numbers and the
-// promises are the shop's own, given by the user the same day.
+// stood at 4.4 from 72 reviews that day; the page shows no average.
+// The three numbers and the promises are the shop's own, given by the
+// user the same day.
 // ------------------------------------------------------------
 const GOOGLE_REVIEWS_URL = "https://maps.google.com/?cid=10756806437846608701";
 
@@ -307,8 +308,10 @@ function renderTrust() {
   const track = document.getElementById("review-track");
   if (!track) return;
 
-  document.getElementById("trust-stars").innerHTML =
-    `<span class="stars" role="img" aria-label="4.4 out of 5 stars">${uiIcon("star").repeat(4)}${uiIcon("star", "star-part")}</span>`;
+  // Five full stars for the reviews shown, which are all 5-star ones.
+  // Deliberately no average: Google's is 4.4, and a number here would
+  // either repeat that or claim a rating the listing doesn't have.
+  document.getElementById("trust-stars").innerHTML = fiveStars();
   document.getElementById("trust-google").href = GOOGLE_REVIEWS_URL;
 
   track.innerHTML = GOOGLE_REVIEWS.map((r) => `

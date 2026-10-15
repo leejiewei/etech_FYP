@@ -6746,8 +6746,11 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
   fill: currentColor;
 }
 
-/* 4.4 shows as four full stars and an outline. */
-.stars .star-part { fill: none; }
+.trust-score .stars .ui-icon {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
 
 .review-rail {
   display: grid;
