@@ -57,6 +57,10 @@ name, maker SKU on its own line, price aligned right.
 
 If a brief genuinely requires one of these, say so and ask first.
 
+Agreed exception (15 Oct 2026): the home page's "Why customers trust eTech" block, a review
+rail, three stat boxes and a promises row, asked for after mrit.my. It uses only real reviews and
+the shop's own numbers. It does not open the door to these patterns anywhere else.
+
 ## Scales
 
 Type is `--text-2xs` … `--text-4xl` (11 to 46px), space is `--space-0` … `--space-16`

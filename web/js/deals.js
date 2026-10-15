@@ -163,6 +163,15 @@ function renderDealCards() {
 
   const list = currentDealCategory === "All" ? deals : deals.filter((d) => d.category === currentDealCategory);
 
+  // Every code has a window; once they have all run out the policy
+  // returns none. Say so, rather than leave a lone "All" chip.
+  const chips = document.getElementById("deal-chips");
+  if (chips) chips.hidden = deals.length === 0;
+  if (deals.length === 0) {
+    grid.innerHTML = `<p class="deal-empty">No promotion codes are running right now.</p>`;
+    return;
+  }
+
   grid.innerHTML = "";
   list.forEach((deal) => {
     const card = document.createElement("div");

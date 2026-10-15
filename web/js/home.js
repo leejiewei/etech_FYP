@@ -245,8 +245,145 @@ document.addEventListener("click", (e) => {
   setTillSheet(false);
 });
 
+// ------------------------------------------------------------
+// Recently viewed: the last products this browser opened, newest
+// first, one of each. Read from the view events tracking.js keeps in
+// localStorage, so it works signed out too. Hidden until there is one.
+// ------------------------------------------------------------
+const RECENT_SHOWN = 4;
+
+function renderRecentlyViewed() {
+  const section = document.getElementById("recent-section");
+  const grid = document.getElementById("recent-grid");
+  if (!section || !grid || typeof getEvents !== "function") return;
+
+  let events = [];
+  try { events = getEvents(); } catch (e) { events = []; }
+  const seen = new Set();
+  const recent = [];
+  for (let i = events.length - 1; i >= 0 && recent.length < RECENT_SHOWN; i--) {
+    const e = events[i];
+    if (e.type !== "view_click" || seen.has(e.productId)) continue;
+    seen.add(e.productId);
+    const product = getProductById(e.productId);
+    if (product) recent.push(product);
+  }
+
+  section.hidden = recent.length === 0;
+  grid.innerHTML = "";
+  recent.forEach((product) => grid.appendChild(buildProductCard(product)));
+}
+
+// ------------------------------------------------------------
+// Why customers trust eTech.
+//
+// The reviews are real 5-star Google reviews of the shop, copied word
+// for word on 15 Oct 2026 (the user picked 5-star only). The listing
+// stood at 4.4 from 72 reviews that day. The three numbers and the
+// promises are the shop's own, given by the user the same day.
+// ------------------------------------------------------------
+const GOOGLE_REVIEWS_URL = "https://maps.google.com/?cid=10756806437846608701";
+
+const GOOGLE_REVIEWS = [
+  { name: "JX Chow", text: "I had a fantastic experience with Yeoh while purchasing my customized desktop. He's not only a nice and professional person but also helped tailor the PC to my budget. After using it for a few months, the performance is excellent. The free software updates and dust cleaning service are a great bonus. Highly recommend, and be sure to ask for Yeoh!" },
+  { name: "Kris Khaira", text: "Great customer service and quality products. Yeoh has a systematic way to help you identify your problem, and then recommend the right solution. I've bought a Wi-Fi router from them, and a DisplayPort to USB-C cable. They are also open everyday incl Sunday." },
+  { name: "Charles Alejandro", text: "Thank you for this shop, they have good customer service and their price point is really good. We will definitely come back to buy more pc parts and maybe get a new set up. Thank you again. Update: Almost 5 months after buying my gpu from this shop, I did a big pc upgrade and they never fail to assist and cater to my needs thank you E-Tech. From great deals to great recommendations. Again, I'll come back and do more pc upgrades." },
+  { name: "Danial Nashri", text: "I bought a gaming pc in August 2021. All parts are new complete with box and warranty. Staff are friendly to questions and helped to carry the pc back to my car. Reliable and professional service overall" },
+  { name: "Kong YB", text: "Kudos to this shop~ their PC component price remain reasonable although at this global pandemic situation which causing CPU/GPU shortage. Response in FB messenger is quick and they wont hard push customer to make decision~" },
+  { name: "michael vincent gaytano (gmvincent)", text: "The staff is friendly and kind to answer every question. Diagnosed and provided solutions on the slow down of the laptop. Their service and charges are kind of reasonable if not cheap." },
+];
+
+const CARE_PROMISES = [
+  { icon: "clock", title: "Open every day", text: "Sundays too, at Kompleks Bukit Jambul." },
+  { icon: "package", title: "New parts, box and warranty", text: "Every part is brand new, in its box, with the maker's warranty." },
+  { icon: "shieldCheck", title: "Tested before handover", text: "We test every PC we build before you take it home." },
+];
+
+function fiveStars() {
+  return `<span class="stars" role="img" aria-label="5 out of 5 stars">${uiIcon("star").repeat(5)}</span>`;
+}
+
+function renderTrust() {
+  const track = document.getElementById("review-track");
+  if (!track) return;
+
+  document.getElementById("trust-stars").innerHTML =
+    `<span class="stars" role="img" aria-label="4.4 out of 5 stars">${uiIcon("star").repeat(4)}${uiIcon("star", "star-part")}</span>`;
+  document.getElementById("trust-google").href = GOOGLE_REVIEWS_URL;
+
+  track.innerHTML = GOOGLE_REVIEWS.map((r) => `
+    <figure class="review-card">
+      <figcaption class="review-who">
+        <span class="review-initial" aria-hidden="true">${escapeHtml(r.name.charAt(0).toUpperCase())}</span>
+        <span><strong>${escapeHtml(r.name)}</strong><small>Google review</small></span>
+      </figcaption>
+      ${fiveStars()}
+      <blockquote>${escapeHtml(r.text)}</blockquote>
+    </figure>`).join("");
+
+  // The arrows move the rail one card at a time.
+  const step = (dir) => {
+    const card = track.querySelector(".review-card");
+    const by = card ? card.getBoundingClientRect().width + 16 : 300;
+    track.scrollBy({ left: dir * by, behavior: "smooth" });
+  };
+  const prev = document.getElementById("review-prev");
+  const next = document.getElementById("review-next");
+  prev.innerHTML = uiIcon("chevron");
+  next.innerHTML = uiIcon("chevron");
+  prev.addEventListener("click", () => step(-1));
+  next.addEventListener("click", () => step(1));
+  const ends = () => {
+    prev.disabled = track.scrollLeft <= 2;
+    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+  };
+  track.addEventListener("scroll", ends, { passive: true });
+  window.addEventListener("resize", ends);
+  ends();
+
+  document.getElementById("care-list").innerHTML = CARE_PROMISES.map((c) => `
+    <li>
+      <span class="care-icon">${uiIcon(c.icon)}</span>
+      <strong>${escapeHtml(c.title)}</strong>
+      <span>${escapeHtml(c.text)}</span>
+    </li>`).join("");
+
+  countUpStats();
+}
+
+// The three numbers count up once, the first time they scroll into
+// view. With reduced motion they simply stand at their value.
+function countUpStats() {
+  const nums = document.querySelectorAll(".stat-num[data-count]");
+  if (!nums.length || !("IntersectionObserver" in window)) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const show = (el, v) => { el.textContent = v.toLocaleString("en-MY") + el.dataset.suffix; };
+  const run = (el) => {
+    const target = Number(el.dataset.count);
+    const start = performance.now();
+    const ms = 1200;
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / ms);
+      show(el, Math.round(target * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      io.unobserve(entry.target);
+      run(entry.target);
+    });
+  }, { threshold: 0.6 });
+  nums.forEach((el) => { show(el, 0); io.observe(el); });
+}
+
 onAppReady(() => {
   renderDepartmentIndex();
+  renderRecentlyViewed();
+  renderTrust();
   renderPicks();
   renderFeaturedProducts();
   renderTill();

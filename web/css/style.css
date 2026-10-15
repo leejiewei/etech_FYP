@@ -6688,3 +6688,270 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
   object-position: left center;
   flex-shrink: 0;
 }
+
+/* ---------- Home: why customers trust eTech ----------
+   Real 5-star Google reviews on a rail, the shop's three numbers in
+   boxes, and what it promises. Asked for by the user on 15 Oct 2026
+   after mrit.my, as an exception to TASTE.md's ban on review sliders
+   and stat counters; the numbers and reviews are real, never invented. */
+.home > .trust-section {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin: 0;
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+  display: grid;
+  gap: var(--space-10);
+}
+
+.trust-reviews {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.trust-summary h2 { margin-bottom: var(--space-4); }
+
+.trust-score {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.trust-score strong {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  line-height: var(--leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.trust-count {
+  margin: var(--space-1) 0 var(--space-4);
+  font-size: var(--text-md);
+  color: var(--ink-3);
+}
+
+.stars {
+  display: inline-flex;
+  gap: var(--space-0);
+  color: var(--brand);
+}
+
+.stars .ui-icon {
+  width: var(--space-4);
+  height: var(--space-4);
+  fill: currentColor;
+}
+
+/* 4.4 shows as four full stars and an outline. */
+.stars .star-part { fill: none; }
+
+.review-rail {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.review-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 2 * var(--space-4)) / 3);
+  gap: var(--space-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.review-track::-webkit-scrollbar { display: none; }
+
+.review-card {
+  scroll-snap-align: start;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.review-who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.review-who strong {
+  display: block;
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+
+.review-who small {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.review-initial {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--r);
+  background-color: var(--brand-tint);
+  color: var(--brand-ink);
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.review-card blockquote {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 7;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.review-nav {
+  display: grid;
+  place-items: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background-color: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.review-nav:hover:not(:disabled) { border-color: var(--ink); }
+.review-nav:disabled { color: var(--ink-4); cursor: default; }
+.review-nav .ui-icon { width: var(--space-4); height: var(--space-4); }
+.review-prev .ui-icon { transform: rotate(90deg); }
+.review-next .ui-icon { transform: rotate(-90deg); }
+
+.trust-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-4);
+  background-color: var(--card);
+  border: 1px solid var(--brand);
+  border-radius: var(--r);
+  text-align: center;
+}
+
+.stat-num {
+  font-size: var(--text-4xl);
+  font-weight: 800;
+  line-height: var(--leading-tight);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat span {
+  font-size: var(--text-base);
+  color: var(--ink-3);
+}
+
+.trust-care {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.section .care-intro h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: var(--space-2);
+}
+
+.care-intro p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--ink-3);
+}
+
+.care-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.care-list li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.care-list strong {
+  font-size: var(--text-base);
+  margin-top: var(--space-2);
+}
+
+.care-list li > span:last-child {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+.care-icon {
+  display: grid;
+  place-items: center;
+  width: var(--space-12);
+  height: var(--space-12);
+  border-radius: var(--r);
+  background-color: var(--brand);
+  color: var(--card);
+}
+
+.care-icon .ui-icon { width: var(--space-6); height: var(--space-6); }
+
+@media (max-width: 1080px) {
+  .trust-reviews,
+  .trust-care { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .review-track { grid-auto-columns: calc((100% - var(--space-4)) / 2); }
+}
+
+@media (max-width: 760px) {
+  .home > .trust-section { gap: var(--space-8); }
+  .review-nav { display: none; }
+  .review-rail { grid-template-columns: minmax(0, 1fr); }
+  .review-track { grid-auto-columns: 85%; }
+  .trust-stats { gap: var(--space-2); }
+  .stat { padding: var(--space-4) var(--space-2); }
+  .stat-num { font-size: var(--text-2xl); }
+  .stat span { font-size: var(--text-sm); }
+  .care-list { grid-template-columns: minmax(0, 1fr); }
+  .care-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-3); }
+  .care-list .care-icon { grid-row: span 2; }
+  .care-list strong { margin-top: 0; }
+}
+
+.deal-grid .deal-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-3);
+}

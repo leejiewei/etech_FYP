@@ -37,6 +37,13 @@
         <nav class="dept-index" id="dept-index" aria-label="Departments"></nav>
       </section>
 
+      <!-- The last products this browser opened, newest first
+           (from the view events tracking.js keeps; js/home.js). -->
+      <section class="section recent-section" id="recent-section" hidden>
+        <h2>Recently viewed</h2>
+        <div class="product-grid" id="recent-grid"></div>
+      </section>
+
       <!-- Personalised recommendations for signed-in customers
            (recommend_for_me(), js/home.js); everyone else sees the
            shop's featured row in the same place. -->
@@ -61,6 +68,41 @@
     <aside class="home-side" id="home-side" aria-label="Your cart">
       <div class="till" id="till"></div>
     </aside>
+
+    <!-- Why trust us: real 5-star Google reviews, the shop's own numbers
+         (given by the user, 15 Oct 2026) and what it promises. -->
+    <section class="section trust-section" aria-labelledby="trust-title">
+      <div class="trust-reviews">
+        <div class="trust-summary">
+          <h2 id="trust-title">Why customers trust eTech</h2>
+          <p class="trust-score">
+            <strong>4.4</strong>
+            <span class="trust-stars" id="trust-stars"></span>
+          </p>
+          <p class="trust-count">From 72 Google reviews</p>
+          <a class="ghost-btn" id="trust-google" target="_blank" rel="noopener">Read all reviews on Google</a>
+        </div>
+        <div class="review-rail">
+          <button type="button" class="review-nav review-prev" id="review-prev" aria-label="Previous reviews"></button>
+          <div class="review-track" id="review-track" tabindex="0" aria-label="Google reviews"></div>
+          <button type="button" class="review-nav review-next" id="review-next" aria-label="More reviews"></button>
+        </div>
+      </div>
+
+      <div class="trust-stats">
+        <div class="stat"><strong class="stat-num" data-count="20" data-suffix="+">20+</strong><span>Years of experience</span></div>
+        <div class="stat"><strong class="stat-num" data-count="1000" data-suffix="+">1,000+</strong><span>PCs built</span></div>
+        <div class="stat"><strong class="stat-num" data-count="100" data-suffix="%">100%</strong><span>New parts</span></div>
+      </div>
+
+      <div class="trust-care">
+        <div class="care-intro">
+          <h2>We build with care</h2>
+          <p>From picking the parts to handing over the PC.</p>
+        </div>
+        <ul class="care-list" id="care-list"></ul>
+      </div>
+    </section>
 
     <!-- Full width under the products and the till. -->
     <section class="section builds-section" id="builds-section" hidden>
