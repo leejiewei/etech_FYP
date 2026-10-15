@@ -30,6 +30,11 @@ import 'push.dart';
 class Shop extends ChangeNotifier {
   // ---- catalogue ----
   List<Product> products = [];
+
+  /// Brand name -> the URL of its logo, for the brands we have a proper
+  /// logo for. A brand missing here is shown by name alone. Matches
+  /// brandLogos in web/js/products.js.
+  Map<String, String> brandLogos = {};
   bool loadingProducts = false;
   String? loadError;
 
@@ -197,7 +202,7 @@ class Shop extends ChangeNotifier {
                 'brand_id,category_id')
             .eq('is_active', 1)
             .order('product_id')),
-        Api.selectAll(() => Api.db.from('brands').select('brand_id,name')),
+        Api.selectAll(() => Api.db.from('brands').select('brand_id,name,logo_path')),
         Api.selectAll(
             () => Api.db.from('categories').select('category_id,name,parent_id')),
         Api.selectAll(() => Api.db
@@ -272,6 +277,11 @@ class Shop extends ChangeNotifier {
   ) {
     final brandName = {
       for (final b in brandRows) b['brand_id'] as int: b['name'] as String
+    };
+    brandLogos = {
+      for (final b in brandRows)
+        if ('${b['logo_path'] ?? ''}'.isNotEmpty)
+          b['name'] as String: b['logo_path'] as String
     };
     final category = {
       for (final c in categoryRows) c['category_id'] as int: c

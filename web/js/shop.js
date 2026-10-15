@@ -109,7 +109,7 @@ function facetGroup(title, groupId, counts, isChecked, opts) {
         <label class="shop-tick${counts[v] === 0 ? " empty" : ""}">
           <input type="checkbox" data-group="${escapeHtml(groupId)}" value="${escapeHtml(v)}"
                  ${isChecked(v) ? "checked" : ""} />
-          <span>${escapeHtml(label(v))}</span>
+          ${opts.icon ? opts.icon(v) : ""}<span>${escapeHtml(label(v))}</span>
           <em>${counts[v]}</em>
         </label>`).join("")}
       ${hiddenCount ? `<button type="button" class="shop-more" data-more>Show all ${values.length + hiddenCount}</button>` : ""}
@@ -144,7 +144,8 @@ function renderFacets() {
   }
 
   html += facetGroup("Brands", "brand", facetCounts("brand", FACET_VALUE.brand), has("brand"),
-    { keep: Array.from(selected.brand), limit: BRANDS_SHOWN });
+    { keep: Array.from(selected.brand), limit: BRANDS_SHOWN,
+      icon: (v) => brandLogoTag(v, "shop-tick-logo") });
 
   // Technical details for the products in view: one category, and inside
   // a category split into types (Components: CPU, GPU, ...), only once a

@@ -512,6 +512,7 @@ class _ShopScreenState extends State<ShopScreen> {
         _counts('brand', (p) => p.brand),
         _selected['brand']!,
         tick,
+        leading: _brandLogo,
         limit: _showAllBrands ? null : _brandsShown,
         onMore: () => setState(() => _showAllBrands = true),
       ),
@@ -568,6 +569,26 @@ class _ShopScreenState extends State<ShopScreen> {
     return out;
   }
 
+  /// A brand's logo before its name in the Brands filter, or nothing when
+  /// we have no proper logo (or it fails to load), leaving the name alone.
+  Widget? _brandLogo(String brand) {
+    final url = shop.brandLogos[brand];
+    if (url == null) return null;
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: SizedBox(
+        width: 48,
+        height: 16,
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
+          alignment: Alignment.centerLeft,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
   /// One group of tick boxes. A ticked value stays listed even when its
   /// count drops to nothing, so it can always be unticked.
   Widget _facetGroup(
@@ -578,6 +599,7 @@ class _ShopScreenState extends State<ShopScreen> {
     void Function(String, String, bool) tick, {
     List<String>? order,
     String Function(String)? label,
+    Widget? Function(String)? leading,
     int? limit,
     VoidCallback? onMore,
     bool startOpen = true,
@@ -621,12 +643,19 @@ class _ShopScreenState extends State<ShopScreen> {
               activeColor: AppTheme.red,
               value: ticked.contains(v),
               onChanged: (on) => tick(group, v, on ?? false),
-              title: Text(
-                label?.call(v) ?? v,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: counts[v] == 0 ? Colors.grey.shade500 : AppTheme.ink,
-                ),
+              title: Row(
+                children: [
+                  ?leading?.call(v),
+                  Expanded(
+                    child: Text(
+                      label?.call(v) ?? v,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: counts[v] == 0 ? Colors.grey.shade500 : AppTheme.ink,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               secondary: Text(
                 '${counts[v]}',

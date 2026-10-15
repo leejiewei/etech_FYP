@@ -20,6 +20,9 @@
 // ============================================================
 
 let products = [];          // filled in by loadProducts()
+// Brand name -> the URL of its logo, for the brands we have a proper
+// logo for. A brand that is missing here is shown by name alone.
+let brandLogos = {};
 let productsLoaded = false;
 
 // The shop's own builds, keyed by the machine's product id. Both stay
@@ -123,7 +126,7 @@ function loadProducts() {
               "image_path,official_url,exclude_from_builder,brand_id,category_id")
       .eq("is_active", 1)
       .order("product_id")),
-    selectAllRows(() => sb.from("brands").select("brand_id,name")),
+    selectAllRows(() => sb.from("brands").select("brand_id,name,logo_path")),
     selectAllRows(() => sb.from("categories").select("category_id,name,parent_id")),
     selectAllRows(() => sb.from("product_attributes").select("product_id,attr_key,attr_value")),
     // The shop's own builds. Fetched with the catalogue rather than when
@@ -198,6 +201,8 @@ function ramGenFits(ramGen, supported) {
 
 function shapeCatalogue(productRows, brandRows, categoryRows, attributeRows) {
   const brandName = new Map(brandRows.map((b) => [b.brand_id, b.name]));
+  brandLogos = {};
+  brandRows.forEach((b) => { if (b.logo_path) brandLogos[b.name] = b.logo_path; });
   const category  = new Map(categoryRows.map((c) => [c.category_id, c]));
 
   // Group the specifications by product, rather than looking them up
@@ -247,6 +252,15 @@ function shapeCatalogue(productRows, brandRows, categoryRows, attributeRows) {
 
     return item;
   });
+}
+
+// A brand's logo as an <img>, or "" when we have none. A logo that fails
+// to load removes itself, leaving the name beside it to do the job.
+function brandLogoTag(brand, cls) {
+  const src = brandLogos[brand];
+  if (!src) return "";
+  return `<img class="${cls}" src="${safeUrl(src)}" alt="" loading="lazy"
+    onerror="this.remove()" />`;
 }
 
 // The actual start-up happens in app.js, which is the last script on every

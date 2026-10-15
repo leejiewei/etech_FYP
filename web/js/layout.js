@@ -183,9 +183,8 @@ function getAllBrands() {
   return brands.sort();
 }
 
-// One name per tile. There used to be a second span beneath it repeating
-// the same brand in capitals -- a caption that had lost its picture. The
-// stylesheet already uppercases .mega-logo, so nothing was lost with it.
+// One tile per brand: its logo with the name beneath, or the name alone
+// for a brand we have no proper logo for.
 function buildBrandsMenu() {
   const brands = getAllBrands();
 
@@ -193,8 +192,10 @@ function buildBrandsMenu() {
     <div class="mega-inner">
       <div class="mega-grid">
         ${brands.map((brand) => `
-          <a class="mega-item" href="shop.html?brand=${encodeURIComponent(brand)}"
+          <a class="mega-item mega-brand${brandLogos[brand] ? " has-logo" : ""}"
+             href="shop.html?brand=${encodeURIComponent(brand)}"
              data-mega-kind="brand" data-mega-value="${escapeHtml(brand)}">
+            ${brandLogoTag(brand, "mega-brand-logo")}
             <span class="mega-logo">${escapeHtml(brand)}</span>
           </a>
         `).join("")}
