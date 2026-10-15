@@ -412,29 +412,6 @@ function gpuPcie(gpu) {
   return null;
 }
 
-// Rough gaming tiers, so the summary can spot a processor and graphics card
-// that are badly out of step. Only the models we stock are listed; anything
-// else returns null and the bottleneck check is skipped.
-const CPU_TIERS = [
-  [/3200G|3400G/, 1],
-  [/Ryzen 5 5500|Ryzen 5 5600/, 2],
-  [/7800X3D|9800X3D|9950X3D/, 5],
-  [/7500F|i5-14400|Ultra 5 225\b|5700X|i7-12700/, 3],
-  [/7600X|9600X|7500X3D|5800X3D|i5-14600K|245K|i7-14700|265K|270K|9700X|9900X|285K|i9-14900/, 4],
-];
-const GPU_TIERS = [
-  [/^GT /, 0],
-  [/^GTX 1650|^RTX 3050/, 1],
-  [/^RTX 5050|^RTX 5060$|^RX 9060/, 2],
-  [/^RTX 5060 Ti|^RTX 5070$/, 3],
-  [/^RTX 5070 Ti|^RX 9070|^RTX 5080/, 4],
-  [/^RTX 5090/, 5],
-];
-function tierOf(table, text) {
-  const hit = table.find((row) => row[0].test(text));
-  return hit ? hit[1] : null;
-}
-
 // A cooler rated at 60% or more of the CPU's power copes, just with the CPU
 // running hotter and boosting less. Below that it is critical.
 const COOLER_MIN_SHARE = 0.6;
@@ -452,22 +429,20 @@ function socketMaker(socket) {
   return /^AM/.test(socket || "") ? "AMD" : "Intel";
 }
 
-function renderBuildSummary() {
-  const subtotalEl = document.getElementById("builder-subtotal");
-  const messagesEl = document.getElementById("compat-messages");
-  if (!subtotalEl) return;
-
-  subtotalEl.textContent = money(buildTotal());
-
+// Every rule check for a build, as { level, text }. `pick(slot)` returns
+// the part in that slot, so the same rules can test the build on screen
+// (selectedProduct) or a "what if" build, such as eTech AI's suggested
+// swaps before they are offered.
+function compatibilityChecks(pick) {
   const messages = [];
-  const cpu = selectedProduct("CPU");
-  const cooler = selectedProduct("Cooler");
-  const mobo = selectedProduct("Motherboard");
-  const ram = selectedProduct("RAM");
-  const gpu = selectedProduct("GPU");
-  const psu = selectedProduct("PSU");
-  const pcCase = selectedProduct("Case");
-  const storage = selectedProduct("Storage");
+  const cpu = pick("CPU");
+  const cooler = pick("Cooler");
+  const mobo = pick("Motherboard");
+  const ram = pick("RAM");
+  const gpu = pick("GPU");
+  const psu = pick("PSU");
+  const pcCase = pick("Case");
+  const storage = pick("Storage");
 
   // Every check lands in one of three levels:
   //   critical — the parts physically won't work together. Must be changed,
@@ -657,21 +632,8 @@ function renderBuildSummary() {
     }
   }
 
-  // A processor and graphics card far apart in power — one holds the other back.
-  if (cpu && gpu) {
-    const cpuTier = tierOf(CPU_TIERS, cpu.name);
-    const gpuTier = tierOf(GPU_TIERS, gpu.attrs.chip || "");
-    if (cpuTier !== null && gpuTier !== null) {
-      if (gpuTier - cpuTier >= 2) {
-        warn(`Bottleneck: the ${cpu.name} will hold back the ${gpu.name} in games, so you'd be ` +
-          `paying for graphics power you can't use. A faster processor, or a cheaper card, ` +
-          `would balance this build better.`);
-      } else if (gpuTier >= 1 && cpuTier - gpuTier >= 3) {
-        warn(`Bottleneck: the ${gpu.name} will hold back the ${cpu.name} in games. Fine for work ` +
-          `and light gaming, but a stronger graphics card would make far better use of this processor.`);
-      }
-    }
-  }
+  // Whether the processor and graphics card are well matched is judged by
+  // eTech AI's review below, not by a hand-kept table of chip "tiers".
 
   // The RTX 50 cards ship with an adapter, so this is a tidiness issue.
   if (psu && gpu && psu.attrs.connector12VHPWR === "No" &&
@@ -684,6 +646,21 @@ function renderBuildSummary() {
   if (cpu && cpu.attrs.coolerIncluded === "Yes" && !cooler) {
     pass(`The ${cpu.name} comes with a cooler in the box, so a separate cooler is optional.`);
   }
+
+  return messages;
+}
+
+function renderBuildSummary() {
+  const subtotalEl = document.getElementById("builder-subtotal");
+  const messagesEl = document.getElementById("compat-messages");
+  if (!subtotalEl) return;
+
+  subtotalEl.textContent = money(buildTotal());
+
+  const messages = compatibilityChecks(selectedProduct);
+  const cpu = selectedProduct("CPU");
+  const gpu = selectedProduct("GPU");
+  const psu = selectedProduct("PSU");
 
   // ---- Render, grouped by severity ----
   if (messages.length === 0) {
@@ -733,6 +710,8 @@ function renderBuildSummary() {
   if (addBtn) {
     addBtn.disabled = !(allPicked && allCompatible);
   }
+
+  scheduleAiReview(allPicked, messages);
 }
 
 // Estimated draw against the power supply, as a bar, and the supply the
@@ -782,6 +761,202 @@ function renderBarInfo() {
   document.getElementById("bp-talk").href = whatsappShopLink(spec
     ? "Hi eTech, can you check this build for me?\n\n" + spec
     : "Hi eTech, I'd like help choosing parts for a PC build.");
+}
+
+// ------------------------------------------------------------
+// eTech AI review
+//
+// Once every part is picked, the build goes to eTech AI (Gemini, through
+// the chat-advisor Edge Function) for a technician's opinion: how well the
+// processor and graphics card suit each other, what is not ideal, and up
+// to two swaps from our own catalogue. It sorts what it finds the same way
+// the checks above do: critical when the build won't work, warning when
+// it runs but isn't ideal.
+//
+// The checks above stay the only thing that can stop an order. eTech AI's
+// criticals are shown in red but never disable Add Build to Cart, because
+// a language model can be wrong and Google can be down. Its suggested
+// swaps are run through the same checks before they are offered, and any
+// that would break the build are dropped.
+//
+// A build is only sent once: the answer is kept in this browser by the
+// build's part ids, so changing a part and changing it back costs nothing.
+// ------------------------------------------------------------
+const AI_REVIEW_DELAY = 1500;          // wait for the customer to stop clicking
+const AI_REVIEW_STORE = "aiBuildReviews";
+const AI_REVIEW_KEEP = 20;             // reviews remembered in this browser
+const AI_REVIEW_MAX_AGE = 24 * 60 * 60 * 1000; // stock and the catalogue move on
+
+let aiReviewTimer = null;
+let aiReviewWanted = "";               // the build key the panel should show
+
+const AI_VERDICTS = {
+  great:     { cls: "compat-ok",      text: "eTech AI: a well-balanced build." },
+  good:      { cls: "compat-ok",      text: "eTech AI: a good build, with room to improve." },
+  rethink:   { cls: "compat-caution", text: "eTech AI: it works, but it's worth rethinking." },
+  fix_first: { cls: "compat-warn",    text: "eTech AI: fix the critical problems first." },
+};
+
+function aiReviewKey() {
+  return builderSlots.map((slot) => slot + ":" + (currentBuild[slot] || 0)).join(",");
+}
+
+function readAiReviews() {
+  try { return JSON.parse(localStorage.getItem(AI_REVIEW_STORE)) || {}; }
+  catch (e) { return {}; }
+}
+
+function cachedAiReview(key) {
+  const hit = readAiReviews()[key];
+  return hit && Date.now() - hit.at < AI_REVIEW_MAX_AGE ? hit.review : null;
+}
+
+function storeAiReview(key, review) {
+  try {
+    const all = readAiReviews();
+    all[key] = { review: review, at: Date.now() };
+    const newest = Object.keys(all)
+      .sort((a, b) => all[b].at - all[a].at)
+      .slice(0, AI_REVIEW_KEEP);
+    const kept = {};
+    newest.forEach((k) => { kept[k] = all[k]; });
+    localStorage.setItem(AI_REVIEW_STORE, JSON.stringify(kept));
+  } catch (e) { /* storage full or blocked: the review just isn't remembered */ }
+}
+
+function scheduleAiReview(allPicked, checks) {
+  const el = document.getElementById("bp-ai-review");
+  if (!el) return;
+  clearTimeout(aiReviewTimer);
+
+  if (!allPicked) {
+    aiReviewWanted = "";
+    renderAiReviewNote("Pick every part and eTech AI will review the whole build: " +
+      "how well the parts suit each other, and what to change.");
+    return;
+  }
+
+  const key = aiReviewKey();
+  aiReviewWanted = key;
+  const cached = cachedAiReview(key);
+  if (cached) return renderAiReview(cached);
+
+  renderAiReviewNote("eTech AI is reviewing your build…", true);
+  aiReviewTimer = setTimeout(() => requestAiReview(key, checks), AI_REVIEW_DELAY);
+}
+
+function requestAiReview(key, checks) {
+  if (typeof sb === "undefined" || !sb.functions) {
+    return renderAiReviewFailed(key, checks);
+  }
+  const build = {};
+  builderSlots.forEach((slot) => { if (currentBuild[slot]) build[slot] = currentBuild[slot]; });
+
+  sb.functions
+    .invoke("chat-advisor", {
+      body: {
+        mode: "review",
+        build: build,
+        checks: checks.map((m) => ({ level: m.level, text: m.text })),
+      },
+    })
+    .then(({ data, error }) => {
+      if (key !== aiReviewWanted) return;   // the build changed meanwhile
+      if (error || !data || !data.verdict) {
+        console.warn("eTech AI review unavailable.", error || data);
+        return renderAiReviewFailed(key, checks);
+      }
+      storeAiReview(key, data);
+      renderAiReview(data);
+    })
+    .catch((error) => {
+      if (key !== aiReviewWanted) return;
+      console.warn("eTech AI review unreachable.", error);
+      renderAiReviewFailed(key, checks);
+    });
+}
+
+function renderAiReviewNote(text, busy) {
+  const el = document.getElementById("bp-ai-review");
+  if (!el) return;
+  el.innerHTML = `
+    <h3>eTech AI review</h3>
+    <p class="ai-review-note${busy ? " busy" : ""}">${escapeHtml(text)}</p>`;
+}
+
+function renderAiReviewFailed(key, checks) {
+  const el = document.getElementById("bp-ai-review");
+  if (!el) return;
+  el.innerHTML = `
+    <h3>eTech AI review</h3>
+    <p class="ai-review-note">eTech AI couldn't review this build just now.
+      The checks above still apply.</p>
+    <button type="button" class="ai-review-retry" id="ai-review-retry">Try again</button>`;
+  document.getElementById("ai-review-retry").onclick = () => {
+    if (key !== aiReviewWanted) return;
+    renderAiReviewNote("eTech AI is reviewing your build…", true);
+    requestAiReview(key, checks);
+  };
+}
+
+// A suggested swap is only offered when the part still exists, belongs in
+// that slot, is in stock, and passes every check with it swapped in.
+function swapIsSafe(swap) {
+  const part = getProductById(swap.product_id);
+  if (!part || part.subcategory !== swap.slot || part.excludeFromBuilder) return false;
+  if (part.stock === "out" || currentBuild[swap.slot] === part.id) return false;
+  const pick = (slot) => (slot === swap.slot ? part : selectedProduct(slot));
+  return compatibilityChecks(pick).every((m) => m.level !== "critical");
+}
+
+function renderAiReview(review) {
+  const el = document.getElementById("bp-ai-review");
+  if (!el) return;
+
+  const verdict = AI_VERDICTS[review.verdict] || AI_VERDICTS.good;
+  const issues = Array.isArray(review.issues) ? review.issues : [];
+  const criticals = issues.filter((i) => i.level === "critical");
+  const warnings = issues.filter((i) => i.level !== "critical");
+  const swaps = (Array.isArray(review.swaps) ? review.swaps : []).filter(swapIsSafe);
+
+  const group = (list, cls, mark, title) => list.length
+    ? `<p class="compat-group-title">${escapeHtml(title)}</p>` +
+      list.map((i) => `<p class="compat-message ${cls}">${mark} ${escapeHtml(i.text)}</p>`).join("")
+    : "";
+
+  const swapRows = swaps.map((swap) => {
+    const part = getProductById(swap.product_id);
+    const now = selectedProduct(swap.slot);
+    return `
+      <div class="ai-swap">
+        <div class="ai-swap-body">
+          <span class="ai-swap-slot">${escapeHtml(buildSlotInfo(swap.slot).title)}</span>
+          <span class="ai-swap-name">${escapeHtml(part.name)}</span>
+          ${now ? `<span class="ai-swap-was">instead of ${escapeHtml(now.name)}</span>` : ""}
+          <span class="ai-swap-reason">${escapeHtml(swap.reason)}</span>
+        </div>
+        <div class="ai-swap-side">
+          <strong>${money(partPrice(part))}</strong>
+          <button type="button" class="ai-swap-btn" data-swap-slot="${escapeHtml(swap.slot)}"
+                  data-swap-id="${part.id}">Swap in</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  el.innerHTML = `
+    <h3>eTech AI review</h3>
+    <p class="compat-summary ${verdict.cls}">${escapeHtml(verdict.text)}</p>
+    ${review.summary ? `<p class="ai-review-summary">${escapeHtml(review.summary)}</p>` : ""}
+    ${group(criticals, "compat-warn", "&#10007;", "Critical — eTech AI says this won't work")}
+    ${group(warnings, "compat-caution", "&#9888;", "Worth knowing")}
+    ${swapRows ? `<p class="compat-group-title">Suggested swaps</p>${swapRows}` : ""}
+    <p class="ai-review-foot">${criticals.length
+      ? "eTech AI can be wrong. If you're unsure, ask us on WhatsApp before you order. "
+      : ""}Reviewed by eTech AI from our catalogue. Prices are ours; the checks above decide what can be ordered.</p>`;
+
+  el.querySelectorAll("[data-swap-slot]").forEach((btn) => {
+    btn.onclick = () => handleSlotChange(btn.dataset.swapSlot, btn.dataset.swapId);
+  });
 }
 
 function addBuildToCart() {

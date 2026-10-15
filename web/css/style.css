@@ -6527,3 +6527,123 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
     font-weight: 600;
   }
 }
+
+/* ---------- PC builder: eTech AI review ----------
+   Sits under the compatibility checks and reuses their summary and
+   message styles, so an AI critical or warning reads exactly like a
+   rule's. Only the checks can disable Add Build to Cart. */
+.ai-review {
+  margin-top: var(--space-4);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--line);
+}
+
+.ai-review-note {
+  font-size: var(--text-md);
+  color: var(--ink-3);
+  line-height: var(--leading-body);
+}
+
+.ai-review-note.busy::before {
+  content: "";
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  margin-right: var(--space-2);
+  border-radius: var(--r);
+  background: var(--brand);
+  vertical-align: middle;
+  animation: ai-review-pulse 900ms var(--ease-out) infinite alternate;
+}
+
+@keyframes ai-review-pulse {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-review-note.busy::before { animation: none; }
+}
+
+.ai-review-summary {
+  margin-top: var(--space-2);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+}
+
+.ai-review-retry,
+.ai-swap-btn {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-review-retry:hover,
+.ai-swap-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.ai-swap {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-swap-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.ai-swap-slot {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.ai-swap-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ai-swap-was {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.ai-swap-reason {
+  color: var(--ink-2);
+  line-height: var(--leading-snug);
+}
+
+.ai-swap-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.ai-swap-side strong {
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-review-foot {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  line-height: var(--leading-snug);
+}
