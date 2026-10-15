@@ -26,7 +26,7 @@ class CartScreen extends StatelessWidget {
                     return Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       padding: const EdgeInsets.all(12),
                       child: Row(
@@ -209,7 +209,7 @@ class CartScreen extends StatelessWidget {
           height: 28,
           decoration: BoxDecoration(
             color: enabled ? const Color(0xFFEEF0F3) : const Color(0xFFF7F8FA),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Icon(icon,
               size: 16, color: enabled ? AppTheme.ink : Colors.grey.shade400),

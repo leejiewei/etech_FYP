@@ -124,7 +124,7 @@ class BuiltByEtech extends StatelessWidget {
       color: Colors.white,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: const BorderSide(color: AppTheme.line),
       ),
       child: InkWell(

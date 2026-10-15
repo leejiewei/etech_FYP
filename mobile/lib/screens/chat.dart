@@ -314,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: AppTheme.red,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Text(m.text,
               style: const TextStyle(color: Colors.white, fontSize: 13.5)),
@@ -329,7 +329,7 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: m.recommendation != null
             ? _buildTable(m)
@@ -374,7 +374,7 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE3E5E8)),
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           children: [
@@ -466,7 +466,7 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
             color: problems == 0 ? const Color(0xFFE3F8E8) : const Color(0xFFFDE8E8),
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             children: [

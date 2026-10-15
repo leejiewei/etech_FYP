@@ -93,7 +93,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +107,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.statusColour(order.status).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(stageLabel(order.status, order.fulfilmentMethod),
                     style: TextStyle(
@@ -274,7 +274,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: colour.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Text(paymentStatusLabel(order.paymentStatus),
                 style: TextStyle(

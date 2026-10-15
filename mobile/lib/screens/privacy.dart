@@ -282,7 +282,7 @@ class PrivacyScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
           children: [
@@ -347,7 +347,7 @@ class PrivacyScreen extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: const Color(0xFFFDE7E9),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text(text,
             style: const TextStyle(

@@ -12,38 +12,36 @@ import 'notifications.dart';
 class HomeScreen extends StatelessWidget {
   final Shop shop;
   final VoidCallback onBrowse;
-  const HomeScreen({super.key, required this.shop, required this.onBrowse});
+  final VoidCallback onBuild;
+  const HomeScreen({
+    super.key,
+    required this.shop,
+    required this.onBrowse,
+    required this.onBuild,
+  });
+
+  /// The website's department tiles, in the same order.
+  static const _departments = [
+    'Components', 'Laptops', 'Gaming Gear', 'Monitors',
+    'Printers', 'Networking', 'Accessories', 'Branded PC',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        titleSpacing: 12,
+        title: Row(
           children: [
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'e',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text: 'Tech',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.red,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              'COMPUTER ACCESSORIES',
+            Image.asset('assets/images/etech-logo.png', width: 34, height: 34),
+            const SizedBox(width: 8),
+            const Text(
+              'eTech',
               style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 1.5,
-                color: Colors.white70,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                fontStyle: FontStyle.italic,
+                color: AppTheme.red,
               ),
             ),
           ],
@@ -114,13 +112,14 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 90),
                 children: [
                   _hero(context),
+                  _departmentTiles(context),
                   // The recommender's row, first thing under the banner.
                   // Signed-in customers only: nobody else has a history
                   // the database can put a name to.
                   if (shop.loggedIn) _picks(context),
                   if (shop.deals.isNotEmpty) _dealStrip(context),
                   const BuiltByEtech(),
-                  _section(context, 'Featured', shop.products.take(6).toList()),
+                  _section(context, 'Featured products', shop.products.take(6).toList()),
                   _section(
                     context,
                     'Popular picks',
@@ -160,50 +159,146 @@ class HomeScreen extends StatelessWidget {
     ),
   );
 
+  /// The website's Home band: the shop's name over the ROG Hyperion,
+  /// on near-black. The case is a still from the website's 3D model
+  /// (web/js/hero3d.js, ?hero-still), so both show the same case.
   Widget _hero(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(22, 30, 22, 30),
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppTheme.redDark, AppTheme.redDarker],
-      ),
-      border: Border(bottom: BorderSide(color: AppTheme.red, width: 4)),
+    margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+    height: 300,
+    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(
+      color: AppTheme.ink,
+      borderRadius: BorderRadius.circular(AppTheme.radius),
     ),
-    child: Column(
+    child: Stack(
       children: [
-        const Text(
-          'Build Your Dream PC',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+        Positioned(
+          right: -6,
+          top: 10,
+          bottom: 10,
+          child: Image.asset('assets/images/hero-hyperion.png', fit: BoxFit.contain),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              const SizedBox(
+                width: 210,
+                child: Text(
+                  'eTech Computer Accessories',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const SizedBox(
+                width: 200,
+                child: Text(
+                  'Computer parts, PCs and laptops, priced in RM. Collect in Bukit Jambul, Penang, or have it delivered.',
+                  style: TextStyle(color: Color(0xC7FFFFFF), fontSize: 13, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  FilledButton(onPressed: onBrowse, child: const Text('Shop all')),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0x80FFFFFF)),
+                    ),
+                    onPressed: onBuild,
+                    child: const Text('Build a PC'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Quality computer parts, laptops and gaming gear at student-friendly prices.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(onPressed: onBrowse, child: const Text('Shop Now')),
       ],
     ),
   );
+
+  /// Departments with their product counts, two to a row, as on the
+  /// website. A tap opens the Shop tab filtered to that department.
+  Widget _departmentTiles(BuildContext context) {
+    final rows = [
+      for (final d in _departments)
+        (d, shop.products.where((p) => p.category == d).length),
+    ].where((r) => r.$2 > 0).toList();
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10),
+            child: Text('Shop by department',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          ),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 3.6,
+            children: [
+              for (final (name, count) in rows)
+                Material(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                    side: const BorderSide(color: AppTheme.line),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      shop.browseCategory = name;
+                      onBrowse();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                          Text('$count',
+                              style: const TextStyle(fontSize: 12, color: AppTheme.ink3)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _dealStrip(BuildContext context) => Container(
     margin: const EdgeInsets.fromLTRB(14, 14, 14, 0),
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFF4DD),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: const Color(0xFFF0D9A8)),
+      color: AppTheme.brandTint,
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      border: Border.all(color: AppTheme.line),
     ),
     child: Row(
       children: [
-        const Icon(Icons.local_offer, color: AppTheme.amber),
+        const Icon(Icons.local_offer, color: AppTheme.red),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -245,7 +340,7 @@ class HomeScreen extends StatelessWidget {
         if (askRole) _rolePrompt(context),
         if (shop.picks.isNotEmpty)
           SizedBox(
-            height: 250,
+            height: 300,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -267,8 +362,8 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E2E2)),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: AppTheme.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +408,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 250,
+          height: 300,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14),

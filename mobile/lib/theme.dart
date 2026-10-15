@@ -1,82 +1,83 @@
 import 'package:flutter/material.dart';
 
-/// eTech's colours on a native Material 3 app.
+/// eTech's look in the app: the same Shop Catalogue as the website
+/// (design/TASTE.md, the :root block of web/css/style.css).
 ///
-/// The website is set as a shop receipt; the app stays an Android app,
-/// with Android's own controls, and takes only the shop's palette from
-/// it: thermal-paper ground, PAID-stamp blue, and the pink of a till
-/// roll's end stripe, kept for prices that have dropped. Prices are set
-/// in Azeret Mono, the face the website prints them in, so the same
-/// number looks the same on both.
+/// White cards with grey hairlines on a light grey ground, one red taken
+/// from the round eTech logo, prices in bold with even-width figures,
+/// buttons that say what they do. The red is the brand, the primary
+/// action and a deal price, the way a shop marks its own sales.
 ///
-/// The old names (red, redDark, redDarker) are kept so every screen
-/// follows the new palette without being edited; they now hold blues.
+/// The old names (red, redDark, redDarker, roll) are kept so every screen
+/// follows the palette without being edited.
 class AppTheme {
-  static const Color stamp = Color(0xFF2448A8);
-  static const Color stampDeep = Color(0xFF1A3683);
-  static const Color stampInk = Color(0xFF13286A);
-  static const Color stampTint = Color(0xFFE7ECF8);
-  static const Color roll = Color(0xFFC42F6E);
+  static const Color brand = Color(0xFFBC2000);
+  static const Color brandDeep = Color(0xFF9A1A00);
+  static const Color brandInk = Color(0xFF6E1300);
+  static const Color brandTint = Color(0xFFFDEBE6);
   static const Color danger = Color(0xFFB3261E);
 
-  static const Color red = stamp;
-  static const Color redDark = stampDeep;
-  static const Color redDarker = stampInk;
-  static const Color ink = Color(0xFF1C1C1E);
-  static const Color line = Color(0xFFDCDCD4);
-  static const Color pageBg = Color(0xFFF6F6F2);
+  static const Color red = brand;
+  static const Color redDark = brandDeep;
+  static const Color redDarker = brandInk;
+  static const Color roll = brand; // a deal price
+  static const Color ink = Color(0xFF16181D);
+  static const Color ink3 = Color(0xFF5C636E);
+  static const Color line = Color(0xFFE2E5E9);
+  static const Color line2 = Color(0xFFC8CDD3);
+  static const Color pageBg = Color(0xFFF3F4F6);
 
   static const Color green = Color(0xFF1D6B3A);
   static const Color amber = Color(0xFF855600);
 
-  static const String priceFont = 'AzeretMono';
+  static const double radius = 4;
 
-  /// A price, in the receipt face with even-width figures.
+  /// A price: bold, with even-width figures so a column of them lines up.
   static TextStyle price(double size, {Color color = ink, FontWeight weight = FontWeight.w700}) =>
       TextStyle(
-        fontFamily: priceFont,
         fontSize: size,
         fontWeight: weight,
         color: color,
-        letterSpacing: -0.4,
+        letterSpacing: -0.2,
         fontFeatures: const [FontFeature.tabularFigures()],
       );
 
   static ThemeData get theme {
     final scheme = ColorScheme.fromSeed(
-      seedColor: stamp,
-      primary: stamp,
+      seedColor: brand,
+      primary: brand,
       onPrimary: Colors.white,
-      secondary: stampDeep,
-      tertiary: roll,
+      secondary: brandDeep,
+      tertiary: brand,
       error: danger,
       surface: Colors.white,
       onSurface: ink,
     );
-    final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
+    final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: pageBg,
       appBarTheme: const AppBarTheme(
-        backgroundColor: stamp,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
+        shape: Border(bottom: BorderSide(color: line)),
+        titleTextStyle: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: ink),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: stampTint,
+        indicatorColor: brandTint,
         surfaceTintColor: Colors.transparent,
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-              color: states.contains(WidgetState.selected) ? stamp : const Color(0xFF5C5C57),
+              color: states.contains(WidgetState.selected) ? brand : ink3,
             )),
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
               fontSize: 12,
               fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-              color: states.contains(WidgetState.selected) ? stamp : const Color(0xFF5C5C57),
+              color: states.contains(WidgetState.selected) ? brand : ink3,
             )),
       ),
       cardTheme: CardThemeData(
@@ -85,59 +86,59 @@ class AppTheme {
         margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           side: const BorderSide(color: line),
         ),
       ),
       dividerTheme: const DividerThemeData(color: line, thickness: 1, space: 1),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: stamp,
+          backgroundColor: brand,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: rounded,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: stamp,
+          backgroundColor: brand,
           foregroundColor: Colors.white,
           shape: rounded,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: stamp,
-          side: const BorderSide(color: Color(0xFFC4C4BB)),
+          foregroundColor: brand,
+          side: const BorderSide(color: line2),
           shape: rounded,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: stamp),
+        style: TextButton.styleFrom(foregroundColor: brand),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFC4C4BB)),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: const BorderSide(color: line2),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFC4C4BB)),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: const BorderSide(color: line2),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: stamp, width: 2),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: const BorderSide(color: brand, width: 2),
         ),
       ),
       chipTheme: const ChipThemeData(
         backgroundColor: Colors.white,
-        selectedColor: stampTint,
+        selectedColor: brandTint,
         side: BorderSide(color: line),
       ),
       snackBarTheme: const SnackBarThemeData(
@@ -146,9 +147,9 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
       textSelectionTheme: const TextSelectionThemeData(
-        cursorColor: stamp,
-        selectionColor: stampTint,
-        selectionHandleColor: stamp,
+        cursorColor: brand,
+        selectionColor: brandTint,
+        selectionHandleColor: brand,
       ),
     );
   }

@@ -320,7 +320,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDE8E8),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   _error!,
@@ -507,8 +507,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: const Border(top: BorderSide(color: AppTheme.red, width: 3)),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      border: Border.all(color: AppTheme.line),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

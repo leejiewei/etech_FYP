@@ -125,9 +125,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Material(
       color: fresh ? const Color(0xFFFDF2F3) : Colors.white,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         onTap: () => _open(n),
         child: Padding(
           padding: const EdgeInsets.all(14),

@@ -66,17 +66,20 @@ class StockPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppTheme.stockBg(stock),
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.stockColour(stock))),
+    // A small dot and the words, as on the website's cards.
+    final colour = AppTheme.stockColour(stock);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: colour, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colour)),
+      ],
     );
   }
 }

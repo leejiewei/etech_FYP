@@ -17,7 +17,7 @@ wishlist, cart, checkout, orders, notifications (push), chat advisor and account
 
 ## Capabilities and Constraints
 
-- Flutter, Material 3; theme in `lib/theme.dart`. Released as a signed APK, installed on test phones.
+- Flutter, Material 3 controls in the website's Shop Catalogue look (design/TASTE.md); theme in `lib/theme.dart`. Released as a signed APK, installed on test phones.
 - It must feel like a **native Android app** (confirmed 9 Oct 2026), sharing only the eTech name
   and brand accents with the website, not the website's layout.
 - Same Supabase backend and the same behaviour-event capture as the web shop.

@@ -124,7 +124,11 @@ class _MainShellState extends State<MainShell> {
       animation: widget.shop,
       builder: (context, _) {
         final pages = [
-          HomeScreen(shop: widget.shop, onBrowse: () => setState(() => _tab = 1)),
+          HomeScreen(
+            shop: widget.shop,
+            onBrowse: () => setState(() => _tab = 1),
+            onBuild: () => setState(() => _tab = 2),
+          ),
           ShopScreen(shop: widget.shop),
           BuilderScreen(shop: widget.shop),
           CartScreen(shop: widget.shop),

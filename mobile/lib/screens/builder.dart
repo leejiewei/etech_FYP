@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -67,6 +69,100 @@ class _BuilderScreenState extends State<BuilderScreen> {
       _colours.removeWhere((s, c) =>
           !(_build[s]?.colourOptions.contains(c) ?? false));
     });
+    _scheduleReview();
+  }
+
+  // ------------------------------------------------------------
+  // eTech AI review
+  //
+  // Once every part is picked, the build goes to eTech AI (Gemini, through
+  // the chat-advisor Edge Function) for a technician's opinion, sorted the
+  // shop's way: critical when the PC won't work, warning when it runs but
+  // isn't ideal, plus up to two swaps from our own stock. The same feature
+  // as web/js/build.js.
+  //
+  // The rule checks stay the only thing that can stop an order: eTech AI's
+  // criticals are shown in red but never disable Add Build to Cart, and a
+  // suggested swap is only offered when the rules pass with it swapped in.
+  // ------------------------------------------------------------
+  static const _reviewDelay = Duration(milliseconds: 1500);
+
+  /// Reviews already had this session, by build, so changing a part and
+  /// changing it back costs no second call.
+  static final Map<String, Map<String, dynamic>> _reviewCache = {};
+
+  Timer? _reviewTimer;
+  String _reviewKey = '';
+  Map<String, dynamic>? _review;
+  bool _reviewFailed = false;
+
+  @override
+  void dispose() {
+    _reviewTimer?.cancel();
+    super.dispose();
+  }
+
+  String _buildKey() => Compatibility.slots
+      .map((slot) => '$slot:${_build[slot]?.id ?? 0}')
+      .join(',');
+
+  void _scheduleReview() {
+    _reviewTimer?.cancel();
+    if (!Compatibility.allPicked(_build)) {
+      setState(() {
+        _reviewKey = '';
+        _review = null;
+        _reviewFailed = false;
+      });
+      return;
+    }
+    final key = _buildKey();
+    setState(() {
+      _reviewKey = key;
+      _review = _reviewCache[key];
+      _reviewFailed = false;
+    });
+    if (_review == null) {
+      _reviewTimer = Timer(_reviewDelay, () => _requestReview(key));
+    }
+  }
+
+  Future<void> _requestReview(String key) async {
+    final checks = Compatibility.check(_build);
+    final result = await shop.reviewBuild(
+      {
+        for (final slot in Compatibility.slots)
+          if (_build[slot] != null) slot: _build[slot]!.id,
+      },
+      [
+        for (final c in checks) {'level': c.level.name, 'text': c.text},
+      ],
+    );
+    // The customer may have changed the build while we waited.
+    if (!mounted || key != _reviewKey) return;
+    setState(() {
+      if (result == null) {
+        _reviewFailed = true;
+      } else {
+        _reviewCache[key] = result;
+        _review = result;
+      }
+    });
+  }
+
+  /// A swap is only offered when the part still exists, belongs in that
+  /// slot, is in stock, and every rule passes with it swapped in.
+  Product? _safeSwap(Map<String, dynamic> swap) {
+    final slot = '${swap['slot']}';
+    final id = swap['product_id'];
+    final part = id is num ? shop.byId(id.toInt()) : null;
+    if (part == null || part.subcategory != slot) return null;
+    if (part.excludeFromBuilder || !part.inStock || _build[slot]?.id == part.id) {
+      return null;
+    }
+    final trial = Map<String, Product?>.of(_build)..[slot] = part;
+    final ok = Compatibility.check(trial).every((c) => c.level != Level.critical);
+    return ok ? part : null;
   }
 
   /// Changing the CPU or board can strand a part chosen earlier, so forget
@@ -129,6 +225,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         _build[slot] = null;
       }
     });
+    _scheduleReview();
   }
 
   Future<void> _copySpecs() async {
@@ -261,13 +358,8 @@ class _BuilderScreenState extends State<BuilderScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.redDarker, AppTheme.redDark, AppTheme.red],
-          stops: [0, 0.6, 1],
-        ),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        color: AppTheme.ink,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,14 +444,14 @@ class _BuilderScreenState extends State<BuilderScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: part == null ? Colors.white : const Color(0xFFFDF0F1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           onTap: () => _openPicker(slot),
           child: Container(
             padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: part == null ? AppTheme.line : AppTheme.red,
                 width: part == null ? 1 : 1.4,
@@ -389,7 +481,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                   height: 46,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(color: AppTheme.line),
                   ),
                   child: part == null
@@ -516,14 +608,8 @@ class _BuilderScreenState extends State<BuilderScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: AppTheme.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -604,6 +690,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
             )
           else
             ..._checks(checks),
+          ..._aiReview(),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -640,7 +727,8 @@ class _BuilderScreenState extends State<BuilderScreen> {
     final n = Compatibility.psuNeed(cpu, gpu);
     final needed = n.needed;
     final capacity = _num(psu?.attrs['wattage']);
-    final over = capacity > 0 && capacity < needed;
+    final over = capacity > 0 && capacity < n.draw;
+    final tight = capacity > 0 && !over && capacity < needed;
     final share = capacity > 0 ? (n.draw / capacity).clamp(0.0, 1.0) : 0.0;
 
     return Container(
@@ -648,7 +736,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF7F7F9),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,14 +782,21 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 value: share.toDouble(),
                 minHeight: 8,
                 backgroundColor: const Color(0xFFE2E4E8),
-                color: over ? AppTheme.red : AppTheme.green,
+                color: over
+                    ? AppTheme.red
+                    : tight
+                        ? AppTheme.amber
+                        : AppTheme.green,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               over
                   ? 'Your ${capacity.round()}W supply is too small for this build.'
-                  : '${(share * 100).round()}% of your ${capacity.round()}W supply.',
+                  : tight
+                      ? '${(share * 100).round()}% of your ${capacity.round()}W supply — '
+                          'below the ${needed}W we recommend.'
+                      : '${(share * 100).round()}% of your ${capacity.round()}W supply.',
               style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
             ),
           ] else
@@ -716,10 +811,9 @@ class _BuilderScreenState extends State<BuilderScreen> {
 
   List<Widget> _checks(List<Check> checks) {
     final criticals = checks.where((c) => c.level == Level.critical).toList();
-    final warnings = checks.where((c) => c.level == Level.warning).toList();
     final passes = checks.where((c) => c.level == Level.pass).toList();
     return [
-      _summaryHeader(criticals.length, warnings.length, passes.length),
+      _summaryHeader(criticals.length, passes.length),
       if (criticals.isNotEmpty)
         _group(
           'Critical — needs changing',
@@ -727,14 +821,6 @@ class _BuilderScreenState extends State<BuilderScreen> {
           const Color(0xFFFDE8E8),
           AppTheme.red,
           Icons.close,
-        ),
-      if (warnings.isNotEmpty)
-        _group(
-          'Worth knowing',
-          warnings,
-          const Color(0xFFFFF4DD),
-          AppTheme.amber,
-          Icons.warning_amber_rounded,
         ),
       if (passes.isNotEmpty)
         _group(
@@ -807,7 +893,211 @@ class _BuilderScreenState extends State<BuilderScreen> {
     );
   }
 
-  Widget _summaryHeader(int criticals, int warnings, int passes) {
+  /// The eTech AI review section, under the rule checks.
+  List<Widget> _aiReview() {
+    const note = TextStyle(fontSize: 12.5, color: AppTheme.ink3, height: 1.4);
+    const heading = Padding(
+      padding: EdgeInsets.only(top: 18, bottom: 8),
+      child: Text(
+        'eTech AI review',
+        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+      ),
+    );
+
+    if (_reviewKey.isEmpty) {
+      return const [
+        heading,
+        Text(
+          'Pick every part and eTech AI will review the whole build: how '
+          'well the parts suit each other, and what to change.',
+          style: note,
+        ),
+      ];
+    }
+    if (_reviewFailed) {
+      return [
+        heading,
+        const Text(
+          "eTech AI couldn't review this build just now. The checks above "
+          'still apply.',
+          style: note,
+        ),
+        const SizedBox(height: 6),
+        OutlinedButton(
+          onPressed: () {
+            setState(() => _reviewFailed = false);
+            _requestReview(_reviewKey);
+          },
+          child: const Text('Try again'),
+        ),
+      ];
+    }
+    final review = _review;
+    if (review == null) {
+      return const [
+        heading,
+        Row(
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.brand),
+            ),
+            SizedBox(width: 10),
+            Expanded(child: Text('eTech AI is reviewing your build…', style: note)),
+          ],
+        ),
+      ];
+    }
+
+    final issues = (review['issues'] is List ? review['issues'] as List : const [])
+        .whereType<Map>()
+        .map((i) => Check(
+              i['level'] == 'critical' ? Level.critical : Level.warning,
+              '${i['text'] ?? ''}',
+            ))
+        .where((c) => c.text.isNotEmpty)
+        .toList();
+    final criticals = issues.where((c) => c.level == Level.critical).toList();
+    final warnings = issues.where((c) => c.level == Level.warning).toList();
+
+    final swaps = <(Map<String, dynamic>, Product)>[];
+    for (final raw in (review['swaps'] is List ? review['swaps'] as List : const [])) {
+      if (raw is! Map) continue;
+      final swap = Map<String, dynamic>.from(raw);
+      final part = _safeSwap(swap);
+      if (part != null) swaps.add((swap, part));
+    }
+
+    final verdict = switch ('${review['verdict']}') {
+      'great' => ('eTech AI: a well-balanced build.', Level.pass),
+      'rethink' => ("eTech AI: it works, but it's worth rethinking.", Level.warning),
+      'fix_first' => ('eTech AI: fix the critical problems first.', Level.critical),
+      _ => ('eTech AI: a good build, with room to improve.', Level.pass),
+    };
+    // The same tints as the rule checks' summary header.
+    final (bg, fg) = switch (verdict.$2) {
+      Level.critical => (const Color(0xFFFDE8E8), AppTheme.red),
+      Level.warning => (const Color(0xFFFFF4DD), AppTheme.amber),
+      Level.pass => (const Color(0xFFE3F8E8), AppTheme.green),
+    };
+    final summary = '${review['summary'] ?? ''}';
+
+    return [
+      heading,
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+        ),
+        child: Text(
+          verdict.$1,
+          style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ),
+      if (summary.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(summary, style: note.copyWith(color: AppTheme.ink)),
+        ),
+      if (criticals.isNotEmpty)
+        _group(
+          "Critical — eTech AI says this won't work",
+          criticals,
+          const Color(0xFFFDE8E8),
+          AppTheme.red,
+          Icons.close,
+        ),
+      if (warnings.isNotEmpty)
+        _group(
+          'Worth knowing',
+          warnings,
+          const Color(0xFFFFF4DD),
+          AppTheme.amber,
+          Icons.warning_amber_rounded,
+        ),
+      if (swaps.isNotEmpty) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(2, 10, 0, 6),
+          child: Text(
+            'SUGGESTED SWAPS',
+            style: TextStyle(
+              fontSize: 10.5,
+              letterSpacing: 1,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+        for (final (swap, part) in swaps) _swapRow(swap, part),
+      ],
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+          '${criticals.isNotEmpty ? "eTech AI can be wrong. If you're unsure, ask us before you order. " : ""}'
+          'Reviewed by eTech AI from our catalogue. Prices are ours; the '
+          'checks above decide what can be ordered.',
+          style: const TextStyle(fontSize: 11, color: AppTheme.ink3, height: 1.35),
+        ),
+      ),
+    ];
+  }
+
+  Widget _swapRow(Map<String, dynamic> swap, Product part) {
+    final slot = '${swap['slot']}';
+    final now = _build[slot];
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppTheme.line)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_info(slot).title,
+                    style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                Text(part.name,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                if (now != null)
+                  Text('instead of ${now.name}',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                const SizedBox(height: 2),
+                Text('${swap['reason'] ?? ''}',
+                    style: const TextStyle(fontSize: 12.5, height: 1.3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                money(shop.priceOf(part)),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                onPressed: () => _choose(slot, part),
+                child: const Text('Swap in'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryHeader(int criticals, int passes) {
     late String text;
     late Color bg, fg;
     if (criticals > 0) {
@@ -817,12 +1107,6 @@ class _BuilderScreenState extends State<BuilderScreen> {
           '${criticals > 1 ? "them" : "it"}.';
       bg = const Color(0xFFFDE8E8);
       fg = AppTheme.red;
-    } else if (warnings > 0) {
-      text =
-          'Everything fits. $warnings thing${warnings > 1 ? "s are" : " is"} '
-          'worth a look, but you can order as-is.';
-      bg = const Color(0xFFFFF4DD);
-      fg = AppTheme.amber;
     } else {
       text = 'All $passes compatibility checks passed.';
       bg = const Color(0xFFE3F8E8);
@@ -835,7 +1119,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Text(
         text,
@@ -872,7 +1156,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
           padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,7 +1320,7 @@ class _PartPickerState extends State<_PartPicker> {
                 prefixIcon: const Icon(Icons.search, size: 20),
                 hintText: 'Search all $title',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
             ),
@@ -1127,9 +1411,9 @@ class _PartPickerState extends State<_PartPicker> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: chosen ? const Color(0xFFFDF0F1) : Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           onTap: () {
             widget.onPick(p);
             Navigator.pop(context);
@@ -1137,7 +1421,7 @@ class _PartPickerState extends State<_PartPicker> {
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: chosen ? AppTheme.red : AppTheme.line,
                 width: chosen ? 1.4 : 1,

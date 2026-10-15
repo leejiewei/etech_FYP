@@ -24,7 +24,7 @@ class PaymentPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFBFBFC),
         border: Border.all(color: const Color(0xFFE6E8EC)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: method == PaymentMethod.qrCode ? _qr(context) : _bank(context),
     );
@@ -64,7 +64,7 @@ class PaymentPanel extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF4E0),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Text(
                 'QR image not bundled yet — add ${PaymentDetails.qrAsset}',

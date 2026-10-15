@@ -205,15 +205,9 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: const Border(top: BorderSide(color: AppTheme.red, width: 3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: AppTheme.line),
+        
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -229,7 +223,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFFAFBFC),
                 border: Border.all(color: const Color(0xFFE8EAED)),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               padding: const EdgeInsets.all(8),
               child: ProductImage(url: p.imageUrl, isSvg: p.isSvg, height: 130),
@@ -321,7 +315,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
                     side: const BorderSide(color: AppTheme.redDark),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   child: Text(optionCount > 0 ? 'Customise' : 'View details'),

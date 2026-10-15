@@ -129,7 +129,7 @@ class _DealPriceTextState extends State<DealPriceText> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF4E0),
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text(
           'Ends in ${formatCountdown(left)}',

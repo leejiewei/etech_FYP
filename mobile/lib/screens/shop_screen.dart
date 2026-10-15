@@ -207,6 +207,14 @@ class _ShopScreenState extends State<ShopScreen> {
     return AnimatedBuilder(
       animation: shop,
       builder: (context, _) {
+        // A department tapped on Home: show just that one.
+        final asked = shop.browseCategory;
+        if (asked != null) {
+          shop.browseCategory = null;
+          _selected['category'] = {asked};
+          _selected['subcategory']!.clear();
+          _pruneAttrs();
+        }
         final results = _filtered();
         return Scaffold(
           appBar: AppBar(
@@ -251,7 +259,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.62,
+                          mainAxisExtent: 300,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -279,13 +287,8 @@ class _ShopScreenState extends State<ShopScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.redDarker, AppTheme.redDark, AppTheme.red],
-                stops: [0, 0.6, 1],
-              ),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+              color: AppTheme.ink,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

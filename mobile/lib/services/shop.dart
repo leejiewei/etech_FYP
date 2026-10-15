@@ -54,6 +54,10 @@ class Shop extends ChangeNotifier {
   Map<String, dynamic>? user;
   bool get loggedIn => user != null;
 
+  /// A department tapped on Home, for the Shop tab to open filtered to.
+  /// The Shop tab reads it once and clears it.
+  String? browseCategory;
+
   /// Whether the signed-in account is shop staff.
   ///
   /// Only used to decide what the Account tab is willing to show. It is
@@ -1402,6 +1406,32 @@ class Shop extends ChangeNotifier {
       return null;
     } catch (e) {
       debugPrint('AI consultant unavailable, using built-in answers: $e');
+      return null;
+    }
+  }
+
+  /// Ask eTech AI to review a finished PC build.
+  ///
+  /// Sends only the product id in each slot and the rule results the
+  /// screen showed; the Edge Function reads names and specs from our own
+  /// tables. Returns { verdict, summary, issues, swaps } or null when the
+  /// review cannot be had, in which case the builder says so and the rule
+  /// checks still stand. Same request as web/js/build.js.
+  Future<Map<String, dynamic>?> reviewBuild(
+      Map<String, int> build, List<Map<String, String>> checks) async {
+    try {
+      final res = await Api.db.functions.invoke(
+        'chat-advisor',
+        body: {'mode': 'review', 'build': build, 'checks': checks},
+      );
+      final data = res.data;
+      if (data is Map && data['verdict'] != null) {
+        return Map<String, dynamic>.from(data);
+      }
+      debugPrint('eTech AI review returned nothing usable: $data');
+      return null;
+    } catch (e) {
+      debugPrint('eTech AI review unavailable: $e');
       return null;
     }
   }

@@ -141,7 +141,7 @@ class _RigsScreenState extends State<RigsScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +154,7 @@ class _RigsScreenState extends State<RigsScreen> {
                   itemCount: rig.imageUrls.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, i) => ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     child: Image.network(
                       rig.imageUrls[i],
                       fit: BoxFit.cover,
@@ -406,7 +406,7 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => Stack(children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     child: Image.memory(_photos[i],
                         height: 90, width: 90, fit: BoxFit.cover),
                   ),
@@ -457,7 +457,7 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: const Color(0xFFE3F8E8),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: const Text(
                 'ASUS Certified — one of these is ASUS, ROG or TUF hardware.',

@@ -169,13 +169,8 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.redDarker, AppTheme.redDark, AppTheme.red],
-          stops: [0, 0.6, 1],
-        ),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        color: AppTheme.ink,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +250,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF7F7F9),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: ProductImage(url: p.imageUrl, isSvg: p.isSvg, height: 176),
           ),
@@ -361,14 +356,14 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
         child: Material(
           color: on ? const Color(0xFFFDF0F1) : Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             side: BorderSide(
               color: on ? AppTheme.red : const Color(0xFFE2E2E2),
               width: on ? 1.5 : 1,
             ),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             onTap: outOfStock ? null : () => _toggle(u),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -415,7 +410,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF4DD),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,11 +454,9 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: const Border(top: BorderSide(color: AppTheme.red, width: 5)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: AppTheme.line),
+        
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -596,10 +589,8 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2)),
-          ],
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(color: AppTheme.line),
         ),
         child: child,
       );

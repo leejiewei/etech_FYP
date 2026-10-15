@@ -111,7 +111,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   color: _ok
                       ? const Color(0xFFE3F8E8)
                       : const Color(0xFFFDE8E8),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   _message!,

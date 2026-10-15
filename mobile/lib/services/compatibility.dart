@@ -28,19 +28,6 @@ class Compatibility {
   /// running hotter. Below that it is critical. Matches COOLER_MIN_SHARE.
   static const double coolerMinShare = 0.6;
 
-  /// Total memory in GB and the number of sticks, from the kit ("2 x 16GB").
-  static ({int? sticks, int totalGb})? ramKit(Product ram) {
-    final m = RegExp(r'(\d+)\s*x\s*(\d+)\s*GB', caseSensitive: false)
-        .firstMatch((ram.attrs['kit'] ?? '').toString());
-    if (m != null) {
-      final n = int.parse(m.group(1)!);
-      return (sticks: n, totalGb: n * int.parse(m.group(2)!));
-    }
-    final cap = int.tryParse(
-        RegExp(r'\d+').stringMatch((ram.attrs['capacity'] ?? '').toString()) ?? '');
-    return cap == null ? null : (sticks: null, totalGb: cap);
-  }
-
   /// A supply should not run flat out: the draw plus a quarter again.
   static const double psuHeadroom = 1.25;
 
@@ -73,78 +60,9 @@ class Compatibility {
     return supported.split('/').contains(ramGen);
   }
 
-  /// Which PCIe generation a board's M.2 slot runs at, from its chipset.
-  /// Only the chipsets the supplier confirmed are listed; anything else
-  /// returns null and the speed note is skipped rather than guessed.
-  static int? boardPcieGen(Product board) {
-    final chipset = (board.attrs['chipset'] ?? '').toString().toUpperCase();
-    if (chipset.startsWith('X870')) return 5;
-    // The Strix Z790-I's ROG Hyper M.2 card in the box adds a Gen 5 slot.
-    if (chipset == 'Z790') return 5;
-    if (['B760', 'B860', 'B850', 'A620', 'B650', 'H810'].contains(chipset)) return 4;
-    if (['H610', 'B550', 'A520', 'H510'].contains(chipset)) return 3;
-    return null;
-  }
-
   /// Intel or AMD, from the socket name.
   static String _maker(String? socket) =>
       (socket ?? '').startsWith('AM') ? 'AMD' : 'Intel';
-
-  /// True for the AM4 APUs (the "G" chips), which cut the graphics slot
-  /// to Gen 3 on any board.
-  static bool _isAm4Apu(Product? cpu) =>
-      cpu != null && cpu.socket == 'AM4' && RegExp(r'\d{4}G').hasMatch(cpu.name);
-
-  /// Which PCIe generation the board's graphics card slot runs at.
-  /// Matches boardGpuSlotGen() in web/js/build.js.
-  static int? boardGpuSlotGen(Product board, Product? cpu) {
-    final chipset = (board.attrs['chipset'] ?? '').toString().toUpperCase();
-    if (_isAm4Apu(cpu)) return 3;
-    if (['H61', 'H81'].contains(chipset)) return 2;
-    if (['A520', 'H110', 'H310', 'H510'].contains(chipset)) return 3;
-    if (['B550', 'A620', 'B650', 'H610', 'B760', 'H810', 'B850', 'B860']
-        .contains(chipset)) {
-      return 4;
-    }
-    if (chipset == 'Z790' || chipset.startsWith('X870')) return 5;
-    return null;
-  }
-
-  /// The PCIe generation and lane count a graphics card is built for.
-  static ({int gen, int lanes})? gpuPcie(Product gpu) {
-    final chip = (gpu.attrs['chip'] ?? '').toString();
-    if (RegExp(r'^RTX 50|^RX 90').hasMatch(chip)) {
-      return (gen: 5, lanes: RegExp(r'^RTX 50(50|60)').hasMatch(chip) ? 8 : 16);
-    }
-    if (chip.startsWith('RTX 30')) {
-      return (gen: 4, lanes: chip == 'RTX 3050' ? 8 : 16);
-    }
-    return null;
-  }
-
-  /// Rough gaming tiers, so a badly out-of-step CPU and GPU can be spotted.
-  /// Same tables as CPU_TIERS / GPU_TIERS in web/js/build.js.
-  static final List<(RegExp, int)> _cpuTiers = [
-    (RegExp(r'3200G|3400G'), 1),
-    (RegExp(r'Ryzen 5 5500|Ryzen 5 5600'), 2),
-    (RegExp(r'7800X3D|9800X3D|9950X3D'), 5),
-    (RegExp(r'7500F|i5-14400|Ultra 5 225\b|5700X|i7-12700'), 3),
-    (RegExp(r'7600X|9600X|7500X3D|5800X3D|i5-14600K|245K|i7-14700|265K|270K|9700X|9900X|285K|i9-14900'), 4),
-  ];
-  static final List<(RegExp, int)> _gpuTiers = [
-    (RegExp(r'^GT '), 0),
-    (RegExp(r'^GTX 1650|^RTX 3050'), 1),
-    (RegExp(r'^RTX 5050|^RTX 5060$|^RX 9060'), 2),
-    (RegExp(r'^RTX 5060 Ti|^RTX 5070$'), 3),
-    (RegExp(r'^RTX 5070 Ti|^RX 9070|^RTX 5080'), 4),
-    (RegExp(r'^RTX 5090'), 5),
-  ];
-  static int? _tierOf(List<(RegExp, int)> table, String text) {
-    for (final row in table) {
-      if (row.$1.hasMatch(text)) return row.$2;
-    }
-    return null;
-  }
 
   /// Parts that can go in a slot given what has already been chosen.
   static List<Product> eligible(
@@ -204,10 +122,11 @@ class Compatibility {
     final gpu = build['GPU'];
     final psu = build['PSU'];
     final pcCase = build['Case'];
-    final storage = build['Storage'];
 
+    // The rules only answer "will it work?": critical or pass. What runs
+    // but isn't ideal (one stick, no case fans, a bottleneck, a tight
+    // PSU...) is judged by eTech AI's review, as on the website.
     void critical(String t) => checks.add(Check(Level.critical, t));
-    void warn(String t) => checks.add(Check(Level.warning, t));
     void pass(String t) => checks.add(Check(Level.pass, t));
 
     // ---- CRITICAL: parts that physically cannot work together ----
@@ -241,7 +160,7 @@ class Compatibility {
 
     // Cooling. Well under the CPU's power is critical (the picker hides
     // those, so that only fires on a build loaded from earlier); a little
-    // under still works, so it is a warning.
+    // under still works, and eTech AI's review points it out.
     if (cooler != null && cpu != null) {
       if (cooler.coolerRating >= cpu.tdp) {
         pass('Cooling OK: ${cooler.name} handles ${cooler.coolerRating}W, '
@@ -251,10 +170,8 @@ class Compatibility {
             '${cpu.tdp}W but ${cooler.name} only handles ${cooler.coolerRating}W. '
             'Please pick a cooler rated for ${cpu.tdp}W or more.');
       } else {
-        warn('Cooler below the recommended size: the ${cpu.name} can put out '
-            '${cpu.tdp}W and ${cooler.name} handles ${cooler.coolerRating}W. It will '
-            'work, but under heavy load the processor runs hotter and boosts less. '
-            'A cooler rated for ${cpu.tdp}W or more keeps it at full speed.');
+        pass('Cooling OK: ${cooler.name} handles ${cooler.coolerRating}W, '
+            'enough for the ${cpu.name} to run.');
       }
     }
 
@@ -291,7 +208,7 @@ class Compatibility {
 
     // Below the estimated full-load draw the PC shuts down under load:
     // critical. Covering the draw but short of the recommended size still
-    // runs: only a warning.
+    // runs: the power meter shows it amber and eTech AI comments on it.
     if (psu != null && (cpu != null || gpu != null)) {
       final n = psuNeed(cpu, gpu);
       final why = n.byCard
@@ -307,10 +224,8 @@ class Compatibility {
             'but your PSU is only ${psu.wattage}W, so the PC would shut down in '
             'games. Pick a ${n.needed}W or bigger supply.');
       } else {
-        warn('PSU below the recommended size: $why, and your PSU is '
-            '${psu.wattage}W. It covers the estimated ${n.draw}W draw, so it will '
-            'run, but with little spare for load spikes. A ${n.needed}W supply '
-            'is the safer pick.');
+        pass('Power OK: this build draws about ${n.draw}W at full load, and '
+            'your PSU is ${psu.wattage}W.');
       }
     }
 
@@ -324,89 +239,6 @@ class Compatibility {
               'stock any at the moment.');
     }
 
-    // ---- WARNINGS: it builds and runs, just not at its best ----
-
-    // Memory: one stick runs single channel; too little memory stutters.
-    if (ram != null) {
-      final kit = ramKit(ram);
-      if (kit != null && kit.sticks == 1) {
-        warn('${ram.name} is a single stick, so memory runs in single channel — '
-            'noticeably slower in games and with built-in graphics. Two matching '
-            'sticks (a 2 x kit) run in dual channel.');
-      }
-      if (kit != null && kit.totalGb < 16) {
-        warn('${kit.totalGb}GB of memory is tight for Windows 11 and current games '
-            'and apps. 16GB or more is the comfortable minimum.');
-      }
-    }
-
-    // A hard drive as the only drive makes the whole PC feel slow.
-    if (storage != null && storage.attrs['driveType'] == 'HDD') {
-      warn('${storage.name} is a hard drive, so Windows and games will load slowly. '
-          'It is great for bulk storage, but an SSD as the main drive makes the '
-          'whole PC feel much faster.');
-    }
-
-    // A case with no fans needs some added, or the parts run hot.
-    if (pcCase != null &&
-        (pcCase.attrs['fansIncluded'] ?? '').toString().toLowerCase() == 'none') {
-      warn('${pcCase.name} comes with no fans. The PC will run hot without them, '
-          'so add at least two case fans (one in, one out).');
-    }
-
-    if (storage != null && mobo != null && storage.attrs['pcieGen'] != null) {
-      final driveGen = storage._pcieGen;
-      final boardGen = boardPcieGen(mobo);
-      if (boardGen != null && driveGen > boardGen) {
-        warn('${storage.name} is a Gen $driveGen drive and ${mobo.name} runs its '
-            'M.2 slot at Gen $boardGen. It is fully compatible and will work '
-            'perfectly — it just will not reach its top speed.');
-      }
-      if (driveGen == 5 && storage.attrs['heatsink'] == 'No') {
-        warn('Gen 5 drives run hot: check ${mobo.name} has its own M.2 heat shield, '
-            'or pick a drive with a heatsink built in.');
-      }
-    }
-
-    // A newer graphics card in a Gen 3 (or older) slot still works, with
-    // less bandwidth. The x8 cards feel it most.
-    if (gpu != null && mobo != null) {
-      final card = gpuPcie(gpu);
-      final slotGen = boardGpuSlotGen(mobo, cpu);
-      if (card != null && slotGen != null && slotGen <= 3 && card.gen > slotGen) {
-        warn('${gpu.name} is a PCIe Gen ${card.gen} card, but its slot runs at '
-            'Gen $slotGen${_isAm4Apu(cpu) ? ' with the ${cpu!.name}' : ' on ${mobo.name}'}. '
-            'It is fully compatible, but '
-            '${card.lanes == 8 ? 'this card only uses 8 lanes, so it can lose a noticeable amount of performance in some games.' : 'it can lose a little performance.'}'
-            '${_isAm4Apu(cpu) ? ' A processor without a "G" in its name runs the slot at full speed.' : ' A board with a Gen 4 or newer slot gets the most out of it.'}');
-      }
-    }
-
-    // A processor and graphics card far apart in power.
-    if (cpu != null && gpu != null) {
-      final cpuTier = _tierOf(_cpuTiers, cpu.name);
-      final gpuTier = _tierOf(_gpuTiers, (gpu.attrs['chip'] ?? '').toString());
-      if (cpuTier != null && gpuTier != null) {
-        if (gpuTier - cpuTier >= 2) {
-          warn('Bottleneck: the ${cpu.name} will hold back the ${gpu.name} in '
-              'games, so you would be paying for graphics power you cannot use. '
-              'A faster processor, or a cheaper card, would balance this build better.');
-        } else if (gpuTier >= 1 && cpuTier - gpuTier >= 3) {
-          warn('Bottleneck: the ${gpu.name} will hold back the ${cpu.name} in '
-              'games. Fine for work and light gaming, but a stronger graphics '
-              'card would make far better use of this processor.');
-        }
-      }
-    }
-
-    if (psu != null && gpu != null &&
-        psu.attrs['connector12VHPWR'] == 'No' &&
-        (gpu.attrs['chip'] ?? '').toString().startsWith('RTX 5')) {
-      warn('${psu.name} has no 12VHPWR connector, which the ${gpu.attrs['chip']} '
-          'expects. It will work using the adapter in the card\'s box, but a supply '
-          'with a native lead is tidier.');
-    }
-
     // ---- Good news ----
     if (cpu != null && cpu.attrs['coolerIncluded'] == 'Yes' && cooler == null) {
       pass('The ${cpu.name} comes with a cooler in the box, so a separate '
@@ -416,15 +248,21 @@ class Compatibility {
     return checks;
   }
 
-  /// Can this build go in the basket?
-  static bool canOrder(Map<String, Product?> build, List<Check> checks) {
+  /// Is every slot filled? The cooler may be empty when the CPU comes
+  /// with one in the box.
+  static bool allPicked(Map<String, Product?> build) {
     final coolerOptional = build['CPU']?.attrs['coolerIncluded'] == 'Yes';
-    final allPicked = slots.every((slot) {
+    return slots.every((slot) {
       if (slot == 'Cooler' && coolerOptional) return true;
       return build[slot] != null;
     });
+  }
+
+  /// Can this build go in the basket? Only these rules decide it; eTech
+  /// AI's review advises but never blocks.
+  static bool canOrder(Map<String, Product?> build, List<Check> checks) {
     final noCriticals = !checks.any((c) => c.level == Level.critical);
-    return allPicked && noCriticals;
+    return allPicked(build) && noCriticals;
   }
 
   static double subtotal(Map<String, Product?> build) {
@@ -433,15 +271,6 @@ class Compatibility {
       total += build[slot]?.price ?? 0;
     }
     return total;
-  }
-}
-
-extension on Product {
-  int get _pcieGen {
-    final v = attrs['pcieGen'];
-    if (v is int) return v;
-    if (v is num) return v.toInt();
-    return int.tryParse('$v') ?? 0;
   }
 }
 

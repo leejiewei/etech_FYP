@@ -46,7 +46,7 @@ class DealsScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.62,
+                mainAxisExtent: 300,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
@@ -100,8 +100,8 @@ class DealsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: const Border(top: BorderSide(color: AppTheme.red, width: 3)),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(color: AppTheme.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class DealsScreen extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEF0F3),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Text(deal.category ?? 'Everything',
                       style: const TextStyle(
@@ -157,7 +157,7 @@ class DealsScreen extends StatelessWidget {
                       color: AppTheme.red,
                       width: 1.4,
                       style: BorderStyle.solid),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   color: const Color(0xFFFDF2F3),
                 ),
                 child: Row(

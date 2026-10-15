@@ -125,7 +125,7 @@ class AccountScreen extends StatelessWidget {
       Container(
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(10)),
+            color: Colors.white, borderRadius: BorderRadius.circular(AppTheme.radius)),
         child: ListTile(
           leading: Icon(icon, color: danger ? AppTheme.red : AppTheme.redDark),
           title: Text(title,
