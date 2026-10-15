@@ -101,8 +101,10 @@ function renderPicks() {
 }
 
 // ------------------------------------------------------------
-// The department tiles: each aisle with its product count. The counts
-// are the catalogue's own, so they are true the moment the page loads.
+// The shop's departments. "Featured products" shows one in-stock
+// product from each, so the row covers the whole shop. (The home page
+// used to list them as tiles too; the user removed that on 15 Oct 2026
+// because the header and its search already lead to them.)
 // ------------------------------------------------------------
 const HOME_DEPARTMENTS = [
   { name: "Components", param: "category" },
@@ -114,25 +116,6 @@ const HOME_DEPARTMENTS = [
   { name: "Accessories", param: "category" },
   { name: "Branded PC", param: "category" },
 ];
-
-function renderDepartmentIndex() {
-  const index = document.getElementById("dept-index");
-  if (!index) return;
-
-  const rows = HOME_DEPARTMENTS
-    .map((d) => ({ ...d, count: products.filter((p) => p.category === d.name).length }))
-    .filter((d) => d.count > 0);
-
-  index.innerHTML = rows.map((d) => `
-    <a class="dept-row" href="shop.html?${d.param}=${encodeURIComponent(d.name)}">
-      <span class="dept-name">${escapeHtml(d.name)}</span>
-      <span class="dept-count">${d.count}<span class="visually-hidden"> products</span></span>
-    </a>`).join("") + `
-    <a class="dept-row dept-all" href="shop.html">
-      <span class="dept-name">Everything</span>
-      <span class="dept-count">${products.length}<span class="visually-hidden"> products</span></span>
-    </a>`;
-}
 
 // ------------------------------------------------------------
 // Your cart, down the side of the home page.
@@ -384,7 +367,6 @@ function countUpStats() {
 }
 
 onAppReady(() => {
-  renderDepartmentIndex();
   renderRecentlyViewed();
   renderTrust();
   renderPicks();

@@ -3898,72 +3898,6 @@ body.privacy-notice-open { padding-bottom: 96px; }
   max-width: 60ch;
 }
 
-/* Two columns of receipt lines: name, dot leader, count. */
-.dept-index {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--space-10);
-  border-top: 1px solid var(--ink);
-  padding-top: 6px;
-}
-
-.dept-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line-2);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.dept-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dept-name::before {
-  content: "";
-  width: 10px;
-  height: 10px;
-  border-radius: 1px;
-  background-color: var(--row-hue, var(--ink));
-  flex-shrink: 0;
-}
-
-.dept-leader {
-  flex: 1;
-  min-width: 16px;
-  border-bottom: 2px solid var(--line-2);
-  transform: translateY(-4px);
-}
-
-.dept-count {
-  font-family: var(--font-data);
-  font-size: var(--text-md);
-  font-weight: 700;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.dept-row:hover .dept-name {
-  color: var(--brand);
-}
-
-.dept-row:hover .dept-leader {
-  border-bottom-color: var(--brand);
-}
-
-.dept-all .dept-name {
-  font-weight: 800;
-}
-
-.dept-all .dept-name::before {
-  background-color: var(--ink);
-}
-
 /* ---------- Built by eTech: a strip of real workshop photos ---------- */
 .home > .builds-section {
   grid-column: 1 / -1;
@@ -4173,7 +4107,6 @@ body.privacy-notice-open { padding-bottom: 96px; }
 @media (max-width: 760px) {
   .home { padding: 0 var(--space-4); }
   .home-intro { padding-top: 22px; }
-  .dept-index { grid-template-columns: minmax(0, 1fr); }
   .builds-section .builds-grid {
     grid-template-columns: none;
     grid-auto-flow: column;
@@ -6020,8 +5953,7 @@ body {
 }
 
 .product-card-leader,
-.till-leader,
-.dept-leader { display: none; }
+.till-leader { display: none; }
 
 .product-price,
 .product-card-buy .product-price,
@@ -6193,46 +6125,11 @@ body {
   .hero-copy .home-lede { font-size: var(--text-base); }
 }
 
-/* ---------- Home: department tiles ---------- */
-.dept-index {
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--space-3);
-  border-top: 0;
-  padding-top: 0;
-}
-
-.dept-row {
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  font-size: var(--text-md);
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-
-.dept-row:hover { border-color: var(--brand); }
-
-.dept-row:hover .dept-name { color: var(--brand); }
-
-.dept-name::before { content: none; }
-
-.dept-count {
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: 400;
-  color: var(--ink-3);
-}
-
-.dept-all .dept-name { font-weight: 700; }
-
 @media (max-width: 760px) {
-  .product-grid,
-  .dept-index {
+  .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
   }
-  .dept-row { padding: var(--space-3); }
 }
 
 .home-side { padding-top: var(--space-6); }
