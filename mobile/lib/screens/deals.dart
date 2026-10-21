@@ -51,7 +51,7 @@ class DealsScreen extends StatelessWidget {
                 mainAxisSpacing: 12,
               ),
               itemCount: timed.length,
-              itemBuilder: (_, i) => ProductCard(product: timed[i], shop: shop),
+              itemBuilder: (_, i) => ProductCard(product: timed[i], shop: shop, index: i),
             ),
           const SizedBox(height: 26),
           _heading('Promotion Codes',

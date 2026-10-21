@@ -47,7 +47,7 @@ class WishlistScreen extends StatelessWidget {
                   ),
                   itemCount: saved.length,
                   itemBuilder: (_, i) =>
-                      ProductCard(product: saved[i], shop: shop),
+                      ProductCard(product: saved[i], shop: shop, index: i),
                 ),
         );
       },

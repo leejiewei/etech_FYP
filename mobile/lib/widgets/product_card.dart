@@ -4,6 +4,7 @@ import '../services/shop.dart';
 import '../theme.dart';
 import '../screens/product_detail.dart';
 import 'deal_price.dart';
+import 'motion.dart';
 import 'product_image.dart';
 
 /// One product in a grid, the same card as the website's: the photo,
@@ -13,7 +14,11 @@ import 'product_image.dart';
 class ProductCard extends StatelessWidget {
   final Product product;
   final Shop shop;
-  const ProductCard({super.key, required this.product, required this.shop});
+
+  /// Its place in the list, for the entrance (widgets/motion.dart).
+  /// Left out, the card is simply there.
+  final int? index;
+  const ProductCard({super.key, required this.product, required this.shop, this.index});
 
   void _open(BuildContext context) {
     shop.trackView(product.id);
@@ -36,6 +41,12 @@ class ProductCard extends StatelessWidget {
     final hasOptions = product.colourOptions.isNotEmpty;
     final switches = hasOptions && product.colourOptions.every((o) => o.endsWith(' Switch'));
 
+    final card = PressScale(child: _card(context, stock, saved, out, hasOptions, switches));
+    return index == null ? card : Entrance(index: index!, child: card);
+  }
+
+  Widget _card(BuildContext context, String stock, bool saved, bool out, bool hasOptions,
+      bool switches) {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(

@@ -265,7 +265,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         ),
                     itemCount: results.length,
                     itemBuilder: (_, i) =>
-                        ProductCard(product: results[i], shop: shop),
+                        ProductCard(product: results[i], shop: shop, index: i),
                   ),
                 ),
             ],

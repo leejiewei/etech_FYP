@@ -348,7 +348,7 @@ class HomeScreen extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (_, i) => SizedBox(
                 width: 160,
-                child: ProductCard(product: shop.picks[i].product, shop: shop),
+                child: ProductCard(product: shop.picks[i].product, shop: shop, index: i),
               ),
             ),
           ),
@@ -416,7 +416,7 @@ class HomeScreen extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) => SizedBox(
               width: 160,
-              child: ProductCard(product: products[i], shop: shop),
+              child: ProductCard(product: products[i], shop: shop, index: i),
             ),
           ),
         ),

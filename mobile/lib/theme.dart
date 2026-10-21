@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'widgets/motion.dart';
+
 /// eTech's look in the app: the same Shop Catalogue as the website
 /// (design/TASTE.md, the :root block of web/css/style.css).
 ///
@@ -32,6 +34,21 @@ class AppTheme {
 
   static const double radius = 4;
 
+  // Motion: the website's --dur-fast/base/slow and --ease-out. Taps are
+  // fast, entrances are slow; nothing bounces. See widgets/motion.dart.
+  static const Duration durFast = Duration(milliseconds: 150);
+  static const Duration durBase = Duration(milliseconds: 200);
+  static const Duration durSlow = Duration(milliseconds: 350);
+  static const Curve easeOut = Cubic(0.2, 0.7, 0.2, 1);
+  static const double rise = 12; // --space-3: how far a page or card rises in
+  static const double pressScale = 0.98; // a pressed card or button, as on the web
+
+  /// A pressed red button darkens to brandDeep, the website's hover and
+  /// press colour, on top of the ripple.
+  static final WidgetStateProperty<Color?> _pressedDeep =
+      WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.pressed) ? brandDeep : null);
+
   /// A price: bold, with even-width figures so a column of them lines up.
   static TextStyle price(double size, {Color color = ink, FontWeight weight = FontWeight.w700}) =>
       TextStyle(
@@ -58,6 +75,15 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: pageBg,
+      // iOS keeps its own swipe-back slide.
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: RisePageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.windows: RisePageTransitionsBuilder(),
+        TargetPlatform.linux: RisePageTransitionsBuilder(),
+        TargetPlatform.fuchsia: RisePageTransitionsBuilder(),
+      }),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: ink,
@@ -99,7 +125,8 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: rounded,
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
+          animationDuration: durFast,
+        ).copyWith(overlayColor: _pressedDeep),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -107,7 +134,8 @@ class AppTheme {
           foregroundColor: Colors.white,
           shape: rounded,
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
+          animationDuration: durFast,
+        ).copyWith(overlayColor: _pressedDeep),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
