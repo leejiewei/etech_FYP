@@ -55,6 +55,41 @@ class RisePageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
+/// The bottom tabs. Switching tab doesn't open a page, so this gives it
+/// the same rise a page has. The tabs stay in their IndexedStack, so each
+/// keeps its scroll position, filters and half-built PC.
+class TabEntrance extends StatefulWidget {
+  final int tab;
+  final Widget child;
+  const TabEntrance({super.key, required this.tab, required this.child});
+
+  @override
+  State<TabEntrance> createState() => _TabEntranceState();
+}
+
+class _TabEntranceState extends State<TabEntrance> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller =
+      AnimationController(vsync: this, duration: AppTheme.durSlow, value: 1);
+  late final Animation<double> _t =
+      CurvedAnimation(parent: _controller, curve: AppTheme.easeOut);
+
+  @override
+  void didUpdateWidget(TabEntrance old) {
+    super.didUpdateWidget(old);
+    if (old.tab != widget.tab && !_reduced(context)) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _t, child: _rise(_t, widget.child));
+}
+
 /// A product card coming in. The first screenful arrives one after
 /// another; anything further down the list, built as it scrolls in, comes
 /// straight in, so a long list never waits. It plays once per card: a

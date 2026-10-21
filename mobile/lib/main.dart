@@ -12,6 +12,7 @@ import 'screens/builder.dart';
 import 'screens/cart.dart';
 import 'screens/orders.dart';
 import 'screens/prebuilt.dart';
+import 'widgets/motion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -136,7 +137,10 @@ class _MainShellState extends State<MainShell> {
         ];
 
         return Scaffold(
-          body: IndexedStack(index: _tab, children: pages),
+          body: TabEntrance(
+            tab: _tab,
+            child: IndexedStack(index: _tab, children: pages),
+          ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _tab,
             onDestinationSelected: (i) => setState(() => _tab = i),

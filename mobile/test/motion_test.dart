@@ -55,6 +55,39 @@ void main() {
     expect(taps, 1, reason: 'the press-in must not swallow the tap');
   });
 
+  testWidgets('switching tab rises the new tab in, and the old tab keeps its state',
+      (tester) async {
+    var tab = 0;
+    late StateSetter setTab;
+    await tester.pumpWidget(_app(StatefulBuilder(builder: (context, setState) {
+      setTab = setState;
+      return TabEntrance(
+        tab: tab,
+        child: IndexedStack(index: tab, children: const [
+          TextField(key: Key('search')),
+          Text('second tab'),
+        ]),
+      );
+    })));
+    double opacity() => tester
+        .widget<FadeTransition>(find.descendant(
+            of: find.byType(TabEntrance), matching: find.byType(FadeTransition)))
+        .opacity
+        .value;
+    expect(opacity(), 1, reason: 'the first tab is simply there');
+
+    await tester.enterText(find.byKey(const Key('search')), 'rtx');
+    setTab(() => tab = 1);
+    await tester.pump();
+    expect(opacity(), 0);
+    await tester.pumpAndSettle();
+    expect(opacity(), 1);
+
+    setTab(() => tab = 0);
+    await tester.pumpAndSettle();
+    expect(find.text('rtx'), findsOneWidget);
+  });
+
   testWidgets('pages open with the rise transition at durSlow', (tester) async {
     await tester.pumpWidget(MaterialApp(
       theme: AppTheme.theme,

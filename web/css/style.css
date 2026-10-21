@@ -6067,6 +6067,12 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Every other page rises in as it opens (the home page has the hero).
+     Nothing is left behind once it ends, so sticky and fixed parts
+     inside the page behave as before. */
+  body > section.section,
+  body > .countdown-banner { animation: rise-in var(--dur-slow) var(--ease-out) backwards; }
+
   .hero-stage { animation: fade-in calc(var(--dur-slow) * 2) var(--ease-out) backwards; }
   .hero-copy > * { animation: rise-in var(--dur-slow) var(--ease-out) backwards; }
   .hero-copy > :nth-child(2) { animation-delay: calc(var(--dur-fast) / 2); }
