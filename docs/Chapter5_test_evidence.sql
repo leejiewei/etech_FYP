@@ -172,3 +172,200 @@ where n.nspname = 'public'
 --      21 Oct: PASS. "permission denied for table customers".
 -- (SQ5 and SQ6 need the key: add &apikey=<publishable key from web/js/config.js>)
 -- ============================================================
+
+
+-- ============================================================
+-- Added 21 Oct 2026 (evening) for Chapter 5 sections 5.2.4-5.2.9.
+-- Every block runs as test customer 44 (or staff admin 1) and ends
+-- in ROLLBACK. Blocks that stop with an ERROR are meant to: the
+-- error message IS the result to screenshot.
+-- Products used: 4502 Logitech B175 (RM 38), 4501 Logitech B100
+-- (RM 22), 4504 Fantech Venom II WGC2 (colours), 206 ASUS Vivobook
+-- 15 (RM 2,899, a laptop), 3201 Hiksemi Wave 256GB SSD (RM 239),
+-- 4531 Cliptec RZS878 (RM 25).
+-- ============================================================
+
+
+-- ------------------------------------------------------------
+-- CART-01 + CART-02  Add an in-stock product, then add it again
+-- 21 Oct: PASS. quantity 1, then 2 on the same line.
+-- ------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+delete from public.cart_items where customer_id = 44;
+select public.cart_add(4502);
+create temp table cart1 as select 'after 1st add' as step, product_id, quantity from public.cart_items where customer_id = 44;
+select public.cart_add(4502);
+insert into cart1 select 'after 2nd add', product_id, quantity from public.cart_items where customer_id = 44;
+select * from cart1;
+rollback;
+
+-- CART-03  Out of stock. 21 Oct: PASS.
+--   ERROR: Sorry, ASUS Vivobook 15 A1504 Core 5 120U 8GB (Silver) is out of stock.
+begin;
+update public.products set stock_status = 'out' where product_id = 206;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.cart_add(206);
+rollback;
+
+-- CART-04  Product that does not exist. 21 Oct: PASS.
+--   ERROR: That product does not exist.
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.cart_add(999999);
+rollback;
+
+-- CART-05  Colour not offered. 21 Oct: PASS.
+--   ERROR: Fantech Venom II WGC2 does not come in Orange.
+--   (Change 'Orange' to 'Beige' to show a real colour is accepted.)
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.cart_add(4504, 'Orange');
+rollback;
+
+-- CART-06  Signed out. 21 Oct: PASS.
+--   ERROR: permission denied for function cart_add
+begin;
+set local role anon;
+select public.cart_add(4502);
+rollback;
+
+-- WISH-01  Wishlist toggle. 21 Oct: PASS. {4502}, then 4502 gone.
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+create temp table wish1 as select 'first press' as step, public.toggle_wishlist(4502)::text as wishlist_now;
+insert into wish1 select 'second press', public.toggle_wishlist(4502)::text;
+select * from wish1;
+rollback;
+
+
+-- ------------------------------------------------------------
+-- ORD-01  Valid order, LAPTOP15 on a laptop. 21 Oct: PASS.
+--   subtotal 2899.00, discount 434.85, total 2464.15, cart empty after.
+-- ------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+delete from public.cart_items where customer_id = 44;
+select public.cart_add(206);
+create temp table ord1 as select public.place_order('Test', '0123456789', null, 'LAPTOP15') as result;
+select result, (select count(*) from public.cart_items where customer_id = 44) as cart_lines_after from ord1;
+rollback;
+
+-- ORD-02 .. ORD-06: run this block once per test, swapping the
+-- place_order(...) line. Each one stops with its error.
+--   ORD-02  place_order('', '0123456789')
+--           -> Please fill in your name and phone number.
+--   ORD-03  place_order('Test', '   ')
+--           -> Please fill in your name and phone number.
+--   ORD-04  place_order('Test', '0123456789', null, null, 'BANK_TRANSFER', 'DELIVERY')
+--           -> Please give us an address to deliver to.
+--   ORD-05  place_order('Test', '0123456789', null, null, 'CASH')
+--           -> Please choose how you are paying.
+--   ORD-06  (delete the cart_add line first) place_order('Test', '0123456789')
+--           -> Your cart is empty.
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+delete from public.cart_items where customer_id = 44;
+select public.cart_add(4502);
+select public.place_order('', '0123456789');
+rollback;
+
+-- ORD-07  Unknown coupon. 21 Oct: PASS. discount 0.00, coupon null.
+-- ORD-08  Coupon outside its category.
+--   21 Oct BEFORE the fix: FAIL. 2 x RM 38 mice + LAPTOP15 -> discount 11.40.
+--   Fix: 20261021140417_coupon_only_its_category.sql (applied 21 Oct).
+--   21 Oct RETEST: PASS.
+--     mouse only + LAPTOP15     -> discount 0.00, coupon null
+--     laptop + LAPTOP15         -> discount 434.85
+--     SSD + PARTS10             -> discount 23.90 (Storage is under Components)
+--     laptop + mouse + LAPTOP15 -> discount 434.85 (laptop only; was 438.15)
+--     mouse + FREE100           -> discount 0.00 (ORD-07)
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+create temp table ord8 (test text, result jsonb);
+delete from public.cart_items where customer_id = 44;
+select public.cart_add(4501);
+insert into ord8 select 'mouse only + LAPTOP15', public.place_order('Test', '0123456789', null, 'LAPTOP15');
+select public.cart_add(206);
+insert into ord8 select 'laptop + LAPTOP15', public.place_order('Test', '0123456789', null, 'LAPTOP15');
+select public.cart_add(3201);
+insert into ord8 select 'SSD + PARTS10', public.place_order('Test', '0123456789', null, 'PARTS10');
+select public.cart_add(206);
+select public.cart_add(4501);
+insert into ord8 select 'laptop + mouse + LAPTOP15', public.place_order('Test', '0123456789', null, 'LAPTOP15');
+select public.cart_add(4501);
+insert into ord8 select 'mouse + FREE100', public.place_order('Test', '0123456789', null, 'FREE100');
+select test, result->>'subtotal' as subtotal, result->>'discount' as discount,
+       result->>'total' as total, result->>'coupon' as coupon from ord8;
+rollback;
+
+
+-- ------------------------------------------------------------
+-- MSG-01..04  Weekly recommendation message, run as the scheduler
+-- (no signed-in user). 21 Oct: PASS.
+--   MSG-01 1 sent: "Logitech B100 is RM 22.00. Based on your Mouse views."
+--   MSG-02 0 sent (cooldown)  MSG-03 0 sent (customer 46, nothing known)
+--   MSG-04 every customer: no message with an empty body
+-- Nothing reaches a phone: the push request is rolled back too.
+-- ------------------------------------------------------------
+begin;
+create temp table msg (test text, sent int, latest text);
+insert into msg select 'MSG-01 customer 44, cooldown 0', public.send_recommendation_alerts(44, 0),
+  (select title || ' / ' || body from public.notifications where customer_id = 44 and kind = 'recommendation' order by notification_id desc limit 1);
+insert into msg select 'MSG-02 again, cooldown 7', public.send_recommendation_alerts(44, 7), null;
+insert into msg select 'MSG-03 customer 46', public.send_recommendation_alerts(46, 0), null;
+insert into msg select 'MSG-04 everyone', public.send_recommendation_alerts(null, 7),
+  'empty bodies: ' || (select count(*) from public.notifications where kind = 'recommendation' and created_at > now() - interval '1 minute' and coalesce(body, '') = '');
+select * from msg;
+rollback;
+
+
+-- ------------------------------------------------------------
+-- DEAL-01 + STF-01  Staff start a deal; staff mark order 1 Ready.
+-- 21 Oct: PASS. 1 customer told about Cliptec RZS878 (RM 25 -> 23);
+--   order 1 Ready with "Your order is on its way".
+-- ------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.admins where admin_id = 1), 'role', 'authenticated')::text, true);
+set local role authenticated;
+create temp table stf (test text, result text);
+insert into stf select 'DEAL-01 customers told', public.admin_create_deal(4531, 23, now(), now() + interval '7 days')::text;
+select public.admin_set_order_status(1, 'Ready');
+reset role;
+insert into stf select 'DEAL-01 message', (select title || ' / ' || body from public.notifications where kind = 'deal_started' and product_id = 4531 order by notification_id desc limit 1);
+insert into stf select 'STF-01 order 1 status', (select status::text from public.orders where order_id = 1);
+insert into stf select 'STF-01 message', (select title || ' / ' || body from public.notifications where order_id = 1 and kind = 'order_ready' order by notification_id desc limit 1);
+select * from stf;
+rollback;
+
+-- STF-02..07: one per run, as staff (STF-07 as customer 44). Each errors.
+--   STF-02 admin_set_order_status(999999, 'Ready') -> That order no longer exists.
+--   STF-03 admin_set_order_status(1, 'Flying')     -> invalid input value for enum order_status
+--   STF-04 admin_create_deal(206, 3200, now(), now() + interval '7 days')
+--                                                  -> A deal price has to be below the shelf price.
+--   STF-05 admin_create_deal(206, 2500, now() + interval '7 days', now())
+--                                                  -> A deal has to end after it starts.
+--   STF-06 admin_create_deal(999999, 10, now(), now() + interval '1 day')
+--                                                  -> That product no longer exists.
+--   STF-07 (customer 44) admin_set_order_status(1, 'Ready') and send_recommendation_alerts(44)
+--                                                  -> Staff access only.
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', (select auth_user_id from public.admins where admin_id = 1), 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.admin_set_order_status(999999, 'Ready');
+rollback;
+
+
+-- ------------------------------------------------------------
+-- SQ7  Staff search filter injection (run in a terminal, not here).
+-- 21 Oct: PASS. Raw text -> all 546 products; cleaned the way
+-- web/staff-console/js/products.js:71 does it -> 0 products.
+-- ------------------------------------------------------------
