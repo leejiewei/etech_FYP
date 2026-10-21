@@ -5900,12 +5900,41 @@ body {
 
 .product-card::before { content: none; }
 
+/* Hover: the border firms up and the photo comes a touch closer. No
+   shadow: a card is not floating above the page (TASTE.md). */
+.product-card { transition: border-color var(--dur-fast) var(--ease-out); }
+
 .product-card:hover {
   border-color: var(--line-2);
   box-shadow: none;
 }
 
-.product-card:hover .product-img { transform: none; }
+.product-img { transition: transform var(--dur-slow) var(--ease-out); }
+
+.product-card:hover .product-img { transform: scale(1.03); }
+
+/* Buttons press in under the finger or the mouse. */
+.add-btn,
+.card-add,
+.ghost-btn,
+.hero-btn {
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.add-btn:active:not(:disabled),
+.card-add:active:not(:disabled),
+.ghost-btn:active,
+.hero-btn:active { transform: scale(0.98); }
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card:hover .product-img,
+  .add-btn:active:not(:disabled),
+  .card-add:active:not(:disabled),
+  .ghost-btn:active,
+  .hero-btn:active { transform: none; }
+}
 
 .product-img-wrap {
   border-bottom: 0;
@@ -6019,12 +6048,31 @@ body {
   color: var(--ink);
   font-size: var(--text-md);
   font-weight: 600;
-  transition: border-color var(--dur-fast) var(--ease-out);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
 }
 
 .ghost-btn:hover { border-color: var(--ink); }
 
 /* ---------- Home: the 3D band ---------- */
+/* The one entrance on the site: the stage fades up and the copy rises
+   in line by line. `backwards` holds the first frame through the delay
+   and leaves nothing behind, so a stalled animation still shows text. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(var(--space-3)); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-stage { animation: fade-in calc(var(--dur-slow) * 2) var(--ease-out) backwards; }
+  .hero-copy > * { animation: rise-in var(--dur-slow) var(--ease-out) backwards; }
+  .hero-copy > :nth-child(2) { animation-delay: calc(var(--dur-fast) / 2); }
+  .hero-copy > :nth-child(3) { animation-delay: var(--dur-fast); }
+}
+
 .hero {
   position: relative;
   max-width: calc(var(--container) - 2 * var(--space-6));
