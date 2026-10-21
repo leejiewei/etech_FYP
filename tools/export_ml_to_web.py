@@ -8,7 +8,8 @@ which reach back far further than the online orders do. A trend over the online
 orders alone would be a number with nothing behind it, so the forecast page
 reads this file instead.
 
-Run after re-executing ml/02_forecasting.ipynb or ml/03_segmentation.ipynb:
+Run after re-executing ml/02_forecasting.ipynb, ml/03_segmentation.ipynb or
+ml/04_purchase_segmentation.ipynb:
 
     python tools/export_ml_to_web.py
 """
@@ -214,11 +215,58 @@ def segments():
     return rows, slowest_rows
 
 
+GROUP_ORDER = ["Gaming & performance", "Business & office", "Everyday computers", "Parts & accessories"]
+
+
+def purchase_groups():
+    """The four customer groups from 04_purchase_segmentation.ipynb.
+
+    Each receipt is one buyer's purchase, so these are groups of purchases, not
+    of people. For each group: how many purchases and how much money, what it
+    sells most of, and its busiest month. Selling prices only -- no cost, margin
+    or customer columns, in line with the data agreement.
+    """
+    path = PROCESSED / "purchase_segments.csv"
+    if not path.exists():
+        return []
+
+    lines = pd.read_csv(path, parse_dates=["date"])
+    total_purchases, total_revenue = len(lines), lines.lineTotal.sum()
+
+    # Busiest month from full years only: 2026 has no September to December yet.
+    full = lines[lines.date.dt.year <= 2025]
+    by_month = full.groupby([full.segment, full.date.dt.month]).size().unstack(fill_value=0)
+
+    rows = []
+    for name in GROUP_ORDER:
+        g = lines[lines.segment == name]
+        if g.empty:
+            continue
+        top = g.subcategory.value_counts().head(4)
+        # By name, not sku: the shop's product codes change in January 2026, and
+        # the name is what carries a product across that change.
+        top_items = g.groupby("itemName").quantity.sum().sort_values(ascending=False).head(3)
+        busiest = int(by_month.loc[name].idxmax()) if name in by_month.index else None
+        rows.append({
+            "segment": name,
+            "purchases": int(len(g)),
+            "share": round(len(g) / total_purchases * 100, 1),
+            "revenue": round(float(g.lineTotal.sum()), 0),
+            "revShare": round(float(g.lineTotal.sum() / total_revenue * 100), 1),
+            "medPrice": round(float(g.unitPrice.median()), 0),
+            "bestSellers": [{"name": n, "purchases": int(c)} for n, c in top.items()],
+            "topProducts": [{"name": n, "units": int(u)} for n, u in top_items.items()],
+            "busiestMonth": None if busiest is None else date(2000, busiest, 1).strftime("%B"),
+        })
+    return rows
+
+
 def main():
     weekly = load_weekly()
     train, test, predicted, metrics, monthly = fit_and_forecast(weekly)
     coming = next_months(weekly, metrics["monthlyWAPE"])
     segment_rows, slowest_rows = segments()
+    group_rows = purchase_groups()
 
     # The chart shows the last year of history for context, then the forecast block.
     history = train.tail(52)
@@ -244,6 +292,7 @@ def main():
                      "errorPct": round((r.forecast - r.actual) / r.actual * 100, 1)}
                     for m, r in monthly.iterrows()],
         "segments": segment_rows,
+        "groups": group_rows,
         "slowest": slowest_rows,
     }
 
@@ -252,7 +301,8 @@ def main():
     size = OUT.stat().st_size / 1024
     print(f"wrote {OUT.relative_to(ROOT)}  ({size:,.1f} KB)")
     print(f"  {len(payload['history'])} history weeks, {len(payload['forecast'])} forecast weeks, "
-          f"{len(payload['monthly'])} months, {len(segment_rows or [])} segments")
+          f"{len(payload['monthly'])} months, {len(segment_rows or [])} segments, "
+          f"{len(group_rows)} customer groups")
     print(f"  weekly WAPE {metrics['weeklyWAPE']}%  monthly WAPE {metrics['monthlyWAPE']}%")
     for m in coming:
         print(f"  {m['label']:<15} ({m['weeks']} weeks) RM {m['revenue']:>9,.0f} "

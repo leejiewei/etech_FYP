@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-10-09",
+    "generated": "2026-10-18",
     "source": "docs/data/etech_sales_data.xlsx",
     "model": "Ridge regression (trend + month seasonality)",
     "trainWeeks": 194,
@@ -715,6 +715,172 @@
       "medPrice": 86.0,
       "medUnitsWk": 0.3,
       "current": 17
+    }
+  ],
+  "groups": [
+    {
+      "segment": "Gaming & performance",
+      "purchases": 1590,
+      "share": 20.0,
+      "revenue": 16141652.0,
+      "revShare": 51.3,
+      "medPrice": 5499.0,
+      "bestSellers": [
+        {
+          "name": "Gaming PC",
+          "purchases": 977
+        },
+        {
+          "name": "Workstation",
+          "purchases": 301
+        },
+        {
+          "name": "Graphics Card",
+          "purchases": 205
+        },
+        {
+          "name": "Prebuilt Gaming PCs",
+          "purchases": 107
+        }
+      ],
+      "topProducts": [
+        {
+          "name": "AMD Ryzen 5 5600 RTX 3060 Gaming PC Rig",
+          "units": 510
+        },
+        {
+          "name": "AMD Ryzen 5 5500 RTX 3050 Gaming PC Rig",
+          "units": 467
+        },
+        {
+          "name": "AMD Ryzen 7 5800X3D RTX 3080 Gaming PC Rig",
+          "units": 460
+        }
+      ],
+      "busiestMonth": "November"
+    },
+    {
+      "segment": "Business & office",
+      "purchases": 1480,
+      "share": 18.6,
+      "revenue": 5505794.0,
+      "revShare": 17.5,
+      "medPrice": 1858.0,
+      "bestSellers": [
+        {
+          "name": "Business Laptop",
+          "purchases": 335
+        },
+        {
+          "name": "Office PC",
+          "purchases": 332
+        },
+        {
+          "name": "Laser Printer",
+          "purchases": 209
+        },
+        {
+          "name": "Multifunction Printer",
+          "purchases": 203
+        }
+      ],
+      "topProducts": [
+        {
+          "name": "Intel Core i3-12100 Office PC Rig",
+          "units": 481
+        },
+        {
+          "name": "Lenovo ThinkPad X1 Carbon Gen 10",
+          "units": 252
+        },
+        {
+          "name": "Brother HL-L3230CDN Colour Laser Printer",
+          "units": 174
+        }
+      ],
+      "busiestMonth": "November"
+    },
+    {
+      "segment": "Everyday computers",
+      "purchases": 1413,
+      "share": 17.8,
+      "revenue": 7064012.0,
+      "revShare": 22.5,
+      "medPrice": 3945.0,
+      "bestSellers": [
+        {
+          "name": "Ultrabook",
+          "purchases": 371
+        },
+        {
+          "name": "Productivity PC",
+          "purchases": 323
+        },
+        {
+          "name": "AI PC",
+          "purchases": 281
+        },
+        {
+          "name": "Consumer Laptop",
+          "purchases": 264
+        }
+      ],
+      "topProducts": [
+        {
+          "name": "AMD Ryzen 5 5600G Productivity PC Rig",
+          "units": 507
+        },
+        {
+          "name": "HP Pavilion Plus 14-eh0000",
+          "units": 308
+        },
+        {
+          "name": "ASUS Zenbook 14 OLED UX3402",
+          "units": 257
+        }
+      ],
+      "busiestMonth": "November"
+    },
+    {
+      "segment": "Parts & accessories",
+      "purchases": 3456,
+      "share": 43.5,
+      "revenue": 2747333.0,
+      "revShare": 8.7,
+      "medPrice": 318.0,
+      "bestSellers": [
+        {
+          "name": "Processor",
+          "purchases": 343
+        },
+        {
+          "name": "Storage",
+          "purchases": 341
+        },
+        {
+          "name": "Memory",
+          "purchases": 282
+        },
+        {
+          "name": "Power Supply",
+          "purchases": 251
+        }
+      ],
+      "topProducts": [
+        {
+          "name": "Vention HDMI 2.1 Cable 2m",
+          "units": 282
+        },
+        {
+          "name": "TP-Link Cat6 Network Cable 3m",
+          "units": 271
+        },
+        {
+          "name": "UGREEN SATA III Data Cable",
+          "units": 236
+        }
+      ],
+      "busiestMonth": "November"
     }
   ],
   "slowest": [

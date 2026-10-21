@@ -1,5 +1,5 @@
 // ============================================================
-// Sales forecast and product segments.
+// Sales forecast and the four customer groups.
 //
 // Every other page in this console reads Supabase, which holds the online
 // shop: a few dozen orders across a handful of months. This page does
@@ -121,11 +121,12 @@ function showPrediction(slot, months, shown) {
 const COLOUR_ACTUAL = "#2c5d8f";
 const COLOUR_FORECAST = "#d62839";
 
+// The four customer groups from ml/04_purchase_segmentation.ipynb.
 const SEGMENT_COLOUR = {
-  "Big-ticket": "#2c5d8f",
-  "Everyday, fast-moving": "#1e8e3e",
-  "Mid-price, slow-moving": "#8a5cf6",
-  "Low-price, slow-moving": "#b4642a",
+  "Gaming & performance": "#2c5d8f",
+  "Business & office": "#1e8e3e",
+  "Everyday computers": "#8a5cf6",
+  "Parts & accessories": "#b4642a",
 };
 
 adminPage("Sales Forecast", "forecast", async (content) => {
@@ -152,14 +153,14 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const metrics = data.metrics || {};
   const monthly = data.monthly || [];
   const weekly = data.forecast || [];
-  const segments = data.segments || [];
+  const groups = data.groups || [];
   const slowest = data.slowest || [];
   // nextMonth (one month) is what the export wrote before the button existed.
   const coming = data.nextMonths || (data.nextMonth ? [data.nextMonth] : []);
 
   const monthMax = Math.max(0, ...monthly.flatMap((m) => [m.actual, m.forecast]));
   const weekMax = Math.max(0, ...weekly.flatMap((w) => [w.actual, w.forecast]));
-  const segMax = Math.max(0, ...segments.map((s) => s.revenue));
+  const segMax = Math.max(0, ...groups.map((s) => s.revenue));
 
   content.innerHTML = `
     <div id="prediction"></div>
@@ -237,29 +238,37 @@ adminPage("Sales Forecast", "forecast", async (content) => {
         </p>`}
     </div>
 
-    <h2>Product segments</h2>
+    <h2>Customer groups</h2>
     <div class="card">
-      ${segments.length === 0
-        ? `<p style="color:#888;">No segments in the forecast file. Run <code>ml/03_segmentation.ipynb</code>.</p>`
-        : segments.map((s) => `
+      ${groups.length === 0
+        ? `<p style="color:#888;">No customer groups in the forecast file. Run <code>ml/04_purchase_segmentation.ipynb</code>, then <code>tools/export_ml_to_web.py</code>.</p>`
+        : groups.map((s) => `
         <div style="margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
             <strong style="color:${SEGMENT_COLOUR[s.segment] || "#555"};">${e(s.segment)}</strong>
-            <span>${s.skus} product${s.skus === 1 ? "" : "s"} &middot; ${e(money(s.revenue))}
-              (${e(s.revShare)}%)</span>
+            <span>${e(s.purchases.toLocaleString())} purchases (${e(s.share)}%) &middot;
+              ${e(money(s.revenue))} (${e(s.revShare)}%)</span>
           </div>
           <div style="background:#eef0f3; border-radius:4px; height:16px;">
             <div style="background:${SEGMENT_COLOUR[s.segment] || "#555"};
                         width:${barWidth(s.revenue, segMax)}%; height:16px; border-radius:4px;"></div>
           </div>
-          <div style="font-size:11px; color:#888; margin-top:4px;">
-            typically ${e(money(s.medPrice))}, ${e(s.medUnitsWk)} sold a week,
-            ${e(s.current)} still in the range
+          <div style="font-size:12px; color:#555; margin-top:5px;">
+            Best-selling types: ${s.bestSellers.map((b) => `${e(b.name)} (${e(b.purchases)})`).join(", ")}
+          </div>
+          ${(s.topProducts || []).length === 0 ? "" : `
+          <ol style="font-size:12px; color:#555; margin:4px 0 0; padding-left:20px;">
+            ${s.topProducts.map((p) => `<li>${e(shorten(p.name, 60))} &mdash; ${e(p.units)} sold</li>`).join("")}
+          </ol>`}
+          <div style="font-size:11px; color:#888; margin-top:2px;">
+            typically ${e(money(s.medPrice))}${s.busiestMonth ? `, busiest in ${e(s.busiestMonth)}` : ""}
           </div>
         </div>`).join("") + `
         <p class="hint" style="margin:0;">
-          Products grouped by how they behave &mdash; price and how fast they sell while in the
-          range &mdash; not by category. Grouping is K-Means over the shop's receipts since 2022.
+          Every sale since 2022 put into one of four groups by K-Means, using price, quantity,
+          graphics card level and whether the item is for gaming, for business or a full computer.
+          The receipts do not say who bought, so these are groups of purchases: "a gaming purchase",
+          not "a gamer".
         </p>`}
     </div>
 
