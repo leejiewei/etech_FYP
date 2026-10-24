@@ -52,27 +52,25 @@ adminPage("Edit Product", "products", async (content) => {
             <select id="brand_id" required>
               ${brandOptions(brands, value("brand_id", 0))}
             </select>
-            <small><a href="#" id="new-brand-link" style="color:#d62839;">+ New brand</a></small>
             <div id="new-brand" style="display:none; margin-top:8px;">
-              <input type="text" id="brand_name" maxlength="60" placeholder="e.g. Lian Li" />
-              <button type="button" class="btn small" id="brand-button" style="margin-top:6px;">Add brand</button>
+              <input type="text" id="brand_name" maxlength="60" placeholder="e.g. Lian Li" disabled />
+              <button type="button" class="btn small" id="brand-button" style="margin-top:6px;" disabled>Add brand</button>
               <small>Written as the maker writes it. It appears on product pages and in the brand filter.</small>
             </div>
           </div>
           <div class="field">
             <label for="category_id">Category</label>
             <select id="category_id" required>
-              ${categoryOptions(categories, value("category_id", 0))}
+              ${categorySelectOptions(categories, value("category_id", 0))}
             </select>
-            <small><a href="#" id="new-category-link" style="color:#d62839;">+ New category</a></small>
             <div id="new-category" style="display:none; margin-top:8px;">
-              <input type="text" id="category_name" maxlength="60" placeholder="e.g. Capture Card" />
-              <select id="parent_id" style="margin-top:6px;">
+              <input type="text" id="category_name" maxlength="60" placeholder="e.g. Capture Card" disabled />
+              <select id="parent_id" style="margin-top:6px;" disabled>
                 <option value="0">On its own (a new top-level category)</option>
                 ${categories.filter((c) => !c.parent).map((c) =>
                   `<option value="${c.category_id}">Under ${e(c.name)}</option>`).join("")}
               </select>
-              <button type="button" class="btn small" id="category-button" style="margin-top:6px;">Add category</button>
+              <button type="button" class="btn small" id="category-button" style="margin-top:6px;" disabled>Add category</button>
               <small>Most new kinds of product sit under an existing category, e.g. a capture card under Components.</small>
             </div>
           </div>
@@ -186,15 +184,8 @@ adminPage("Edit Product", "products", async (content) => {
     document.getElementById("photo-caption").textContent = "New photo, not saved yet";
   };
 
-  const reveal = (link, box, input) => {
-    document.getElementById(link).onclick = (event) => {
-      event.preventDefault();
-      document.getElementById(box).style.display = "block";
-      document.getElementById(input).focus();
-    };
-  };
-  reveal("new-brand-link", "new-brand", "brand_name");
-  reveal("new-category-link", "new-category", "category_name");
+  document.getElementById("brand_id").onchange = () => toggleAddNew("brand");
+  document.getElementById("category_id").onchange = () => toggleAddNew("category");
   document.getElementById("brand-button").onclick = () => addBrand(brands);
   document.getElementById("category-button").onclick = () => addCategory(categories);
   // Enter in these boxes means "add this", not "save the product".
@@ -208,15 +199,79 @@ adminPage("Edit Product", "products", async (content) => {
 
   document.getElementById("product-form").onsubmit = (event) => {
     event.preventDefault();
-    save(id, isNew);
+    save(id, isNew, brands, categories);
   };
 });
 
+// The last option in each dropdown is "+ Add New ...", and choosing it is
+// what opens the box for typing one. ADD_NEW is never a real id, so a
+// form saved with it still chosen fails validation rather than the insert.
+const ADD_NEW = "new";
+
+// A new product starts on an empty "Choose ..." line rather than the first
+// brand in the list, so nobody saves an Acer by not looking. Its value is
+// "", which the select's required attribute refuses.
+function placeholder(label, selectedId) {
+  return `<option value="" ${Number(selectedId) ? "" : "selected"}>${label}</option>`;
+}
+
 function brandOptions(brands, selectedId) {
-  return brands.map((b) => `
+  return placeholder("Choose a brand", selectedId) + brands.map((b) => `
     <option value="${b.brand_id}" ${Number(selectedId) === b.brand_id ? "selected" : ""}>
       ${e(b.name)}
-    </option>`).join("");
+    </option>`).join("") +
+    `<option value="${ADD_NEW}">+ Add New Brand</option>`;
+}
+
+// categoryOptions() lives in admin.js and other pages use it too, so the
+// extra option is added here rather than there.
+function categorySelectOptions(categories, selectedId) {
+  return placeholder("Choose a category", selectedId) +
+    categoryOptions(categories, selectedId) +
+    `<option value="${ADD_NEW}">+ Add New Category</option>`;
+}
+
+// Shows the new-brand (or new-category) box only while "+ Add New" is
+// chosen. Leaving it hides the box, empties what was typed and disables
+// the controls, so nothing half-typed can be added by accident.
+function toggleAddNew(kind) {
+  const adding = document.getElementById(kind + "_id").value === ADD_NEW;
+  const box = document.getElementById("new-" + kind);
+  box.style.display = adding ? "block" : "none";
+  box.querySelectorAll("input, select, button").forEach((control) => {
+    control.disabled = !adding;
+  });
+  const input = document.getElementById(kind + "_name");
+  if (adding) {
+    input.focus();
+  } else {
+    input.value = "";
+    if (kind === "category") document.getElementById("parent_id").value = "0";
+  }
+}
+
+// A login can end while the form is open -- the token runs out, and if
+// the refresh is refused the client quietly drops the session. Every
+// request after that goes out signed out, and the database answers
+// "permission denied". This catches it first and says what really
+// happened. Signing in again in another tab is enough: both tabs share
+// the stored session, so nothing typed here is lost.
+const SIGNED_OUT_MESSAGE =
+  "Your sign-in has expired, so the database refused this. Sign in again " +
+  "in a new tab (login.html), come back to this tab and try again. " +
+  "Nothing you typed here is lost.";
+
+async function signedIn() {
+  const { data } = await sb.auth.getSession();
+  return !!data.session;
+}
+
+// 42501 is Postgres's "permission denied". A signed-in member of staff
+// can still get it from a policy, so it only means "signed out" when the
+// session is gone too.
+async function explain(error, prefix) {
+  if (error && error.code === "42501" && !(await signedIn())) return SIGNED_OUT_MESSAGE;
+  return prefix + (error.message || error);
 }
 
 // ------------------------------------------------------------
@@ -260,21 +315,24 @@ async function addBrand(brands) {
   if (same) return showErrors([`${same.name} is already a brand.`]);
 
   button.disabled = true;
+  if (!(await signedIn())) {
+    button.disabled = false;
+    return showErrors([SIGNED_OUT_MESSAGE]);
+  }
   const { data, error } = await sb.from("brands").insert({ name }).select("brand_id,name").single();
   button.disabled = false;
   if (error) {
     // 23505 is a unique violation: someone else added it a moment ago.
     return showErrors([error.code === "23505"
       ? `${name} is already a brand.`
-      : "Could not add the brand: " + error.message]);
+      : await explain(error, "Could not add the brand: ")]);
   }
 
   hideErrors();
   brands.push(data);
   brands.sort((a, b) => a.name.localeCompare(b.name));
   document.getElementById("brand_id").innerHTML = brandOptions(brands, data.brand_id);
-  document.getElementById("brand_name").value = "";
-  document.getElementById("new-brand").style.display = "none";
+  toggleAddNew("brand");
 }
 
 async function addCategory(categories) {
@@ -294,6 +352,10 @@ async function addCategory(categories) {
   }
 
   button.disabled = true;
+  if (!(await signedIn())) {
+    button.disabled = false;
+    return showErrors([SIGNED_OUT_MESSAGE]);
+  }
   const { data, error } = await sb.from("categories")
     .insert({ name, parent_id: parent ? parent.category_id : null })
     .select("category_id,name").single();
@@ -301,7 +363,7 @@ async function addCategory(categories) {
   if (error) {
     return showErrors([error.code === "23505"
       ? "That category already exists there."
-      : "Could not add the category: " + error.message]);
+      : await explain(error, "Could not add the category: ")]);
   }
 
   hideErrors();
@@ -311,13 +373,12 @@ async function addCategory(categories) {
     (a.parent || a.name).localeCompare(b.parent || b.name) ||
     (a.parent ? 1 : 0) - (b.parent ? 1 : 0) ||
     a.name.localeCompare(b.name));
-  document.getElementById("category_id").innerHTML = categoryOptions(categories, data.category_id);
+  document.getElementById("category_id").innerHTML = categorySelectOptions(categories, data.category_id);
   if (!parent) {
     document.getElementById("parent_id").insertAdjacentHTML("beforeend",
       `<option value="${data.category_id}">Under ${e(data.name)}</option>`);
   }
-  document.getElementById("category_name").value = "";
-  document.getElementById("new-category").style.display = "none";
+  toggleAddNew("category");
 }
 
 function costValue(cost) {
@@ -356,24 +417,42 @@ async function loadProduct(id) {
 // ------------------------------------------------------------
 // Saving
 // ------------------------------------------------------------
-async function save(id, isNew) {
+async function save(id, isNew, brands, categories) {
   const button = document.getElementById("save-button");
   const errorBox = document.getElementById("form-errors");
   const field = (name) => document.getElementById(name).value.trim();
 
+  // A second click while the first save is still going would add the
+  // product twice.
+  if (button.disabled) return;
+
   const errors = [];
   const name = field("name");
+  const brandId = Number(field("brand_id"));
+  const categoryId = Number(field("category_id"));
   const price = Number(field("price"));
   const costRaw = field("cost_price");
   const cost = costRaw === "" ? null : Number(costRaw);
   const qtyRaw = field("stock_qty");
   const qty = qtyRaw === "" ? null : Number(qtyRaw);
-  const reorder = Number(field("reorder_level") || 5);
+  const reorderRaw = field("reorder_level");
+  const reorder = reorderRaw === "" ? 5 : Number(reorderRaw);
   let status = field("stock_status");
+  const isCount = (n) => Number.isInteger(n) && n >= 0;
 
   if (name === "") errors.push("Name is required.");
+  if (!brands.some((b) => b.brand_id === brandId)) {
+    errors.push("Choose a brand, or finish adding the new one with Add brand.");
+  }
+  if (!categories.some((c) => c.category_id === categoryId)) {
+    errors.push("Choose a category, or finish adding the new one with Add category.");
+  }
   if (!(price > 0)) errors.push("Price must be more than zero.");
-  if (cost !== null && cost < 0) errors.push("Cost cannot be negative.");
+  if (cost !== null && !(cost >= 0)) errors.push("Cost must be a number, zero or more.");
+  if (!document.getElementById("stock_qty").disabled) {
+    if (qty !== null && !isCount(qty)) errors.push("Quantity in stock must be a whole number, zero or more.");
+    if (!isCount(reorder)) errors.push("Low-stock level must be a whole number, zero or more.");
+  }
   if (!["in", "low", "out"].includes(status)) status = "in";
 
   // A real count beats the dropdown.
@@ -391,7 +470,9 @@ async function save(id, isNew) {
     return;
   }
 
+  const buttonText = button.textContent;
   button.disabled = true;
+  button.textContent = "Saving…";
   errorBox.style.display = "none";
 
   // A derived machine's stock is left out of the write entirely. Note
@@ -409,8 +490,8 @@ async function save(id, isNew) {
 
   const record = {
     name,
-    brand_id: Number(field("brand_id")),
-    category_id: Number(field("category_id")),
+    brand_id: brandId,
+    category_id: categoryId,
     price,
     cost_price: cost,
     ...stockFields,
@@ -422,16 +503,25 @@ async function save(id, isNew) {
   try {
     let productId = id;
 
+    if (!(await signedIn())) throw { code: "42501", message: SIGNED_OUT_MESSAGE };
+
     if (isNew) {
       // Product ids are not generated: they match the picture files, so a
       // new product takes the next number above the highest in use.
       // product_edit.php read that with MAX(product_id) + 1, which a
-      // browser cannot do — and which two people saving at once could
-      // get wrong anyway. It is a database function now.
-      const { data: nextId, error } = await sb.rpc("admin_next_product_id");
-      if (error) throw error;
-      productId = nextId;
-      await write(sb.from("products").insert({ product_id: productId, ...record }));
+      // browser cannot do. It is a database function now -- but two people
+      // saving at once can still both be handed the same number. The
+      // primary key refuses the second insert, so that one asks again.
+      for (let attempt = 1; ; attempt++) {
+        const { data: nextId, error } = await sb.rpc("admin_next_product_id");
+        if (error) throw error;
+        if (!nextId) throw { code: "42501", message: "This account is not staff." };
+        productId = nextId;
+        const { error: insertError } =
+          await sb.from("products").insert({ product_id: productId, ...record });
+        if (!insertError) break;
+        if (insertError.code !== "23505" || attempt === 3) throw insertError;
+      }
     } else {
       await write(sb.from("products").update(record).eq("product_id", id));
     }
@@ -447,8 +537,10 @@ async function save(id, isNew) {
   } catch (error) {
     console.error(error);
     button.disabled = false;
-    errorBox.textContent = "Could not save: " + (error.message || error);
+    button.textContent = buttonText;
+    errorBox.textContent = await explain(error, "Could not save: ");
     errorBox.style.display = "block";
+    errorBox.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 }
 
