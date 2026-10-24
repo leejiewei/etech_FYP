@@ -1,0 +1,21 @@
+{
+  "checks": [
+    {
+      "month": "2026-09",
+      "source": "docs/data/ETECH_September_2026_Sales.xlsx",
+      "days": 30,
+      "firstDay": "2026-09-01",
+      "lastDay": "2026-09-30",
+      "receipts": 378,
+      "serviceRemoved": 3362.43,
+      "calendarTotal": 481069.0,
+      "forecastDays": 28,
+      "actual": 448998.0,
+      "forecast": 384653.0,
+      "low": 337341.0,
+      "high": 431966.0,
+      "errorPct": -14.3,
+      "inRange": false
+    }
+  ]
+}
