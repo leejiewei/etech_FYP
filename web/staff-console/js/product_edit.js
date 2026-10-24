@@ -50,17 +50,31 @@ adminPage("Edit Product", "products", async (content) => {
           <div class="field">
             <label for="brand_id">Brand</label>
             <select id="brand_id" required>
-              ${brands.map((b) => `
-                <option value="${b.brand_id}" ${Number(value("brand_id", 0)) === b.brand_id ? "selected" : ""}>
-                  ${e(b.name)}
-                </option>`).join("")}
+              ${brandOptions(brands, value("brand_id", 0))}
             </select>
+            <small><a href="#" id="new-brand-link" style="color:#d62839;">+ New brand</a></small>
+            <div id="new-brand" style="display:none; margin-top:8px;">
+              <input type="text" id="brand_name" maxlength="60" placeholder="e.g. Lian Li" />
+              <button type="button" class="btn small" id="brand-button" style="margin-top:6px;">Add brand</button>
+              <small>Written as the maker writes it. It appears on product pages and in the brand filter.</small>
+            </div>
           </div>
           <div class="field">
             <label for="category_id">Category</label>
             <select id="category_id" required>
               ${categoryOptions(categories, value("category_id", 0))}
             </select>
+            <small><a href="#" id="new-category-link" style="color:#d62839;">+ New category</a></small>
+            <div id="new-category" style="display:none; margin-top:8px;">
+              <input type="text" id="category_name" maxlength="60" placeholder="e.g. Capture Card" />
+              <select id="parent_id" style="margin-top:6px;">
+                <option value="0">On its own (a new top-level category)</option>
+                ${categories.filter((c) => !c.parent).map((c) =>
+                  `<option value="${c.category_id}">Under ${e(c.name)}</option>`).join("")}
+              </select>
+              <button type="button" class="btn small" id="category-button" style="margin-top:6px;">Add category</button>
+              <small>Most new kinds of product sit under an existing category, e.g. a capture card under Components.</small>
+            </div>
           </div>
         </div>
 
@@ -172,11 +186,139 @@ adminPage("Edit Product", "products", async (content) => {
     document.getElementById("photo-caption").textContent = "New photo, not saved yet";
   };
 
+  const reveal = (link, box, input) => {
+    document.getElementById(link).onclick = (event) => {
+      event.preventDefault();
+      document.getElementById(box).style.display = "block";
+      document.getElementById(input).focus();
+    };
+  };
+  reveal("new-brand-link", "new-brand", "brand_name");
+  reveal("new-category-link", "new-category", "category_name");
+  document.getElementById("brand-button").onclick = () => addBrand(brands);
+  document.getElementById("category-button").onclick = () => addCategory(categories);
+  // Enter in these boxes means "add this", not "save the product".
+  [["brand_name", "brand-button"], ["category_name", "category-button"]].forEach(([input, button]) => {
+    document.getElementById(input).onkeydown = (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      document.getElementById(button).click();
+    };
+  });
+
   document.getElementById("product-form").onsubmit = (event) => {
     event.preventDefault();
     save(id, isNew);
   };
 });
+
+function brandOptions(brands, selectedId) {
+  return brands.map((b) => `
+    <option value="${b.brand_id}" ${Number(selectedId) === b.brand_id ? "selected" : ""}>
+      ${e(b.name)}
+    </option>`).join("");
+}
+
+// ------------------------------------------------------------
+// A new brand or category, added from inside the product form.
+//
+// This used to be its own Brands & Categories page, which meant leaving a
+// half-filled product to go and make the brand first. Now it is added in
+// place: the new row is inserted, put into the dropdown and selected, and
+// nothing else on the form is touched -- no reload, so nothing typed so
+// far is lost.
+//
+// The "staff manage brands" and "staff manage categories" policies are
+// what allow the insert; to a customer the same request is refused by the
+// database, not by this page.
+// ------------------------------------------------------------
+
+function showErrors(errors) {
+  const box = document.getElementById("form-errors");
+  box.innerHTML = errors.map(e).join("<br />");
+  box.style.display = "block";
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function hideErrors() {
+  document.getElementById("form-errors").style.display = "none";
+}
+
+// Spaces tidied, so "Lian  Li " and "Lian Li" are not two brands.
+function cleanName(id) {
+  return document.getElementById(id).value.trim().replace(/\s+/g, " ");
+}
+
+async function addBrand(brands) {
+  const name = cleanName("brand_name");
+  const button = document.getElementById("brand-button");
+
+  if (name === "") return showErrors(["A brand name is required."]);
+  // The column is unique, but it compares exactly. "asus" next to "ASUS"
+  // would pass the database and give the brand filter two boxes.
+  const same = brands.find((b) => b.name.toLowerCase() === name.toLowerCase());
+  if (same) return showErrors([`${same.name} is already a brand.`]);
+
+  button.disabled = true;
+  const { data, error } = await sb.from("brands").insert({ name }).select("brand_id,name").single();
+  button.disabled = false;
+  if (error) {
+    // 23505 is a unique violation: someone else added it a moment ago.
+    return showErrors([error.code === "23505"
+      ? `${name} is already a brand.`
+      : "Could not add the brand: " + error.message]);
+  }
+
+  hideErrors();
+  brands.push(data);
+  brands.sort((a, b) => a.name.localeCompare(b.name));
+  document.getElementById("brand_id").innerHTML = brandOptions(brands, data.brand_id);
+  document.getElementById("brand_name").value = "";
+  document.getElementById("new-brand").style.display = "none";
+}
+
+async function addCategory(categories) {
+  const name = cleanName("category_name");
+  const parentId = Number(document.getElementById("parent_id").value);
+  const parent = categories.find((c) => c.category_id === parentId);
+  const button = document.getElementById("category-button");
+
+  if (name === "") return showErrors(["A category name is required."]);
+  const same = categories.find((c) =>
+    c.name.toLowerCase() === name.toLowerCase() &&
+    (c.parent || null) === (parent ? parent.name : null));
+  if (same) {
+    return showErrors([parent
+      ? `${parent.name} already has a category called ${same.name}.`
+      : `${same.name} is already a top-level category.`]);
+  }
+
+  button.disabled = true;
+  const { data, error } = await sb.from("categories")
+    .insert({ name, parent_id: parent ? parent.category_id : null })
+    .select("category_id,name").single();
+  button.disabled = false;
+  if (error) {
+    return showErrors([error.code === "23505"
+      ? "That category already exists there."
+      : "Could not add the category: " + error.message]);
+  }
+
+  hideErrors();
+  categories.push({ category_id: data.category_id, name: data.name, parent: parent ? parent.name : null });
+  // Same order loadCategories() gives, so the new one lands beside its parent.
+  categories.sort((a, b) =>
+    (a.parent || a.name).localeCompare(b.parent || b.name) ||
+    (a.parent ? 1 : 0) - (b.parent ? 1 : 0) ||
+    a.name.localeCompare(b.name));
+  document.getElementById("category_id").innerHTML = categoryOptions(categories, data.category_id);
+  if (!parent) {
+    document.getElementById("parent_id").insertAdjacentHTML("beforeend",
+      `<option value="${data.category_id}">Under ${e(data.name)}</option>`);
+  }
+  document.getElementById("category_name").value = "";
+  document.getElementById("new-category").style.display = "none";
+}
 
 function costValue(cost) {
   return cost === null ? "" : num(cost).toFixed(2);
