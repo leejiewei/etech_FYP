@@ -154,58 +154,232 @@ function keepQuery(extra) {
 // The frame
 // ------------------------------------------------------------
 const ADMIN_MENU = [
-  ["dashboard",  "index.html",        "Dashboard"],
-  ["products",   "products.html",     "Products"],
-  ["prebuilts",  "prebuilts.html",    "Prebuilt Parts"],
-  ["deals",      "deals.html",        "Timed Deals"],
-  ["coupons",    "coupons.html",      "Promotions"],
-  ["orders",     "orders.html",       "Orders"],
-  ["showcases",  "showcases.html",    "Rig Showcase"],
-  ["chatlogs",   "chatlogs.html",     "Chatbot Logs"],
+  ["dashboard",  "index.html",        "Dashboard",          "dashboard"],
+  ["products",   "products.html",     "Products",           "package"],
+  ["prebuilts",  "prebuilts.html",    "Prebuilt Parts",     "cpu"],
+  ["deals",      "deals.html",        "Timed Deals",        "timer"],
+  ["coupons",    "coupons.html",      "Promotions",         "tag"],
+  ["orders",     "orders.html",       "Orders",             "cart"],
+  ["showcases",  "showcases.html",    "Rig Showcase",       "monitor"],
+  ["chatlogs",   "chatlogs.html",     "Chatbot Logs",       "message"],
   [null,         null,                "Analytics"],
-  ["behaviour",  "behaviour.html",    "Customer Behaviour"],
-  ["alerts",     "alerts.html",       "Stock Alerts"],
-  ["reports",    "reports.html",      "Sales &amp; Customers"],
-  ["forecast",   "forecast.html",     "Sales Forecast"],
+  ["behaviour",  "behaviour.html",    "Customer Behaviour", "users"],
+  ["alerts",     "alerts.html",       "Stock Alerts",       "alert"],
+  ["reports",    "reports.html",      "Sales &amp; Customers", "bars"],
+  ["forecast",   "forecast.html",     "Sales Forecast",     "trend"],
 ];
 
-function buildChrome(title, active, staffName) {
-  const menu = ADMIN_MENU.map(([key, href, label]) =>
+// Line icons, drawn on a 24px grid in the style of Lucide. Inline so
+// nothing is fetched and each one takes the colour of the text beside it.
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  package:   '<path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  cpu:       '<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M19 9h3M19 15h3M2 9h3M2 15h3"/>',
+  timer:     '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+  tag:       '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  cart:      '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L22 7H6"/>',
+  monitor:   '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  message:   '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  users:     '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  alert:     '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  bars:      '<path d="M12 20V10M18 20V4M6 20v-4"/>',
+  trend:     '<path d="m23 6-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/>',
+  search:    '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  bell:      '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  menu:      '<path d="M3 6h18M3 12h18M3 18h18"/>',
+  chevron:   '<path d="m6 9 6 6 6-6"/>',
+  external:  '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/>',
+  logout:    '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+  money:     '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+};
+
+function icon(name) {
+  return `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ""}</svg>`;
+}
+
+// The menu's collapsed-or-not choice, kept per browser. Storage can be
+// blocked (private windows), so every read and write is allowed to fail.
+const SIDE_KEY = "etech-admin-side";
+function sidePreference() {
+  try { return localStorage.getItem(SIDE_KEY); } catch (error) { return null; }
+}
+function rememberSide(value) {
+  try { localStorage.setItem(SIDE_KEY, value); } catch (error) { /* not kept, still works */ }
+}
+
+function buildChrome(title, active, staff) {
+  const menu = ADMIN_MENU.map(([key, href, label, glyph]) =>
     href === null
       ? `<div class="side-heading">${label}</div>`
-      : `<a href="${href}"${key === active ? ' class="active"' : ""}>${label}</a>`
+      : `<a href="${href}" title="${label}"${key === active ? ' class="active" aria-current="page"' : ""}>
+           ${icon(glyph)}<span class="label">${label}</span></a>`
   ).join("");
 
   const message = flash();
+  const initials = String(staff.name || "?").trim().split(/\s+/).slice(0, 2)
+    .map((word) => word[0]).join("").toUpperCase();
+  // Tablets start with the menu as a rail of icons; a desktop starts open
+  // unless this browser closed it last time.
+  const rail = sidePreference() ? sidePreference() === "rail" : window.innerWidth <= 1024;
 
   document.title = title + " - eTech Admin";
   // Into the shell div rather than into body, so the script tags that
   // are still running are not pulled out from under themselves.
   document.getElementById("admin-shell").innerHTML = `
-    <div class="admin-top">
-      <div class="admin-logo">e<span>Tech</span> <small>Admin</small></div>
-      <div class="admin-user">
-        <a href="../index.html" target="_blank" class="view-shop">View shop &#8599;</a>
-        ${e(staffName)}
-        <a href="#" id="admin-logout" class="logout">Log out</a>
-      </div>
-    </div>
+    <div class="admin-app${rail ? " rail" : ""}" id="admin-app">
+      <aside class="admin-side" id="admin-side" aria-label="Staff menu">
+        <a href="index.html" class="side-brand" title="eTech Admin">
+          <img src="../images/brand/etech-logo-64.png" alt="" />
+          <span class="word">e<span>Tech</span></span><small>Admin</small>
+        </a>
+        <nav class="side-nav">${menu}</nav>
+      </aside>
+      <div class="side-scrim" id="side-scrim"></div>
 
-    <div class="admin-body">
-      <nav class="admin-side">${menu}</nav>
-      <main class="admin-main">
-        <h1>${e(title)}</h1>
-        ${message ? `<p class="flash">${e(message)}</p>` : ""}
-        <div id="admin-content"></div>
-      </main>
+      <div class="admin-frame">
+        <header class="admin-top">
+          <button type="button" class="icon-btn" id="side-toggle" aria-label="Show or hide the menu"
+                  aria-controls="admin-side">${icon("menu")}</button>
+
+          <form class="admin-search" id="admin-search" role="search">
+            ${icon("search")}
+            <input type="search" id="admin-search-input" placeholder="Search products, or #12 for an order"
+                   aria-label="Search products or orders" />
+          </form>
+
+          <div class="top-right">
+            <div class="drop">
+              <button type="button" class="icon-btn" id="bell-button" aria-label="Alerts"
+                      aria-haspopup="true" aria-expanded="false">${icon("bell")}</button>
+              <div class="drop-menu" id="bell-menu" hidden>
+                <h3>Needs attention</h3>
+                <div class="empty">Checking…</div>
+              </div>
+            </div>
+
+            <div class="drop">
+              <button type="button" class="profile-btn" id="profile-button" aria-haspopup="true" aria-expanded="false">
+                <span class="avatar">${e(initials)}</span>
+                <span class="name">${e(staff.name)}</span>${icon("chevron")}
+              </button>
+              <div class="drop-menu" id="profile-menu" hidden>
+                <div class="who"><strong>${e(staff.name)}</strong><small>${e(staff.email)}</small></div>
+                <a href="../index.html" target="_blank" rel="noopener">${icon("external")}View shop</a>
+                <a href="#" id="admin-logout">${icon("logout")}Log out</a>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="admin-main">
+          <h1>${e(title)}</h1>
+          ${message ? `<p class="flash">${e(message)}</p>` : ""}
+          <div id="admin-content"></div>
+        </main>
+
+        <footer class="admin-foot">
+          <span>&copy; ${new Date().getFullYear()} eTech. All rights reserved. Staff use only.</span>
+          <nav>
+            <a href="../index.html" target="_blank" rel="noopener">View shop</a>
+            <a href="../privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+            <a href="../contact.html" target="_blank" rel="noopener">Contact</a>
+          </nav>
+        </footer>
+      </div>
     </div>`;
+
+  wireChrome();
+  loadAlerts();
+  return document.getElementById("admin-content");
+}
+
+function wireChrome() {
+  const app = document.getElementById("admin-app");
+  const phone = () => window.matchMedia("(max-width: 720px)").matches;
+
+  // On a phone the button slides the menu in over the page; anywhere
+  // wider it folds the menu to a rail of icons and back.
+  document.getElementById("side-toggle").onclick = () => {
+    if (phone()) {
+      app.classList.toggle("side-open");
+    } else {
+      app.classList.toggle("rail");
+      rememberSide(app.classList.contains("rail") ? "rail" : "open");
+    }
+  };
+  document.getElementById("side-scrim").onclick = () => app.classList.remove("side-open");
+
+  // "#12" or "12" opens that order; anything else searches products,
+  // using the Products page's own search.
+  document.getElementById("admin-search").onsubmit = (event) => {
+    event.preventDefault();
+    const term = document.getElementById("admin-search-input").value.trim();
+    if (term === "") return;
+    const order = term.match(/^#?(\d+)$/);
+    window.location.href = order
+      ? `orders.html?order=${order[1]}`
+      : `products.html?q=${encodeURIComponent(term)}`;
+  };
+
+  const menus = [["bell-button", "bell-menu"], ["profile-button", "profile-menu"]];
+  const closeAll = () => menus.forEach(([b, m]) => {
+    document.getElementById(m).hidden = true;
+    document.getElementById(b).setAttribute("aria-expanded", "false");
+  });
+  menus.forEach(([b, m]) => {
+    document.getElementById(b).onclick = (event) => {
+      event.stopPropagation();
+      const opening = document.getElementById(m).hidden;
+      closeAll();
+      document.getElementById(m).hidden = !opening;
+      document.getElementById(b).setAttribute("aria-expanded", String(opening));
+    };
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".drop-menu")) closeAll();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeAll();
+    app.classList.remove("side-open");
+  });
 
   document.getElementById("admin-logout").onclick = (event) => {
     event.preventDefault();
     sb.auth.signOut().finally(() => { window.location.href = "login.html"; });
   };
+}
 
-  return document.getElementById("admin-content");
+// The bell: orders waiting and products running out, from the same
+// admin_dashboard row the Dashboard reads. One small request per page;
+// if it fails the bell just says so rather than breaking the page.
+async function loadAlerts() {
+  const menu = document.getElementById("bell-menu");
+  const { data, error } = await sb.from("admin_dashboard")
+    .select("pending_orders,out_of_stock,low_stock").maybeSingle();
+  if (error || !data) {
+    menu.innerHTML = `<h3>Needs attention</h3><div class="empty">Alerts could not be loaded.</div>`;
+    return;
+  }
+
+  const items = [
+    [data.pending_orders, "orders waiting to be processed", "orders.html?status=Pending", "cart"],
+    [data.out_of_stock,   "products out of stock",          "products.html?stock=out",    "alert"],
+    [data.low_stock,      "products low on stock",          "products.html?stock=low",    "package"],
+  ].filter(([n]) => Number(n) > 0);
+
+  const total = items.reduce((sum, [n]) => sum + Number(n), 0);
+  if (total > 0) {
+    document.getElementById("bell-button").insertAdjacentHTML("beforeend",
+      `<span class="bell-count">${total > 99 ? "99+" : total}</span>`);
+    document.getElementById("bell-button").setAttribute("aria-label", `Alerts: ${total}`);
+  }
+
+  menu.innerHTML = `<h3>Needs attention</h3>` + (items.length === 0
+    ? `<div class="empty">Nothing needs attention.</div>`
+    : items.map(([n, text, href, glyph]) =>
+        `<a href="${href}">${icon(glyph)}<span>${e(text)}</span><span class="n">${count(n)}</span></a>`).join("") +
+      `<a href="alerts.html">${icon("trend")}<span>Open Stock Alerts</span></a>`);
 }
 
 // ------------------------------------------------------------
@@ -269,7 +443,7 @@ async function adminPage(title, active, render) {
   const staff = await requireAdmin();
   if (!staff) return;
 
-  const content = buildChrome(title, active, staff.name);
+  const content = buildChrome(title, active, staff);
   try {
     await render(content, staff);
   } catch (error) {

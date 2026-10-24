@@ -61,6 +61,10 @@ Agreed exception (15 Oct 2026): the home page's "Why customers trust eTech" bloc
 rail, three stat boxes and a promises row, asked for after mrit.my. It uses only real reviews and
 the shop's own numbers. It does not open the door to these patterns anywhere else.
 
+Agreed exception (24 Oct 2026): the staff console (`web/staff-console/`) only, redesigned after a
+dashboard reference the owner chose: dark charcoal sidebar, cards at `--r-card` (10px) with
+`--shadow-card`, a red-tint icon chip on each summary card. Staff-only; the customer shop is unchanged.
+
 ## Scales
 
 Type is `--text-2xs` … `--text-4xl` (11 to 46px), space is `--space-0` … `--space-16`

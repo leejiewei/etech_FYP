@@ -102,6 +102,9 @@ adminPage("Orders", "orders", async (content) => {
     .limit(60);
   if (filter !== "") query = query.eq("status", filter);
   if (payFilter !== "") query = query.eq("payment_status", payFilter);
+  // ?order=12 is one order, from the header search or a Dashboard "View".
+  const oneOrder = /^\d+$/.test(params().order || "") ? Number(params().order) : 0;
+  if (oneOrder) query = query.eq("order_id", oneOrder);
 
   const [ordersResult, countsResult] = await Promise.all([
     query,
@@ -142,8 +145,10 @@ adminPage("Orders", "orders", async (content) => {
         </a>`).join("")}
     </div>
 
+    ${oneOrder ? `<p class="hint">Showing order #${oneOrder} only. <a href="orders.html" style="color:var(--brand);">Show all orders</a></p>` : ""}
+
     ${orders.length === 0
-      ? `<div class="card" style="text-align:center; color:#888;">No orders here yet.</div>`
+      ? `<div class="card" style="text-align:center; color:#888;">${oneOrder ? `There is no order #${oneOrder}.` : "No orders here yet."}</div>`
       : orders.map((o) => orderCard(o, linesFor[o.order_id] || [], historyFor[o.order_id] || [])).join("")}`;
 
   wireOrderActions();

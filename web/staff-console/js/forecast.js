@@ -118,10 +118,6 @@ function showPrediction(slot, months, shown) {
   slot.querySelector("#predict-prev")?.addEventListener("click", () => showPrediction(slot, months, shown - 1));
 }
 
-// Dark for what happened, red for what the model said: the console's own
-// --ink and --red.
-const COLOUR_ACTUAL = "#2f3640";
-const COLOUR_FORECAST = "#d62839";
 
 // Months the boss has sent since the forecast was frozen, written by
 // tools/check_forecast_months.py. Optional: the page works without it.
@@ -298,122 +294,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   showPrediction(content.querySelector("#prediction"), coming, -1);
 });
 
-// One row per calendar month from the first backtest month to the last
-// month predicted ahead. A month with nothing (August 2026) keeps its place
-// on the axis, so the lines break there instead of joining across it.
-function monthlyRows(monthly, checks, coming) {
-  const byMonth = {};
-  const row = (month) => (byMonth[month] ||= { month });
-  monthly.forEach((m) => Object.assign(row(m.month), { actual: m.actual, forecast: m.forecast, errorPct: m.errorPct }));
-  coming.forEach((m) => Object.assign(row(m.month), { forecast: m.revenue, low: m.low, high: m.high }));
-  checks.forEach((c) => Object.assign(row(c.month), { actual: c.actual, errorPct: c.errorPct }));
 
-  const keys = Object.keys(byMonth).sort();
-  if (keys.length === 0) return [];
-  const rows = [];
-  let [y, m] = keys[0].split("-").map(Number);
-  for (let key = keys[0]; key <= keys[keys.length - 1]; ) {
-    const r = byMonth[key] || { month: key };
-    rows.push({ ...r, label: monthLabel(key, true), tip: monthLabel(key, true) });
-    m += 1;
-    if (m > 12) { m = 1; y += 1; }
-    key = `${y}-${String(m).padStart(2, "0")}`;
-  }
-  return rows;
-}
-
-// A line chart as inline SVG: actual in dark, forecast in red, the
-// predicted-ahead range as a light red band. Same reasoning as the rest of
-// the page -- no charting library, and every mark is in this function.
-// Lines break wherever a row has no value, rather than drawing across a gap.
-function lineChart(rows, { height = 260, errors = false, dots = true } = {}) {
-  const W = 760, H = height;
-  const left = 52, right = 28, top = 14, bottom = errors ? 44 : 28;
-  const values = rows.flatMap((r) => [r.actual, r.forecast, r.high]).filter((v) => v != null);
-  const step = niceStep(Math.max(1, ...values) / 4);
-  const yMax = Math.ceil(Math.max(1, ...values) / step) * step;
-
-  const slot = (W - left - right) / Math.max(rows.length - 1, 1);
-  const x = (i) => left + i * slot;
-  const y = (v) => top + (1 - v / yMax) * (H - top - bottom);
-
-  // Runs of consecutive rows that have the value, as SVG point lists.
-  const runs = (pick) => {
-    const out = [];
-    let run = [];
-    rows.forEach((r, i) => {
-      const v = pick(r);
-      if (v == null) { if (run.length) out.push(run); run = []; }
-      else run.push([x(i), y(v)]);
-    });
-    if (run.length) out.push(run);
-    return out;
-  };
-  const points = (run) => run.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
-
-  const grid = [];
-  for (let v = 0; v <= yMax; v += step) {
-    grid.push(`
-      <line x1="${left}" x2="${W - right}" y1="${y(v)}" y2="${y(v)}" stroke="#e3e6ea" />
-      <text x="${left - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#888">${e(shortMoney(v))}</text>`);
-  }
-
-  // The band: upper edge left to right, lower edge back again.
-  const bands = [];
-  let band = [];
-  rows.forEach((r, i) => {
-    if (r.low == null) { if (band.length) bands.push(band); band = []; }
-    else band.push(i);
-  });
-  if (band.length) bands.push(band);
-  const bandShapes = bands.map((b) => {
-    const upper = b.map((i) => `${x(i).toFixed(1)},${y(rows[i].high).toFixed(1)}`);
-    const lower = b.slice().reverse().map((i) => `${x(i).toFixed(1)},${y(rows[i].low).toFixed(1)}`);
-    return `<polygon points="${upper.concat(lower).join(" ")}" fill="${COLOUR_FORECAST}" opacity=".12" />`;
-  });
-  const ahead = bands.length
-    ? `<line x1="${x(bands[0][0])}" x2="${x(bands[0][0])}" y1="${top}" y2="${H - bottom}" stroke="#ccd1d7" />
-       <text x="${x(bands[0][0]) + 6}" y="${top + 10}" font-size="11" fill="#888">Predicted ahead</text>`
-    : "";
-
-  const line = (pick, colour) => runs(pick).map((run) =>
-    `<polyline points="${points(run)}" fill="none" stroke="${colour}" stroke-width="2.25"
-       stroke-linejoin="round" stroke-linecap="round" />`).join("");
-
-  const marks = (pick, colour, name) => dots ? rows.map((r, i) => pick(r) == null ? "" : `
-    <circle cx="${x(i)}" cy="${y(pick(r))}" r="3.5" fill="${colour}">
-      <title>${e(r.tip)}: ${name} ${e(money(pick(r)))}${r.low != null ? ` (range ${e(money(r.low))} to ${e(money(r.high))})` : ""}</title>
-    </circle>`).join("") : "";
-
-  // Undotted charts (the weekly one) still get a hover target per row.
-  const hovers = dots ? "" : rows.map((r, i) => `
-    <rect x="${x(i) - slot / 2}" y="${top}" width="${slot}" height="${H - top - bottom}" fill="transparent">
-      <title>${e(r.tip)}&#10;actual ${e(money(r.actual))}&#10;forecast ${e(money(r.forecast))}</title>
-    </rect>`).join("");
-
-  const labels = rows.map((r, i) => `
-    ${r.label ? `<text x="${x(i)}" y="${H - bottom + 16}" text-anchor="middle" font-size="11" fill="#888">${e(r.label)}</text>` : ""}
-    ${errors && r.errorPct != null && r.actual != null
-      ? `<text x="${x(i)}" y="${H - bottom + 31}" text-anchor="middle" font-size="10"
-           fill="${Math.abs(r.errorPct) > 15 ? COLOUR_FORECAST : "#888"}">${r.errorPct >= 0 ? "+" : ""}${e(r.errorPct)}%</text>`
-      : ""}`).join("");
-
-  return `
-    <div style="overflow-x:auto;">
-      <svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:560px; display:block;"
-           role="img" aria-label="Actual sales against the forecast">
-        ${grid.join("")}
-        ${bandShapes.join("")}
-        ${ahead}
-        ${line((r) => r.forecast, COLOUR_FORECAST)}
-        ${line((r) => r.actual, COLOUR_ACTUAL)}
-        ${marks((r) => r.forecast, COLOUR_FORECAST, "forecast")}
-        ${marks((r) => r.actual, COLOUR_ACTUAL, "actual")}
-        ${hovers}
-        ${labels}
-      </svg>
-    </div>`;
-}
 
 // A month sent after the forecast was frozen, checked against it. The
 // numbers are like for like (see tools/check_forecast_months.py), and the
@@ -433,28 +314,6 @@ function checkNote(c) {
     </div>`;
 }
 
-function legend(withBand) {
-  const swatch = (colour) => `<span style="display:inline-block; width:16px; height:3px; background:${colour};
-    vertical-align:middle; margin-right:6px;"></span>`;
-  return `
-    <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:12px; color:#666; margin-top:12px;">
-      <span>${swatch(COLOUR_ACTUAL)}Actual</span>
-      <span>${swatch(COLOUR_FORECAST)}Forecast</span>
-      ${withBand ? `<span><span style="display:inline-block; width:16px; height:11px; background:${COLOUR_FORECAST};
-        opacity:.15; vertical-align:middle; margin-right:6px;"></span>Likely range</span>` : ""}
-    </div>`;
-}
-
-// 1, 2 or 5 times a power of ten, so the axis reads 200k, 400k, 600k.
-function niceStep(raw) {
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const unit = raw / power;
-  return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 5 ? 5 : 10) * power;
-}
-
-function shortMoney(value) {
-  return value >= 1000 ? `${Math.round(value / 1000)}k` : String(value);
-}
 
 function pct(value) {
   return value === null || value === undefined ? "--" : `${value}%`;
