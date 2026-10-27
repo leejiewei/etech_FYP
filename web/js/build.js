@@ -900,7 +900,7 @@ function renderAiReview(review) {
     ${swapRows ? `<p class="compat-group-title">Suggested swaps</p>${swapRows}` : ""}
     <p class="ai-review-foot">${criticals.length
       ? "eTech AI can be wrong. If you're unsure, ask us on WhatsApp before you order. "
-      : ""}Reviewed by eTech AI from our catalogue. Prices are ours; the checks above decide what can be ordered.</p>`;
+      : ""}Reviewed by eTech AI from our catalogue. Prices are ours; the compatibility checks decide what can be ordered.</p>`;
 
   el.querySelectorAll("[data-swap-slot]").forEach((btn) => {
     btn.onclick = () => handleSlotChange(btn.dataset.swapSlot, btn.dataset.swapId);

@@ -6374,16 +6374,16 @@ body.has-till-bar { --float-lift: 72px; }
 body.has-bp-bar { --float-lift: 84px; }
 body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 
-/* eTech AI sits bottom right (moved from the left on 27 Oct, where the
-   green WhatsApp button used to be). env(safe-area-inset-*) keeps it
-   clear of a phone's rounded corners and home bar. */
+/* eTech AI sits bottom left, WhatsApp bottom right, so the two never
+   meet. env(safe-area-inset-*) keeps both clear of a phone's rounded
+   corners and home bar. */
 .chatbot-wrapper,
 .has-bp-bar .chatbot-wrapper {
   position: fixed;
   top: auto;
-  left: auto;
-  right: calc(var(--space-6) + env(safe-area-inset-right, 0px));
-  bottom: calc(var(--space-6) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
+  right: auto;
+  left: calc(var(--space-5) + env(safe-area-inset-left, 0px));
+  bottom: calc(var(--space-5) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
   z-index: 120;
 }
 
@@ -6425,8 +6425,8 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
   position: fixed;
   top: auto;
   left: auto;
-  right: var(--space-5);
-  bottom: calc(var(--space-5) + var(--float-lift));
+  right: calc(var(--space-5) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--space-5) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
   z-index: 110;
   background-color: var(--whatsapp);
   color: white;
@@ -6434,12 +6434,12 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 
 .whatsapp-btn .ui-icon { width: 20px; height: 20px; }
 
-/* The consultant opens just above its button, lined up on its right edge
+/* The consultant opens just above its button, lined up on its left edge
    so it grows into the page rather than off it. */
 .chatbot-panel {
   position: absolute;
-  left: auto;
-  right: 0;
+  left: 0;
+  right: auto;
   bottom: 60px;
   width: 380px;
   max-width: calc(100vw - 2 * var(--space-5));
@@ -6474,12 +6474,15 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 @media (max-width: 760px) {
   .chatbot-wrapper,
   .has-bp-bar .chatbot-wrapper {
-    left: auto;
-    right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
-    bottom: calc(var(--space-4) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
+    right: auto;
+    left: calc(var(--space-3) + env(safe-area-inset-left, 0px));
+    bottom: calc(var(--space-3) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
   }
   .whatsapp-btn,
-  .has-bp-bar .whatsapp-btn { right: var(--space-3); bottom: calc(var(--space-3) + var(--float-lift)); }
+  .has-bp-bar .whatsapp-btn {
+    right: calc(var(--space-3) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--space-3) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
+  }
   .chatbot-toggle,
   .whatsapp-btn { height: 44px; padding: 0 var(--space-3); font-size: var(--text-sm); }
   .chatbot-toggle span { display: inline; }
@@ -6579,14 +6582,26 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 }
 
 /* ---------- PC builder: eTech AI review ----------
-   Sits under the compatibility checks and reuses their summary and
-   message styles, so an AI critical or warning reads exactly like a
-   rule's. Only the checks can disable Add Build to Cart. */
+   Sits under the last part in the parts column and reuses the
+   compatibility checks' summary and message styles, so an AI critical
+   or warning reads exactly like a rule's. Only the checks can disable Add Build to Cart. */
 .ai-review {
   margin-top: var(--space-4);
   padding-top: var(--space-1);
   border-top: 1px solid var(--line);
 }
+
+/* In the parts column it is a panel of its own, like the slot cards
+   above it, rather than a ruled-off section of the summary. */
+.bp-ai-panel {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.bp-ai-panel:empty { display: none; }
 
 .ai-review-note {
   font-size: var(--text-md);

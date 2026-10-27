@@ -524,12 +524,11 @@ function injectPrivacyNotice() {
   window.addEventListener("resize", measureBar);
 }
 
-// eTech AI, the build consultant, in the bottom-right corner of every
-// page. Until 27 Oct that corner held a green "Contact us" WhatsApp
-// button and eTech AI sat bottom left; the ASUS supplier's review asked
-// for the green block to go and the consultant to move right. WhatsApp
-// is still one tap away: the footer, the builder's "Ask us on WhatsApp"
-// and the checkout all carry the link (js/whatsapp.js).
+// Two floating buttons on every customer page: eTech AI, the build
+// consultant, bottom left; Contact us on WhatsApp, bottom right. (On
+// 27 Oct WhatsApp was taken off and eTech AI moved right; the owner put
+// them back this way round on 28 Oct.) The number lives in
+// js/whatsapp.js, which the staff console shares.
 function injectChatbot() {
   const wrapper = document.createElement("div");
   wrapper.className = "chatbot-wrapper";
@@ -553,6 +552,17 @@ function injectChatbot() {
     </div>
   `;
   document.body.appendChild(wrapper);
+
+  if (typeof whatsappShopLink === "function") {
+    const contact = document.createElement("a");
+    contact.className = "whatsapp-btn";
+    contact.href = whatsappShopLink("Hi, I have a question about a product on eTech.");
+    contact.target = "_blank";
+    contact.rel = "noopener";
+    contact.setAttribute("aria-label", "Contact us on WhatsApp");
+    contact.innerHTML = `${uiIcon("chat")}<span>Contact us</span>`;
+    document.body.appendChild(contact);
+  }
 }
 
 // Opens or closes the consultant; with no argument, flips it.

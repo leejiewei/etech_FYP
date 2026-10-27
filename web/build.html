@@ -29,6 +29,11 @@
           <button type="button" class="bp-tool" id="bp-reset">Start Over</button>
         </div>
         <div class="bp-slots" id="builder-slots"></div>
+        <!-- eTech AI's opinion of the finished build; see build.js. Under
+             the last part rather than in the summary column (28 Oct), so
+             the review has room to read; on a phone it follows the parts
+             straight away because this column stacks first. -->
+        <div class="ai-review bp-ai-panel" id="bp-ai-review" aria-live="polite"></div>
       </div>
 
       <aside class="bp-side">
@@ -45,8 +50,6 @@
         <h3>Compatibility</h3>
         <div id="bp-power"></div>
         <div id="compat-messages"></div>
-        <!-- eTech AI's opinion of the finished build; see build.js. -->
-        <div class="ai-review" id="bp-ai-review" aria-live="polite"></div>
       </aside>
     </div>
   </section>
