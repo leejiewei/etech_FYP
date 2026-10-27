@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ASUS Agent Computer - eTech Computer Accessories</title>
+  <meta name="description" content="What a PC needs to run AI models on your own desk, and the ASUS graphics cards and eTech PCs that meet it, with live prices and stock." />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="images/brand/etech-logo-180.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <section class="hero hero-page" aria-labelledby="agent-title">
+    <div class="hero-stage" aria-hidden="true">
+      <img class="hero-still" src="images/products/2225.webp" alt="" />
+    </div>
+    <div class="hero-copy">
+      <p class="hero-kicker">Powered by ASUS</p>
+      <h1 id="agent-title">ASUS Agent Computer</h1>
+      <p class="home-lede">A PC that runs AI models on your own desk, so your files stay on your machine.
+        Here is what it needs, and what we stock that meets it.</p>
+      <div class="hero-actions">
+        <a class="add-btn" href="#agent-hardware">What it needs</a>
+        <a class="ghost-btn" href="build.html">Configure a PC</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section agent-split" aria-labelledby="agent-what">
+      <div>
+        <h2 id="agent-what">What "local AI" means</h2>
+        <p>Chat assistants such as ChatGPT run on someone else's computers: what you type is sent over the
+          internet, and heavy use is billed. A local model is downloaded once and runs on your own PC with free
+          tools such as Ollama or LM Studio. Nothing you give it leaves the machine, and it works offline.</p>
+        <p>An <strong>agent</strong> is a model that does more than chat: it can read a folder of documents,
+          run steps in order and use other programs on the PC to finish a task.</p>
+      </div>
+      <div>
+        <h2 id="agent-uses">What people use one for</h2>
+        <ul class="agent-uses">
+          <li><strong>Coding help</strong> &mdash; explaining, writing and reviewing code inside the editor.</li>
+          <li><strong>Documents</strong> &mdash; summarising reports, pulling figures out of invoices, drafting replies.</li>
+          <li><strong>A private assistant</strong> &mdash; questions about your own files that you would not upload.</li>
+          <li><strong>Automation</strong> &mdash; repeating office tasks, such as sorting files or filling in templates.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="agent-hardware" aria-labelledby="agent-hw-title">
+      <h2 id="agent-hw-title">What the hardware needs</h2>
+      <p class="section-sub">The graphics card matters most, and on the card, its memory (VRAM): the whole model
+        has to fit in it to run at a usable speed.</p>
+
+      <div class="agent-table-wrap">
+        <table class="agent-table">
+          <caption>Rough guide to graphics memory, for 4-bit models in Ollama or LM Studio</caption>
+          <thead><tr><th>Graphics memory</th><th>Model sizes that fit</th><th>Good for</th></tr></thead>
+          <tbody>
+            <tr><td>8GB</td><td>up to about 7 to 8 billion parameters</td><td>Chat, short documents, light coding help</td></tr>
+            <tr><td>12GB</td><td>up to about 12 to 14 billion</td><td>Coding help, longer documents</td></tr>
+            <tr><td>16GB</td><td>about 14 billion comfortably, some around 20 billion</td><td>Day-to-day agent work with longer context</td></tr>
+            <tr><td>24GB and more</td><td>about 30 billion and up</td><td>Larger models, several tasks at once</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ul class="agent-needs">
+        <li><strong>System memory (RAM):</strong> 16GB is the least we would suggest; 32GB leaves room for the
+          tools around the model and lets a model that does not quite fit spill over, slowly.</li>
+        <li><strong>Storage:</strong> a model is a 4 to 20GB download, and most people keep several. An NVMe SSD of
+          1TB or more loads them quickly.</li>
+        <li><strong>Power and cooling:</strong> a long AI task keeps the graphics card at full load, like a game
+          that never stops. The PC Builder checks the power supply has the headroom for it.</li>
+      </ul>
+      <p class="agent-caveat">This table is general guidance, not a benchmark of our PCs. Which models run, and how
+        fast, depends on the model, the software and its settings. No PC runs every model; ask us before you buy
+        if you have a particular one in mind.</p>
+    </section>
+
+    <section class="section" aria-labelledby="agent-machines-title">
+      <h2 id="agent-machines-title">Our PCs with 8GB or more of graphics memory</h2>
+      <p class="section-sub">From our own range, read live from the catalogue.</p>
+      <div id="agent-machines" aria-live="polite"><p class="section-sub">Loading&hellip;</p></div>
+    </section>
+
+    <section class="section" aria-labelledby="agent-gpus-title">
+      <h2 id="agent-gpus-title">ASUS graphics cards for local AI</h2>
+      <p class="section-sub">Every ASUS card we stock with 8GB or more, grouped by memory. Prices and stock are live.</p>
+      <div id="agent-gpus" aria-live="polite"></div>
+      <div class="asus-cta">
+        <a class="add-btn" href="build.html">Configure a PC in the PC Builder</a>
+        <a class="ghost-btn" href="asus.html">See our ASUS-based PCs</a>
+      </div>
+    </section>
+
+    <section class="section faq-section" aria-labelledby="agent-faq-title">
+      <h2 id="agent-faq-title">Questions</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">What is an Agent Computer? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">A desktop PC specified to run AI models locally &mdash; mainly a graphics card with
+            enough memory, plus enough system memory and fast storage around it. Otherwise it is an ordinary
+            desktop PC, and the same graphics card that runs the models runs games.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Will it run any AI model? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">No. The biggest models need far more memory than any single desktop card has. The
+            table above shows roughly what fits in each amount of graphics memory; tell us the model you want and
+            we will check before you order.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Does it replace paying for ChatGPT or an API? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">It can for some work. Local models cost nothing per question once the PC is paid for,
+            but the largest cloud models are still stronger at hard tasks. Many people use both.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Can I start small and upgrade later? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">Yes. Choose a power supply and case with room for a bigger card, and the graphics card
+            and memory can be swapped later. The PC Builder shows the power a build needs.</div>
+        </div>
+      </div>
+      <p class="asus-trademark">ASUS, ROG and TUF Gaming are trademarks of ASUSTeK Computer Inc. Ollama, LM Studio and
+        ChatGPT belong to their owners and are named only as examples.</p>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/whatsapp.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/faq.js"></script>
+  <script src="js/prebuilt.js"></script>
+  <script src="js/asus.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

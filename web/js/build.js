@@ -30,6 +30,45 @@ function buildSlotInfo(slot) {
   return BUILD_SLOT_INFO[slot] || { title: slot, icon: "puzzle" };
 }
 
+// Which slots this particular build needs. Not every PC needs all eight:
+//   Cooler  optional when the CPU's own box has one (coolerIncluded "Yes").
+//           "No" -- or no record either way -- means one must be chosen;
+//           an unverified CPU is never assumed to come with one.
+//   GPU     optional when the CPU has built-in graphics (igpu "Yes"), so an
+//           office PC can run without a card. igpu "No" or unknown: required.
+// Until a CPU is picked those two are "depends". Everything else is always
+// required. The answer is one of "required", "optional" or "depends", with
+// the reason shown on the slot card.
+function slotRequirement(slot, cpu) {
+  if (slot !== "Cooler" && slot !== "GPU") return { need: "required" };
+  if (!cpu) return { need: "depends", why: "Depends on the processor" };
+  const a = cpu.attrs || {};
+  if (slot === "Cooler") {
+    if (a.coolerIncluded === "Yes") return { need: "optional", why: "Optional: a cooler comes in the CPU's box" };
+    if (a.coolerIncluded === "No") return { need: "required", why: "Required: this CPU comes without a cooler" };
+    return { need: "required", why: "Required: we can't confirm this CPU includes a cooler" };
+  }
+  if (a.igpu === "Yes") return { need: "optional", why: "Optional: the CPU has built-in graphics" };
+  if (a.igpu === "No") return { need: "required", why: "Required: this CPU has no built-in graphics" };
+  return { need: "required", why: "Required: we can't confirm this CPU has built-in graphics" };
+}
+
+// The slots still empty that this build cannot do without. A "depends"
+// slot is not listed: the CPU is missing then, and that is listed instead.
+function missingRequiredSlots() {
+  const cpu = selectedProduct("CPU");
+  return builderSlots.filter((slot) =>
+    !currentBuild[slot] && slotRequirement(slot, cpu).need === "required");
+}
+
+// The slots this build counts towards being complete: every required one,
+// plus any optional one the customer has filled anyway.
+function countedSlots() {
+  const cpu = selectedProduct("CPU");
+  return builderSlots.filter((slot) =>
+    slotRequirement(slot, cpu).need !== "optional" || currentBuild[slot]);
+}
+
 function loadBuild() {
   const text = localStorage.getItem("currentBuild");
   currentBuild = text ? JSON.parse(text) : {};
@@ -144,9 +183,11 @@ function renderBuilder() {
   const container = document.getElementById("builder-slots");
   if (!container) return;
 
+  const cpu = selectedProduct("CPU");
   container.innerHTML = builderSlots.map((slot, i) => {
     const info = buildSlotInfo(slot);
     const picked = selectedProduct(slot);
+    const req = slotRequirement(slot, cpu);
     return `
       <div class="bp-slot${picked ? " picked" : ""}${picked && colourOptionsOf(picked).length ? " has-colour" : ""}">
         <button type="button" class="bp-slot-main" data-slot="${escapeHtml(slot)}">
@@ -155,7 +196,10 @@ function renderBuilder() {
             ? slotPhotoTag(picked, buildColours[slot])
             : categoryIcon(info.icon)}</span>
           <span class="bp-slot-title">${escapeHtml(info.title)}</span>
-          <span class="bp-slot-choice">${picked ? escapeHtml(picked.name) : "Not chosen yet"}</span>
+          ${req.why ? `<span class="bp-slot-need bp-need-${req.need}">${escapeHtml(req.why)}</span>` : ""}
+          <span class="bp-slot-choice">${picked
+            ? escapeHtml(picked.name)
+            : req.need === "optional" ? "Not needed, but you can add one" : "Not chosen yet"}</span>
           <span class="bp-slot-foot">
             <span class="bp-slot-price">${picked ? money(partPrice(picked)) : ""}</span>
             <span class="bp-slot-action">${picked ? "Change" : "Choose"}</span>
@@ -199,15 +243,17 @@ function renderBuilder() {
   renderBuildSummary();
 }
 
-// A bar of eight segments in the page header, one per part, filled in as
-// parts are chosen.
+// A bar in the page header, one segment per part this build needs
+// (countedSlots), filled in as parts are chosen. An optional cooler or
+// graphics card left empty is not a gap, so it gets no segment.
 function renderProgress() {
   const el = document.getElementById("bp-progress");
   if (!el) return;
-  const done = builderSlots.filter((slot) => currentBuild[slot]).length;
+  const slots = countedSlots();
+  const done = slots.filter((slot) => currentBuild[slot]).length;
   el.innerHTML = `
-    <span class="bp-progress-label">${done} of ${builderSlots.length} parts chosen</span>
-    <span class="bp-progress-track">${builderSlots.map((slot) =>
+    <span class="bp-progress-label">${done} of ${slots.length} parts chosen</span>
+    <span class="bp-progress-track">${slots.map((slot) =>
       `<span class="${currentBuild[slot] ? "on" : ""}" title="${escapeHtml(buildSlotInfo(slot).title)}"></span>`).join("")}
     </span>`;
 }
@@ -535,6 +581,10 @@ function compatibilityChecks(pick) {
   if (cpu && cpu.attrs.coolerIncluded === "Yes" && !cooler) {
     pass(`The ${cpu.name} comes with a cooler in the box, so a separate cooler is optional.`);
   }
+  if (cpu && cpu.attrs.igpu === "Yes" && !gpu) {
+    pass(`Display OK: the ${cpu.name} has built-in graphics, which is enough for office work, ` +
+         `browsing and video. Add a graphics card for gaming.`);
+  }
 
   return messages;
 }
@@ -578,16 +628,28 @@ function renderBuildSummary() {
       group(passes, "compat-ok", "&#10003;", passes.length && criticals.length ? "Checks passed" : "");
   }
 
+  // What this build still needs before it can be ordered or reviewed.
+  // Listed by name rather than counted, because how many parts a PC needs
+  // depends on the parts: an office PC on a CPU with graphics and a cooler
+  // in the box is complete at six, a gaming PC on one without either at
+  // eight.
+  const missing = missingRequiredSlots();
+  if (missing.length) {
+    const coolerWhy = missing.includes("Cooler") && cpu
+      ? `<p class="compat-message compat-caution">&#9888; ${escapeHtml(slotRequirement("Cooler", cpu).why)}.</p>`
+      : "";
+    messagesEl.insertAdjacentHTML("afterbegin", `
+      <div class="bp-missing">
+        <p class="compat-group-title">Still needed before you can order</p>
+        <ul>${missing.map((slot) => `<li>${escapeHtml(buildSlotInfo(slot).title)}</li>`).join("")}</ul>
+        ${coolerWhy}
+      </div>`);
+  }
+
   renderPowerMeter(cpu, gpu, psu);
   renderBarInfo();
 
-  // Every slot must be filled — except the cooler, when the CPU already
-  // comes with one in the box.
-  const coolerOptional = cpu && cpu.attrs.coolerIncluded === "Yes";
-  const allPicked = builderSlots.every((slot) => {
-    if (slot === "Cooler" && coolerOptional) return true;
-    return currentBuild[slot];
-  });
+  const allPicked = missing.length === 0;
   // Only critical problems stop the order — warnings are advice.
   const allCompatible = messages.every((m) => m.level !== "critical");
   const addBtn = document.getElementById("add-build-btn");
@@ -638,7 +700,7 @@ function renderPowerMeter(cpu, gpu, psu) {
 function renderBarInfo() {
   const picked = builderSlots.filter((slot) => currentBuild[slot]).length;
   document.getElementById("bp-count").textContent = picked
-    ? `${picked} of ${builderSlots.length} parts selected`
+    ? `${picked} of ${countedSlots().length} parts selected`
     : "No parts selected";
 
   const spec = buildSpecText();
@@ -715,8 +777,10 @@ function scheduleAiReview(allPicked, checks) {
 
   if (!allPicked) {
     aiReviewWanted = "";
-    renderAiReviewNote("Pick every part and eTech AI will review the whole build: " +
-      "how well the parts suit each other, and what to change.");
+    const missing = missingRequiredSlots().map((slot) => buildSlotInfo(slot).title);
+    renderAiReviewNote("Once every part this build needs is chosen, eTech AI will review the " +
+      "whole build: how well the parts suit each other, and what to change." +
+      (missing.length ? " Still to choose: " + missing.join(", ") + "." : ""));
     return;
   }
 

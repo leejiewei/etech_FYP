@@ -37,6 +37,19 @@ adminPage("Stock Alerts", "alerts", async (content) => {
       && (r.stock_status === "out" || r.stock_status === "low"))
     .sort((a, b) => Number(b.purchases) - Number(a.purchases));
 
+  // Every product at or below its own low-stock level, whether or not it
+  // is selling. "Restock these" above only ever showed the fast sellers,
+  // so a part that was low but had not sold in the period -- the Ryzen 5
+  // 5500 at 3 units against a level of 5, found in Chapter 4 testing,
+  // Figure 4.35 -- appeared nowhere. The counted quantity decides when
+  // there is one; a product with no count (the shop's own builds, whose
+  // stock follows their parts) is judged by its status.
+  const lowStock = all
+    .filter(isLowStock)
+    .sort((a, b) => statusRank(a) - statusRank(b)
+      || num(a.stock_qty ?? 0) - num(b.stock_qty ?? 0)
+      || Number(b.purchases) - Number(a.purchases));
+
   const dead = all
     .filter((r) => Number(r.purchases) === 0 && num(r.price) >= DEAD_STOCK_FLOOR)
     .sort((a, b) => shelfValue(b) - shelfValue(a));
@@ -61,6 +74,13 @@ adminPage("Stock Alerts", "alerts", async (content) => {
       they are unavailable is a sale going elsewhere.
     </p>
     ${restockTable(restock)}
+
+    <h2 style="margin-top:30px;">Low and out of stock</h2>
+    <p class="hint">
+      Every product at or below its low-stock level, selling or not &mdash; ${lowStock.length}
+      product${lowStock.length === 1 ? "" : "s"}. Change a quantity on the product's page and this list follows.
+    </p>
+    ${lowStockTable(lowStock, highIds)}
 
     <h2 style="margin-top:30px;">Dead stock</h2>
     <p class="hint">
@@ -122,6 +142,61 @@ function restockTable(rows) {
           <td><span class="badge ${e(r.stock_status)}">${r.stock_status === "out" ? "Out of stock" : "Low"}</span></td>
           <td><a href="product_edit.html?id=${r.product_id}" class="btn small">Update stock</a></td>
         </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+function isLowStock(r) {
+  if (r.stock_qty !== null && r.stock_qty !== undefined) {
+    return num(r.stock_qty) <= num(r.reorder_level ?? 5);
+  }
+  return r.stock_status === "low" || r.stock_status === "out";
+}
+
+// Out before low, so the empty shelves lead.
+function statusRank(r) {
+  if (r.stock_qty !== null && r.stock_qty !== undefined) return num(r.stock_qty) <= 0 ? 0 : 1;
+  return r.stock_status === "out" ? 0 : 1;
+}
+
+function lowStockTable(rows, highIds) {
+  if (rows.length === 0) {
+    return `<div class="card" style="color:var(--ok);">Nothing is at or below its low-stock level.</div>`;
+  }
+
+  return `
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Product</th><th>Category</th><th class="num">Qty left</th>
+                 <th class="num">Low-stock level</th><th class="num">Sold</th><th>Status</th><th>Suggested action</th></tr></thead>
+      <tbody>
+      ${rows.map((r) => {
+        const counted = r.stock_qty !== null && r.stock_qty !== undefined;
+        const out = counted ? num(r.stock_qty) <= 0 : r.stock_status === "out";
+        const action = !counted
+          ? "Follows its parts &mdash; restock the part holding it back."
+          : highIds.has(r.product_id) && Number(r.purchases) > 0
+            ? "Selling well &mdash; reorder now."
+            : Number(r.purchases) > 0
+              ? "Reorder to the usual level."
+              : "Not sold this period &mdash; reorder a small quantity only.";
+        return `
+        <tr>
+          <td><strong>${e(shorten(r.name, 42))}</strong><br />
+              <small style="color:#999;">${e(money(r.price))}</small></td>
+          <td><small>${e(categoryPath(r))}</small></td>
+          <td class="num"><strong>${counted ? r.stock_qty : '<small style="color:#bbb;">from parts</small>'}</strong></td>
+          <td class="num">${counted ? num(r.reorder_level ?? 5) : "&mdash;"}</td>
+          <td class="num">${r.purchases}</td>
+          <td><span class="badge ${out ? "out" : "low"}">${out ? "Out of stock" : "Low"}</span></td>
+          <td>
+            <div style="font-size:12px; color:#777; margin-bottom:5px;">${action}</div>
+            <a href="${counted ? `product_edit.html?id=${r.product_id}` : "prebuilts.html"}" class="btn small">${
+              counted ? "Update stock" : "See its parts"}</a>
+          </td>
+        </tr>`;
+      }).join("")}
       </tbody>
     </table>
     </div>`;

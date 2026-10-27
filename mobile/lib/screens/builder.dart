@@ -351,10 +351,11 @@ class _BuilderScreenState extends State<BuilderScreen> {
     );
   }
 
-  /// The red band, with a bar of eight segments filled in as parts are
-  /// chosen.
+  /// The red band, with a bar of one segment per part this build needs
+  /// (an optional cooler or graphics card left empty gets none), filled
+  /// in as parts are chosen.
   Widget _hero() {
-    final slots = Compatibility.slots;
+    final slots = Compatibility.counted(_build);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -389,7 +390,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            '$_pickedCount of ${slots.length} parts chosen',
+            '${slots.where((s) => _build[s] != null).length} of ${slots.length} parts chosen',
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -437,8 +438,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
   Widget _slotCard(int index, String slot) {
     final info = _info(slot);
     final part = _build[slot];
-    final optional =
-        slot == 'Cooler' && _build['CPU']?.attrs['coolerIncluded'] == 'Yes';
+    final (need, why) = Compatibility.requirement(slot, _build['CPU']);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -508,19 +508,18 @@ class _BuilderScreenState extends State<BuilderScreen> {
                               ),
                             ),
                           ),
-                          if (optional && part == null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: Text(
-                                'optional',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
+                      if (why != null)
+                        Text(
+                          why,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: need == 'required' && part == null
+                                ? AppTheme.redDark
+                                : Colors.grey.shade600,
+                          ),
+                        ),
                       const SizedBox(height: 2),
                       Text(
                         part?.name ?? 'Not chosen yet',
@@ -868,7 +867,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                   Text(
                     _pickedCount == 0
                         ? 'No parts selected'
-                        : '$_pickedCount of ${Compatibility.slots.length} parts selected',
+                        : '$_pickedCount of ${Compatibility.counted(_build).length} parts selected',
                     style: TextStyle(
                       fontSize: 11.5,
                       color: Colors.grey.shade600,

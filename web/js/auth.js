@@ -169,7 +169,14 @@ function registerUser(name, email, password, role) {
   }
 
   // The role travels beside the name; handle_new_auth_user() files both.
-  return sb.auth.signUp({ email, password, options: { data: { name, role } } })
+  // emailRedirectTo sends the confirmation link to the login page, which
+  // reads it and says whether it worked (see login.html). Without it the
+  // link landed on the Site URL -- the home page -- which said nothing,
+  // and an expired link looked exactly like a working one.
+  return sb.auth.signUp({
+    email, password,
+    options: { data: { name, role }, emailRedirectTo: authPage("login.html") },
+  })
     .then(({ data, error }) => {
       if (error) return { ok: false, message: registerError(error) };
 
@@ -183,8 +190,8 @@ function registerUser(name, email, password, role) {
       if (!data.session) {
         return {
           ok: true,
-          message: "Account created. Check your email to confirm the address, then log in. " +
-                   "The link expires in 15 minutes.",
+          message: "Account created successfully! Please check your email to verify your " +
+                   "account before logging in. The link expires in 15 minutes.",
         };
       }
       return loadSession().then(claimEarlierActivity).then(() => ({ ok: true, message: "" }));
@@ -245,6 +252,9 @@ function registerError(error) {
   if (message.includes("invalid") && message.includes("email")) {
     return "That email address does not look right.";
   }
+  if (message.includes("weak") || error.code === "weak_password") {
+    return "That password is too easy to guess. Please choose a stronger one.";
+  }
   if (message.includes("password")) {
     return "Password must be at least 8 characters.";
   }
@@ -268,6 +278,13 @@ function loginUser(email, password) {
   }).then(({ error }) => {
     if (error) {
       console.error("Sign-in:", error);
+      // Supabase only says "not confirmed" once the password has been
+      // checked, so this tells nobody anything they could not already
+      // prove by signing in. Every other failure keeps the one sentence.
+      if (error.code === "email_not_confirmed" ||
+          (error.message || "").toLowerCase().includes("not confirmed")) {
+        return "unconfirmed";
+      }
       return "Incorrect email or password.";
     }
     // A staff account has no row in customers, so loadSession() finds
@@ -426,15 +443,7 @@ function requestPasswordReset(email) {
     return Promise.resolve({ ok: false, message: "That email address does not look right." });
   }
 
-  // Where the link in the email should land. Built from the page asking
-  // rather than hard-coded, so the same file works on localhost and on
-  // the deployed site without either being written down here. Supabase
-  // will only honour it if the exact URL is in the project's redirect
-  // allow-list; if it is not, the link falls back to the Site URL and
-  // arrives on a page that cannot finish the job.
-  const here = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
-
-  return sb.auth.resetPasswordForEmail(email, { redirectTo: here + "reset-password.html" })
+  return sb.auth.resetPasswordForEmail(email, { redirectTo: authPage("reset-password.html") })
     .then(({ error }) => {
       if (error) console.error("Password reset request:", error);
       // Deliberately the same answer either way. See above.
@@ -507,6 +516,48 @@ function completePasswordReset(newPassword, confirmPassword) {
       }
     );
   });
+}
+
+// ------------------------------------------------------------
+// Where a link in an auth email should land.
+//
+// Built from the page asking rather than hard-coded, so the same file
+// works on localhost and on the deployed site without either being
+// written down here. Supabase will only honour it if the URL is in the
+// project's redirect allow-list (https://etech-fyp.vercel.app/** covers
+// every page); if it is not, the link falls back to the Site URL.
+// ------------------------------------------------------------
+function authPage(file) {
+  return window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + file;
+}
+
+// ------------------------------------------------------------
+// Sending the confirmation email again.
+//
+// For a customer whose link expired, or who never got it. Like the
+// password reset, the answer is the same whether or not the address has
+// an unconfirmed account, so this cannot be used to find out who does.
+// Supabase allows one email a minute per address; asking sooner fails
+// quietly here and the console says why.
+// ------------------------------------------------------------
+const CONFIRM_RESENT_MESSAGE =
+  "If that address has an account waiting to be confirmed, a new link is on its way. " +
+  "It expires in 15 minutes; check the spam folder too.";
+
+function resendConfirmation(email) {
+  email = (email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return Promise.resolve({ ok: false, message: "Type your email address above first." });
+  }
+  return sb.auth.resend({ type: "signup", email, options: { emailRedirectTo: authPage("login.html") } })
+    .then(({ error }) => {
+      if (error) console.error("Resending confirmation:", error);
+      return { ok: true, message: CONFIRM_RESENT_MESSAGE };
+    })
+    .catch((error) => {
+      console.error("Resending confirmation:", error);
+      return { ok: true, message: CONFIRM_RESENT_MESSAGE };
+    });
 }
 
 function logoutUser() {

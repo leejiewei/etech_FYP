@@ -39,18 +39,6 @@ void main() {
     });
   });
 
-  group('PCIe generation from the chipset', () {
-    test('reads the ones the supplier confirmed', () {
-      expect(Compatibility.boardPcieGen(make(1, 'b', 'Motherboard', {'chipset': 'H610'})), 3);
-      expect(Compatibility.boardPcieGen(make(2, 'b', 'Motherboard', {'chipset': 'B760'})), 4);
-      expect(Compatibility.boardPcieGen(make(3, 'b', 'Motherboard', {'chipset': 'X870E'})), 5);
-    });
-
-    test('returns null rather than guessing at an unlisted chipset', () {
-      expect(Compatibility.boardPcieGen(make(4, 'b', 'Motherboard', {'chipset': 'Z790'})), isNull);
-    });
-  });
-
   group('compatibility checks', () {
     test('a mismatched socket is critical', () {
       final checks = Compatibility.check({
@@ -82,12 +70,14 @@ void main() {
           isTrue);
     });
 
-    test('a newer drive in an older slot only warns, since it still works', () {
+    // Since 15 Oct the rule warnings are gone and eTech AI's review says
+    // what is worth knowing; the checker only blocks builds that will not
+    // work, and a newer drive in an older slot still works.
+    test('a newer drive in an older slot is not critical, since it still works', () {
       final checks = Compatibility.check({
         'Motherboard': make(1, 'Board', 'Motherboard', {'chipset': 'H610'}),
         'Storage': make(2, 'Gen 5 SSD', 'Storage', {'pcieGen': 5, 'heatsink': 'No'}),
       });
-      expect(checks.any((c) => c.level == Level.warning), isTrue);
       expect(checks.any((c) => c.level == Level.critical), isFalse);
     });
 

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Powered by ASUS - eTech Computer Accessories</title>
+  <meta name="description" content="eTech's own gaming and office PCs built on ASUS motherboards, graphics cards, power supplies, coolers and cases, with live prices and stock." />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="images/brand/etech-logo-180.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- Same dark band as the home page, with an ASUS card we sell in place
+       of the 3D case. Left-aligned copy, two plain buttons. -->
+  <section class="hero hero-page" aria-labelledby="asus-title">
+    <div class="hero-stage" aria-hidden="true">
+      <img class="hero-still" src="images/products/2223.webp" alt="" />
+    </div>
+    <div class="hero-copy">
+      <p class="hero-kicker">PCs built by eTech</p>
+      <h1 id="asus-title">Powered by ASUS</h1>
+      <p class="home-lede">Our own gaming and office PCs, built on ASUS motherboards, graphics cards,
+        power supplies, coolers and cases. Live prices and stock.</p>
+      <div class="hero-actions">
+        <a class="add-btn" href="#asus-builds">See the PCs</a>
+        <a class="ghost-btn" href="build.html">Build your own</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section asus-intro" aria-labelledby="asus-why">
+      <h2 id="asus-why">Why we build on ASUS</h2>
+      <div class="asus-intro-body">
+        <p>Every PC starts with the motherboard: it decides which processor, memory, graphics card and
+          drives the machine can take. Most of the PCs we assemble ourselves sit on an ASUS board, and the
+          gaming ones add ASUS graphics cards, power supplies, liquid coolers and cases on top.</p>
+        <p>A PC is listed here when ASUS made it, or when its motherboard is ASUS. Each card says which
+          other parts are ASUS too, read from that PC's own parts list, so the page changes when a build does.</p>
+      </div>
+    </section>
+
+    <section class="section" id="asus-builds" aria-labelledby="asus-builds-title">
+      <h2 id="asus-builds-title">ASUS-based PCs in our range</h2>
+      <p class="section-sub">Live prices and stock. A PC we assemble is in stock only while every part in it is.</p>
+      <div class="filter-bar" id="asus-filter"></div>
+      <div class="prebuilt-grid" id="asus-grid" aria-live="polite">
+        <p class="section-sub">Loading our PCs&hellip;</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="asus-parts-title">
+      <h2 id="asus-parts-title">Choose the ASUS parts yourself</h2>
+      <p class="section-sub">Every ASUS part below works in the PC Builder, which checks that it fits
+        with the rest of your build before it goes in the cart.</p>
+      <div class="asus-part-list" id="asus-parts"></div>
+      <div class="asus-cta">
+        <a class="add-btn" href="build.html">Open the PC Builder</a>
+        <a class="ghost-btn" href="rigs.html">See builds our customers shared</a>
+      </div>
+    </section>
+
+    <section class="section faq-section" aria-labelledby="asus-faq-title">
+      <h2 id="asus-faq-title">Questions</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Is eTech an official ASUS partner? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">We are a computer shop that sells ASUS parts and builds PCs with them. This page
+            describes PCs built on ASUS parts; it is not an ASUS certification programme.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Who handles the warranty? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">Every part is brand new, in its box, with the maker's own warranty &mdash; the
+            same as everything we sell. If something goes wrong, talk to us at the shop or on WhatsApp first.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Can I change a part in one of these PCs? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">Yes. Open the PC's page to see the upgrades we price for it, or start from scratch
+            in the PC Builder and pick every part yourself.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">Why is a PC out of stock when the shop has it on display? <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="faq-answer">We build each PC to order from parts on our shelves. If one of its parts runs out,
+            the PC shows as out of stock until that part is back, and its card says which one.</div>
+        </div>
+      </div>
+      <p class="asus-trademark">ASUS, ROG and TUF Gaming are trademarks of ASUSTeK Computer Inc.</p>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/escape.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/deals.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/whatsapp.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/faq.js"></script>
+  <script src="js/prebuilt.js"></script>
+  <script src="js/asus.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

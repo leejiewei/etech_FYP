@@ -244,19 +244,51 @@ class Compatibility {
       pass('The ${cpu.name} comes with a cooler in the box, so a separate '
           'cooler is optional.');
     }
+    if (cpu != null && cpu.attrs['igpu'] == 'Yes' && gpu == null) {
+      pass('Display OK: the ${cpu.name} has built-in graphics, which is enough '
+          'for office work, browsing and video. Add a graphics card for gaming.');
+    }
 
     return checks;
   }
 
-  /// Is every slot filled? The cooler may be empty when the CPU comes
-  /// with one in the box.
-  static bool allPicked(Map<String, Product?> build) {
-    final coolerOptional = build['CPU']?.attrs['coolerIncluded'] == 'Yes';
-    return slots.every((slot) {
-      if (slot == 'Cooler' && coolerOptional) return true;
-      return build[slot] != null;
-    });
+  /// Does this build need [slot]? Same rule as slotRequirement() in the
+  /// web builder: the cooler is optional only when the CPU's box has one,
+  /// the graphics card only when the CPU has built-in graphics. A CPU with
+  /// no record either way is never assumed to have them. Until a CPU is
+  /// picked those two are 'depends'. Returns (need, why).
+  static (String, String?) requirement(String slot, Product? cpu) {
+    if (slot != 'Cooler' && slot != 'GPU') return ('required', null);
+    if (cpu == null) return ('depends', 'Depends on the processor');
+    if (slot == 'Cooler') {
+      final v = cpu.attrs['coolerIncluded'];
+      if (v == 'Yes') return ('optional', 'Optional: a cooler comes in the box');
+      if (v == 'No') return ('required', 'Required: no cooler in the box');
+      return ('required', "Required: can't confirm a cooler is included");
+    }
+    final v = cpu.attrs['igpu'];
+    if (v == 'Yes') return ('optional', 'Optional: CPU has built-in graphics');
+    if (v == 'No') return ('required', 'Required: no built-in graphics');
+    return ('required', "Required: can't confirm built-in graphics");
   }
+
+  /// The empty slots this build cannot do without.
+  static List<String> missing(Map<String, Product?> build) => slots
+      .where((slot) =>
+          build[slot] == null &&
+          requirement(slot, build['CPU']).$1 == 'required')
+      .toList();
+
+  /// The slots that count towards this build being complete: every
+  /// required one, plus an optional one the customer filled anyway.
+  static List<String> counted(Map<String, Product?> build) => slots
+      .where((slot) =>
+          requirement(slot, build['CPU']).$1 != 'optional' ||
+          build[slot] != null)
+      .toList();
+
+  /// Is every part this build needs chosen?
+  static bool allPicked(Map<String, Product?> build) => missing(build).isEmpty;
 
   /// Can this build go in the basket? Only these rules decide it; eTech
   /// AI's review advises but never blocks.

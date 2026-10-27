@@ -15,14 +15,41 @@ function isInWishlist(productId) {
   return wishlistIds.indexOf(productId) !== -1;
 }
 
+// Whether the server has answered yet. Until it has, the Wishlist page
+// says it is loading rather than "empty".
+let wishlistLoaded = false;
+
+// Redraws everything on the page that shows the wishlist. The Wishlist
+// page used to be drawn once, by its own onAppReady, which runs before
+// this request comes back -- so a signed-in customer with saved items
+// saw "Your wishlist is empty" next to a header count of 3 (found in
+// Chapter 4 testing, Figure 4.24). Every change now repaints from here.
+function refreshWishlistViews() {
+  updateWishlistCount();
+  if (document.getElementById("wishlist-grid")) renderWishlistPage();
+  if (typeof renderProductGrid === "function") renderProductGrid();
+  if (typeof renderFeaturedProducts === "function") renderFeaturedProducts();
+}
+
 function loadWishlist() {
-  if (!isLoggedIn()) { wishlistIds = []; updateWishlistCount(); return Promise.resolve(); }
+  if (!isLoggedIn()) {
+    wishlistIds = [];
+    wishlistLoaded = true;
+    // Synchronous here, so before the shop's own start-up has drawn its
+    // grid: only the badge and the Wishlist page need anything.
+    updateWishlistCount();
+    if (document.getElementById("wishlist-grid")) renderWishlistPage();
+    return Promise.resolve();
+  }
 
   return sb.from("wishlist_items").select("product_id").order("added_at")
     .then(({ data, error }) => {
       if (error) { console.error("Reading the wishlist:", error); return; }
       wishlistIds = data.map((row) => row.product_id);
-      updateWishlistCount();
+    })
+    .finally(() => {
+      wishlistLoaded = true;
+      refreshWishlistViews();
     });
 }
 
@@ -43,19 +70,27 @@ function toggleWishlist(productId) {
   }
   return sb.rpc("toggle_wishlist", { p_product_id: productId }).then(({ data, error }) => {
     if (error) { alert(dbMessage(error, "Could not update your wishlist.")); return; }
+    const added = !isInWishlist(productId);
     wishlistIds = data || [];
-    updateWishlistCount();
-
     // Redraw whichever page we're on so the heart fills or empties.
-    if (document.getElementById("wishlist-grid")) renderWishlistPage();
-    if (typeof renderProductGrid === "function") renderProductGrid();
-    if (typeof renderFeaturedProducts === "function") renderFeaturedProducts();
+    refreshWishlistViews();
+    if (typeof showToast === "function") {
+      showToast(added ? "Saved to your wishlist." : "Removed from your wishlist.", 2200);
+    }
   });
+}
+
+// The products on the wishlist the shop still sells. A product taken off
+// sale stays in wishlist_items but cannot be shown, so it is not counted
+// either -- the badge and the page must agree.
+function visibleWishlist() {
+  if (!productsLoaded) return wishlistIds;
+  return wishlistIds.filter((id) => getProductById(id));
 }
 
 function updateWishlistCount() {
   const countEl = document.getElementById("wishlist-count");
-  if (countEl) countEl.textContent = wishlistIds.length;
+  if (countEl) countEl.textContent = visibleWishlist().length;
 }
 
 function renderWishlistPage() {
@@ -71,16 +106,22 @@ function renderWishlistPage() {
     return;
   }
 
-  if (wishlistIds.length === 0) {
+  if (!wishlistLoaded) {
+    emptyMessage.style.display = "block";
+    emptyMessage.textContent = "Loading your wishlist…";
+    return;
+  }
+
+  const ids = visibleWishlist();
+  if (ids.length === 0) {
     emptyMessage.style.display = "block";
     emptyMessage.innerHTML = 'Your wishlist is empty. <a href="shop.html">Browse products</a>';
     return;
   }
 
   emptyMessage.style.display = "none";
-  wishlistIds.forEach((productId) => {
-    const product = getProductById(productId);
-    if (product) grid.appendChild(buildProductCard(product));
+  ids.forEach((productId) => {
+    grid.appendChild(buildProductCard(getProductById(productId)));
   });
 }
 

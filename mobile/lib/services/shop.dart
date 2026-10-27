@@ -527,7 +527,15 @@ class Shop extends ChangeNotifier {
         email: email.trim().toLowerCase(),
         password: password,
       );
-    } on AuthException {
+    } on AuthException catch (e) {
+      // Supabase only says "not confirmed" after the password has been
+      // checked, so this gives nothing away. Same rule as loginUser() in
+      // web/js/auth.js.
+      if (e.code == 'email_not_confirmed' ||
+          e.message.toLowerCase().contains('not confirmed')) {
+        return 'Please verify your email before signing in. Use the link we '
+            'sent when you signed up.';
+      }
       return 'Incorrect email or password.';
     } catch (e) {
       return Api.message(e, 'Could not sign in.');
@@ -576,6 +584,9 @@ class Shop extends ChangeNotifier {
         email: email,
         password: password,
         data: {'name': name, 'role': role},
+        // The web login page reads the link and says whether it worked,
+        // including an expired one (web/login.html).
+        emailRedirectTo: '${Config.webOrigin}/login.html',
       );
 
       // No session back means the project is set to confirm addresses by
@@ -586,8 +597,8 @@ class Shop extends ChangeNotifier {
       if (result.session == null) {
         return (
           ok: true,
-          message: 'Account created. Check your email to confirm the address, '
-              'then sign in. The link expires in 15 minutes.',
+          message: 'Account created successfully! Please check your email to '
+              'verify your account before logging in. The link expires in 15 minutes.',
         );
       }
     } on AuthException catch (e) {

@@ -12,11 +12,12 @@ adminPage("Edit Product", "products", async (content) => {
   const id = Number(params().id || 0);
   const isNew = id === 0;
 
-  const [brands, categories, product, fromParts] = await Promise.all([
+  const [brands, categories, product, fromParts, specs] = await Promise.all([
     loadBrands(),
     loadCategories(),
     isNew ? null : loadProduct(id),
     isNew ? false : stockIsDerived(id),
+    isNew ? [] : loadSpecs(id),
   ]);
 
   if (!isNew && !product) {
@@ -33,12 +34,25 @@ adminPage("Edit Product", "products", async (content) => {
 
   const currentPhoto = value("image_path", null);
 
+  // Laid out in two columns on a wide screen (27 Oct, after Chapter 4
+  // testing found the single long column hard to read in a screenshot):
+  // what the customer sees on the left, in the order they see it; the
+  // photo, the staff-only cost and the builder switch on the right. The
+  // Save bar stays at the foot of the window however far down you are.
   content.innerHTML = `
-    <div class="error-box" id="form-errors" style="display:none;"></div>
+    <div class="error-box" id="form-errors" style="display:none;" role="alert"></div>
+    <div class="flash" id="form-ok" style="display:none;" role="status"></div>
 
-    <form id="product-form">
+    ${isNew ? "" : `
+      <p class="pe-summary">
+        <strong>${e(value("name"))}</strong>
+        <span>Item ${id}</span>
+      </p>`}
+
+    <form id="product-form" class="pe-form">
+     <div class="pe-main">
       <div class="card">
-        <h2 style="margin-top:0;">Details</h2>
+        <h2 class="pe-title">Product details</h2>
 
         <div class="field">
           <label for="name">Product name</label>
@@ -83,7 +97,8 @@ adminPage("Edit Product", "products", async (content) => {
       </div>
 
       <div class="card">
-        <h2 style="margin-top:0;">Price and stock</h2>
+        <h2 class="pe-title">Selling price and stock</h2>
+        <p class="hint">Everything in this box is shown to customers.</p>
         ${fromParts ? `
           <p class="hint" style="margin:0 0 14px;">
             This machine's stock is worked out from its parts, so the three
@@ -98,12 +113,6 @@ adminPage("Edit Product", "products", async (content) => {
             <label for="price">Selling price (RM)</label>
             <input type="number" id="price" step="0.01" min="0" required
                    value="${num(value("price", 0)).toFixed(2)}" />
-          </div>
-          <div class="field">
-            <label for="cost_price">Cost price (RM)</label>
-            <input type="number" id="cost_price" step="0.01" min="0"
-                   value="${costValue(value("cost_price", null))}" />
-            <small>What you pay the supplier. Used for margin and dead-stock alerts. Leave blank if unknown.</small>
           </div>
         </div>
 
@@ -131,49 +140,82 @@ adminPage("Edit Product", "products", async (content) => {
         </div>
       </div>
 
+      ${isNew ? "" : specsCard(specs)}
+     </div>
+
+     <div class="pe-side">
       <div class="card">
-        <h2 style="margin-top:0;">Picture</h2>
-        <div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
-          <div style="text-align:center;">
-            <img id="photo-preview"
-                 src="${e(currentPhoto || "../images/" + value("img_slug", "default") + ".svg")}"
-                 style="width:140px; height:110px; object-fit:contain; background:#fafbfc; border:1px solid #e3e6ea; border-radius:6px;" />
-            <div style="font-size:12px; color:#999; margin-top:5px;" id="photo-caption">
-              ${currentPhoto ? "Uploaded photo" : "Drawn illustration"}
-            </div>
-          </div>
-          <div style="flex:1; min-width:240px;">
-            <div class="field">
-              <label for="photo">Upload a photo</label>
-              <input type="file" id="photo" accept="image/jpeg,image/png,image/webp" />
-              <small>JPG, PNG or WEBP, under 5MB. Resized to 800px and saved as JPEG.</small>
-            </div>
-            <div class="field">
-              <label for="img_slug">Fallback drawing</label>
-              <input type="text" id="img_slug" value="${e(value("img_slug", "default"))}" />
-              <small>Used when there's no photo: cpu, gpu, ram, motherboard, psu, case, cooler,
-                     ssd, hdd, monitor, laptop, printer, paper, projector, projectorscreen,
-                     monitorarm, keyboard, mouse, headset, mousepad, router, wifi, switch, cable, default.</small>
-            </div>
-          </div>
+        <h2 class="pe-title">Product photo</h2>
+        <img id="photo-preview" class="pe-photo"
+             src="${e(currentPhoto || "../images/" + value("img_slug", "default") + ".svg")}" alt="" />
+        <p class="pe-photo-caption" id="photo-caption">
+          ${currentPhoto ? "Uploaded photo" : "Drawn illustration (no photo yet)"}
+        </p>
+        <div class="field">
+          <label for="photo">Upload a new photo</label>
+          <input type="file" id="photo" accept="image/jpeg,image/png,image/webp" />
+          <small>JPG, PNG or WEBP, under 5MB. Resized to 800px and saved as JPEG. Optional.</small>
         </div>
+        <details class="pe-more">
+          <summary>Fallback drawing</summary>
+          <div class="field">
+            <label for="img_slug">Drawing used when there is no photo</label>
+            <input type="text" id="img_slug" value="${e(value("img_slug", "default"))}" />
+            <small>cpu, gpu, ram, motherboard, psu, case, cooler, ssd, hdd, monitor, laptop, printer,
+                   paper, projector, projectorscreen, monitorarm, keyboard, mouse, headset, mousepad,
+                   router, wifi, switch, cable, default.</small>
+          </div>
+        </details>
+      </div>
+
+      <!-- Cost is the one figure here a customer must never see. The shop
+           cannot read it at all (no SELECT grant on products.cost_price for
+           anon or authenticated); staff read it through admin_products. -->
+      <div class="card pe-internal">
+        <h2 class="pe-title">Internal: cost price</h2>
+        <p class="hint">Staff only. Never shown in the shop or the app.</p>
+        <div class="field">
+          <label for="cost_price">Cost price (RM)</label>
+          <input type="number" id="cost_price" step="0.01" min="0"
+                 value="${costValue(value("cost_price", null))}" />
+          <small>What you pay the supplier. Used for margin and dead-stock alerts. Leave blank if unknown.</small>
+        </div>
+        <p class="pe-margin" id="pe-margin"></p>
       </div>
 
       <div class="card">
-        <label style="font-weight:normal;">
+        <h2 class="pe-title">PC Builder</h2>
+        <label class="pe-check">
           <input type="checkbox" id="exclude_from_builder"
                  ${Number(value("exclude_from_builder", 0)) === 1 ? "checked" : ""} />
           Hide from the PC Builder
         </label>
-        <small style="display:block; color:#999; margin-top:4px;">
-          For things sold in the shop that don't belong in a desktop build —
+        <small class="pe-check-note">
+          For things sold in the shop that don't belong in a desktop build &mdash;
           laptop memory, surveillance drives, legacy repair boards.
         </small>
       </div>
+     </div>
 
-      <button type="submit" class="btn" id="save-button">${isNew ? "Add product" : "Save changes"}</button>
-      <a href="products.html" class="btn grey">Cancel</a>
+      <div class="pe-actions">
+        <button type="submit" class="btn" id="save-button">${isNew ? "Add product" : "Save changes"}</button>
+        <a href="products.html" class="btn grey">Cancel</a>
+      </div>
     </form>`;
+
+  // The margin, worked out as the two prices are typed, so a cost that
+  // is higher than the selling price is caught before it is saved.
+  const showMargin = () => {
+    const price = Number(document.getElementById("price").value);
+    const costText = document.getElementById("cost_price").value.trim();
+    const el = document.getElementById("pe-margin");
+    if (costText === "" || !(price > 0)) { el.textContent = ""; return; }
+    const margin = price - Number(costText);
+    el.className = "pe-margin" + (margin < 0 ? " bad" : "");
+    el.textContent = `Margin: ${money(margin)} (${Math.round(margin / price * 100)}% of the selling price)`;
+  };
+  ["price", "cost_price"].forEach((f) => document.getElementById(f).addEventListener("input", showMargin));
+  showMargin();
 
   // Show the chosen photo straight away, so it is obvious something has
   // been picked before anything is saved.
@@ -333,6 +375,7 @@ async function addBrand(brands) {
   brands.sort((a, b) => a.name.localeCompare(b.name));
   document.getElementById("brand_id").innerHTML = brandOptions(brands, data.brand_id);
   toggleAddNew("brand");
+  showOk(`Brand "${data.name}" added and selected.`);
 }
 
 async function addCategory(categories) {
@@ -379,6 +422,55 @@ async function addCategory(categories) {
       `<option value="${data.category_id}">Under ${e(data.name)}</option>`);
   }
   toggleAddNew("category");
+  showOk(`Category "${parent ? parent.name + " > " : ""}${data.name}" added and selected.`);
+}
+
+// The product's specifications and colour options as the shop shows
+// them, read-only here: they come from the supplier's spec sheet and are
+// loaded with the catalogue, not typed on this form.
+async function loadSpecs(id) {
+  const { data, error } = await sb.from("product_attributes")
+    .select("attr_key,attr_value").eq("product_id", id).order("attr_key");
+  if (error) throw error;
+  return data;
+}
+
+// "maxGpuLength" -> "Max gpu length"
+function specLabel(key) {
+  const words = key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function specsCard(specs) {
+  const colours = specs.filter((s) => s.attr_key === "colourOption").map((s) => s.attr_value);
+  const rest = specs.filter((s) => s.attr_key !== "colourOption");
+  // A spec that can hold several values (sockets, form factors) arrives
+  // as one row per value; shown as one line.
+  const grouped = new Map();
+  rest.forEach((s) => grouped.set(s.attr_key, [...(grouped.get(s.attr_key) || []), s.attr_value]));
+
+  return `
+    <div class="card">
+      <h2 class="pe-title">Specifications</h2>
+      ${grouped.size
+        ? `<dl class="pe-specs">${[...grouped].map(([key, values]) => `
+            <dt>${e(specLabel(key))}</dt><dd>${e(values.join(", "))}</dd>`).join("")}</dl>`
+        : `<p class="hint">No specifications recorded for this product.</p>`}
+      <h3 class="pe-subtitle">Colour options</h3>
+      ${colours.length
+        ? `<p class="pe-colours">${colours.map((c) => `<span class="badge">${e(c)}</span>`).join(" ")}</p>
+           <small class="pe-check-note">All colours share this product's stock count.</small>`
+        : `<p class="hint">Sold in one colour only.</p>`}
+    </div>`;
+}
+
+// A short green note after something worked, e.g. a brand being added.
+function showOk(text) {
+  const box = document.getElementById("form-ok");
+  box.textContent = text;
+  box.style.display = "block";
+  clearTimeout(showOk.timer);
+  showOk.timer = setTimeout(() => { box.style.display = "none"; }, 5000);
 }
 
 function costValue(cost) {

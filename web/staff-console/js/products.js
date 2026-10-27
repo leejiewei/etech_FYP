@@ -175,7 +175,7 @@ function productRow(r, derived) {
       <td>${r.product_id}</td>
       <td><img class="thumb" src="${e(img)}" alt="" /></td>
       <td>
-        <strong>${e(r.name)}</strong><br />
+        <a href="product_edit.html?id=${r.product_id}" class="row-name">${e(r.name)}</a><br />
         <small style="color:#999;">${e(r.brand)}</small>
       </td>
       <td><small>${e(categoryPath)}</small></td>
@@ -200,7 +200,7 @@ function productRow(r, derived) {
                     title="How many have just arrived. Added to the count on Save." />
              ${r.stock_qty === null
                ? `<br /><small style="color:#c88;">not counted</small>`
-               : ""}`}
+               : `<br /><small class="row-level">low at ${r.reorder_level ?? 5}</small>`}`}
       </td>
       <td>
         ${fromParts
@@ -214,12 +214,19 @@ function productRow(r, derived) {
                <option value="out" ${r.stock_status === "out" ? "selected" : ""}>Out</option>
              </select>`}
       </td>
-      <td style="white-space:nowrap;">
-        <button type="button" data-act="save" class="btn small">Save</button>
-        <a href="product_edit.html?id=${r.product_id}" class="btn small grey">Edit</a>
-        ${r.is_active
-          ? `<button type="button" data-act="remove" class="btn small danger">Remove</button>`
-          : `<button type="button" data-act="restore" class="btn small">Restore</button>`}
+      <td>
+        <!-- Three different looks for three different weights (27 Oct,
+             after Chapter 4 testing): Save is the only filled button and
+             stays greyed until something in the row is changed; Edit is
+             an outline; Remove is red text, set apart from the other two. -->
+        <div class="row-actions">
+          <button type="button" data-act="save" class="btn small" disabled
+                  title="Change the price or stock first">Save</button>
+          <a href="product_edit.html?id=${r.product_id}" class="btn small ghost">Edit</a>
+          ${r.is_active
+            ? `<button type="button" data-act="remove" class="btn small link-danger">Remove</button>`
+            : `<button type="button" data-act="restore" class="btn small ghost">Restore</button>`}
+        </div>
       </td>
     </tr>`;
 }
@@ -244,6 +251,19 @@ async function loadDerivedMachines() {
 
 function wireRowActions(rows) {
   const byId = new Map(rows.map((r) => [r.product_id, r]));
+
+  // A row's Save wakes up once one of its boxes is changed, so it is
+  // plain which rows have unsaved edits.
+  document.querySelectorAll("tr[data-id]").forEach((row) => {
+    const save = row.querySelector('[data-act="save"]');
+    row.querySelectorAll("[data-field]").forEach((field) => {
+      field.addEventListener("input", () => {
+        save.disabled = false;
+        save.title = "";
+        row.classList.add("row-dirty");
+      });
+    });
+  });
 
   document.querySelectorAll("tr[data-id] button[data-act]").forEach((button) => {
     button.onclick = async () => {

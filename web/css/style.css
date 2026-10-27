@@ -459,6 +459,48 @@ html {
   transform: rotate(180deg);
 }
 
+.mega-tab[data-current="true"] {
+  color: white;
+  box-shadow: inset 0 -3px 0 white;
+}
+
+/* Keyboard focus is always visible in the strip and the menus. */
+.aisle:focus-visible,
+.mega-tab:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -4px;
+}
+.mega-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+  background-color: var(--brand-tint);
+}
+
+/* The ASUS menu: two wide items with a line each, not a grid of tiles. */
+#mega-asus .mega-grid-asus {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 360px));
+}
+.mega-item-rich {
+  align-items: flex-start;
+  min-height: 64px;
+  padding: var(--space-4);
+}
+.mega-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.mega-note {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--ink-3);
+  white-space: normal;
+}
+@media (max-width: 760px) {
+  #mega-asus .mega-grid-asus { grid-template-columns: 1fr; }
+  .aisles .mega-tab.aisle-tool { order: 2; }
+}
+
 /* The full menus drop over the page from under the strip. */
 .mega-menu {
   display: none;
@@ -1666,6 +1708,33 @@ html {
   color: var(--ink-3);
   font-weight: normal;
 }
+
+/* Whether this build needs the slot at all -- see slotRequirement(). */
+.bp-slot-need {
+  align-self: flex-start;
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+  padding: var(--space-0) var(--space-2);
+  border-radius: var(--r);
+}
+.bp-need-required { background: var(--warn-tint); color: var(--warn); }
+.bp-need-optional { background: var(--ok-tint); color: var(--ok); }
+.bp-need-depends  { background: var(--surface-2); color: var(--ink-3); }
+.bp-slot.picked .bp-need-required { background: var(--surface-2); color: var(--ink-3); }
+
+/* The parts this build still needs, above the compatibility checks. */
+.bp-missing {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--card);
+}
+.bp-missing ul {
+  margin: var(--space-1) 0 0 var(--space-5);
+  font-size: var(--text-sm);
+}
+.bp-missing .compat-message { margin-top: var(--space-2); }
 
 .bp-slot-foot {
   display: flex;
@@ -4794,6 +4863,27 @@ body.privacy-notice-open { padding-bottom: 96px; }
   background-color: var(--brand-deep);
 }
 
+.form-page button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+/* A secondary action under the main button, e.g. "send the link again". */
+.form-page button.text-button {
+  min-height: 0;
+  margin-top: var(--space-3);
+  padding: var(--space-2) 0;
+  background-color: transparent;
+  color: var(--brand);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+}
+
+.form-page button.text-button:hover {
+  background-color: transparent;
+  color: var(--brand-deep);
+}
+
 .form-note {
   text-align: left;
   color: var(--ink-3);
@@ -6284,13 +6374,16 @@ body.has-till-bar { --float-lift: 72px; }
 body.has-bp-bar { --float-lift: 84px; }
 body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 
+/* eTech AI sits bottom right (moved from the left on 27 Oct, where the
+   green WhatsApp button used to be). env(safe-area-inset-*) keeps it
+   clear of a phone's rounded corners and home bar. */
 .chatbot-wrapper,
 .has-bp-bar .chatbot-wrapper {
   position: fixed;
   top: auto;
-  right: auto;
-  left: var(--space-5);
-  bottom: calc(var(--space-5) + var(--float-lift));
+  left: auto;
+  right: calc(var(--space-6) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--space-6) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
   z-index: 120;
 }
 
@@ -6341,10 +6434,12 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 
 .whatsapp-btn .ui-icon { width: 20px; height: 20px; }
 
-/* The consultant opens just above its button. */
+/* The consultant opens just above its button, lined up on its right edge
+   so it grows into the page rather than off it. */
 .chatbot-panel {
   position: absolute;
-  left: 0;
+  left: auto;
+  right: 0;
   bottom: 60px;
   width: 380px;
   max-width: calc(100vw - 2 * var(--space-5));
@@ -6378,7 +6473,11 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
 
 @media (max-width: 760px) {
   .chatbot-wrapper,
-  .has-bp-bar .chatbot-wrapper { left: var(--space-3); right: auto; bottom: calc(var(--space-3) + var(--float-lift)); }
+  .has-bp-bar .chatbot-wrapper {
+    left: auto;
+    right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--space-4) + var(--float-lift) + env(safe-area-inset-bottom, 0px));
+  }
   .whatsapp-btn,
   .has-bp-bar .whatsapp-btn { right: var(--space-3); bottom: calc(var(--space-3) + var(--float-lift)); }
   .chatbot-toggle,
@@ -6908,4 +7007,171 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
   grid-column: 1 / -1;
   margin: 0;
   color: var(--ink-3);
+}
+
+/* ---------- Powered by ASUS and ASUS Agent Computer (asus.html,
+   asus-agent.html, js/asus.js). Catalogue pages: the home page's dark
+   band, then plain sections, a parts list and a table. ---------- */
+.hero-page { min-height: 320px; }
+.hero-kicker {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: var(--space-2);
+}
+
+.asus-intro-body {
+  max-width: 760px;
+  display: grid;
+  gap: var(--space-3);
+  color: var(--ink-2);
+  line-height: var(--leading-body);
+}
+
+.asus-parts {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+.asus-full {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--r);
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+
+.asus-empty {
+  grid-column: 1 / -1;
+  padding: var(--space-8);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.asus-part-list {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  max-width: 900px;
+}
+.asus-part-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.asus-part-row:last-child { border-bottom: 0; }
+.asus-part-row:hover,
+.asus-part-row:focus-visible { background: var(--brand-tint); }
+.asus-part-name { font-weight: 700; }
+.asus-part-count { font-size: var(--text-sm); color: var(--ink-3); }
+.asus-part-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 110px;
+  text-align: right;
+}
+
+.asus-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.asus-cta .add-btn {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  min-height: 44px;
+}
+.asus-cta .ghost-btn { min-height: 44px; display: inline-flex; align-items: center; }
+
+.asus-trademark {
+  margin-top: var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.agent-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-10);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+}
+.agent-split p + p { margin-top: var(--space-3); }
+.agent-uses,
+.agent-needs {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+}
+.agent-needs { margin-top: var(--space-6); max-width: 820px; }
+
+.agent-table-wrap { overflow-x: auto; }
+.agent-table {
+  width: 100%;
+  max-width: 980px;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+.agent-table caption {
+  text-align: left;
+  padding-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+.agent-table th,
+.agent-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.agent-table th { background: var(--surface-2); font-weight: 700; }
+.agent-price { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.agent-table .stock-badge { margin: 0; }
+
+.agent-note,
+.agent-caveat {
+  margin-top: var(--space-3);
+  max-width: 820px;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+.agent-caveat {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--warn);
+  background: var(--warn-tint);
+  color: var(--ink-2);
+}
+
+.agent-tier-title {
+  margin: var(--space-6) 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+@media (max-width: 760px) {
+  .agent-split { grid-template-columns: 1fr; gap: var(--space-6); }
+  .asus-part-row { grid-template-columns: 1fr auto; }
+  .asus-part-count { grid-column: 1; grid-row: 2; }
+  .asus-part-price { grid-row: 1 / span 2; grid-column: 2; min-width: 0; }
+  #agent-machines { overflow-x: auto; }
+  .agent-table { min-width: 620px; }
 }

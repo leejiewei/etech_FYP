@@ -7,6 +7,25 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="apple-touch-icon" href="images/brand/etech-logo-180.png" />
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    // ============================================================
+    // Arriving from a confirmation email.
+    //
+    // Read here, in <head>, because the Supabase client turns a good
+    // link's token into a session and wipes it from the address bar as
+    // soon as it loads -- after that there is no telling how the
+    // customer got here. A bad link (expired, or already used) comes
+    // back as #error_code=otp_expired instead and is never consumed.
+    // Same reading as reset-password.html.
+    // ============================================================
+    window.CONFIRM_ARRIVAL = (function () {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      return {
+        confirmed: hash.get("type") === "signup" && hash.has("access_token"),
+        errorCode: hash.get("error_code") || "",
+      };
+    })();
+  </script>
 </head>
 <body>
 
@@ -22,9 +41,15 @@
         <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="current-password" required />
 
-        <div class="form-error" id="login-error"></div>
+        <div class="form-error" id="login-error" role="alert"></div>
+        <div class="form-ok" id="login-ok" role="status" hidden></div>
 
         <button type="submit">Log in</button>
+        <!-- Shown only after a sign-in is refused for an unconfirmed
+             address, or after an expired confirmation link. -->
+        <button type="button" class="text-button" id="resend-confirm" hidden>
+          Send the confirmation email again
+        </button>
       </form>
       <p class="form-note"><a href="forgot-password.html">Forgot your password?</a></p>
       <p class="form-note">Don't have an account? <a href="register.html">Register here</a></p>
@@ -51,10 +76,44 @@
   <script src="js/layout.js"></script>
   <script src="js/notifications.js"></script>
   <script>
+    const loginError = document.getElementById("login-error");
+    const loginOk = document.getElementById("login-ok");
+    const resendButton = document.getElementById("resend-confirm");
+
+    function showOk(text) {
+      loginError.textContent = "";
+      loginOk.textContent = text;
+      loginOk.hidden = false;
+    }
+
+    if (CONFIRM_ARRIVAL.confirmed) {
+      // The link worked and the client has already signed them in.
+      showOk("Your email is confirmed and your account is ready. Taking you to the shop…");
+      setTimeout(() => { window.location.href = "index.html"; }, 2500);
+    } else if (CONFIRM_ARRIVAL.errorCode) {
+      loginError.textContent = CONFIRM_ARRIVAL.errorCode === "otp_expired"
+        ? "That confirmation link has expired or was already used. If your account is not " +
+          "confirmed yet, type your email below and send a new link."
+        : "That confirmation link did not work. Type your email below and send a new link.";
+      resendButton.hidden = false;
+      history.replaceState(null, "", window.location.pathname);
+    }
+
+    resendButton.addEventListener("click", () => {
+      resendButton.disabled = true;
+      resendConfirmation(document.getElementById("email").value).then((result) => {
+        resendButton.disabled = false;
+        if (!result.ok) { loginError.textContent = result.message; return; }
+        showOk(result.message);
+      });
+    });
+
     document.getElementById("login-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      loginError.textContent = "";
+      loginOk.hidden = true;
 
       // The server checks the password, so this waits for its answer.
       loginUser(email, password).then((errorMessage) => {
@@ -67,8 +126,14 @@
           window.location.href = "staff-console/login.html?staff=" + encodeURIComponent(email);
           return;
         }
+        if (errorMessage === "unconfirmed") {
+          loginError.textContent = "Please verify your email before logging in. " +
+            "Use the link we sent when you signed up, or send a new one below.";
+          resendButton.hidden = false;
+          return;
+        }
         if (errorMessage) {
-          document.getElementById("login-error").textContent = errorMessage;
+          loginError.textContent = errorMessage;
           return;
         }
         // Come back to whatever page sent us here, if any.

@@ -118,7 +118,9 @@ function injectHeader() {
         <nav class="aisles" aria-label="Departments">
           <a class="aisle aisle-tool" href="build.html"${current("build.html")}>Build a PC</a>
           <a class="aisle aisle-tool" href="prebuilt.html"${current("prebuilt.html")}>Prebuilt PCs</a>
-          <a class="aisle aisle-tool" href="rigs.html"${current("rigs.html")}>Workshop rigs</a>
+          <button class="mega-tab aisle-tool" id="tab-asus" type="button" aria-expanded="false"
+                  aria-controls="mega-asus"${["asus.html", "asus-agent.html"].includes(here) ? ' data-current="true"' : ""}
+                  onclick="toggleMegaMenu('asus')">Powered by ASUS ${uiIcon("chevron")}</button>
           <a class="aisle aisle-tool aisle-deals" href="deals.html"${current("deals.html")}>${uiIcon("tag")}Deals</a>
           <span class="aisle-rule" aria-hidden="true"></span>
           ${HEADER_AISLES.map((a) => `
@@ -134,6 +136,7 @@ function injectHeader() {
 
     <div class="mega-menu" id="mega-brands">${buildBrandsMenu()}</div>
     <div class="mega-menu" id="mega-categories">${buildCategoriesMenu()}</div>
+    <div class="mega-menu mega-menu-asus" id="mega-asus">${buildAsusMenu()}</div>
   `;
 
   // If the page loaded with ?search=..., push it into the search box.
@@ -149,6 +152,63 @@ function injectHeader() {
   });
 
   wireMegaItems(header);
+  wireMegaHover(header);
+}
+
+// The two ASUS pages, which replaced "Workshop rigs" in the strip on
+// 27 Oct after an ASUS supplier's review. The rigs page itself still
+// works -- customers' submitted builds and the staff showcase queue are
+// untouched -- and the Powered by ASUS page links to it.
+function buildAsusMenu() {
+  const items = [
+    { href: "asus.html", icon: "computer", label: "Powered by ASUS",
+      note: "Our own PCs built on ASUS boards, cards, power and cooling" },
+    { href: "asus-agent.html", icon: "cpu", label: "ASUS Agent Computer",
+      note: "PCs for running AI models on your own machine" },
+  ];
+  return `
+    <div class="mega-inner">
+      <div class="mega-grid mega-grid-asus">
+        ${items.map((i) => `
+          <a class="mega-item mega-item-rich" href="${i.href}">
+            <span class="mega-icon">${categoryIcon(i.icon)}</span>
+            <span class="mega-text">
+              <span class="mega-label">${escapeHtml(i.label)}</span>
+              <span class="mega-note">${escapeHtml(i.note)}</span>
+            </span>
+          </a>`).join("")}
+      </div>
+    </div>`;
+}
+
+// On a mouse, the ASUS menu also opens on hover, the way a shop's menu
+// is expected to. Touch has no hover, so there it is the tap alone --
+// nothing depends on hovering. A short delay on leaving lets the pointer
+// cross the gap from the tab into the panel.
+function wireMegaHover(root) {
+  if (!window.matchMedia || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const tab = root.querySelector("#tab-asus");
+  const panel = root.querySelector("#mega-asus");
+  if (!tab || !panel) return;
+  let leaveTimer = null;
+  const open = () => {
+    clearTimeout(leaveTimer);
+    if (panel.classList.contains("open")) return;
+    toggleMegaMenu("asus");
+    // The click that usually follows a hover must not shut what the
+    // hover has just opened.
+    panel.dataset.hoverOpenedAt = String(Date.now());
+  };
+  const leave = () => {
+    clearTimeout(leaveTimer);
+    leaveTimer = setTimeout(() => {
+      if (panel.classList.contains("open") && !panel.contains(document.activeElement)) closeMegaMenus();
+    }, 220);
+  };
+  [tab, panel].forEach((el) => {
+    el.addEventListener("mouseenter", open);
+    el.addEventListener("mouseleave", leave);
+  });
 }
 
 // The tiles are ordinary links to shop.html?category=... and they stay
@@ -304,21 +364,54 @@ function buildCategoriesMenu() {
   `;
 }
 
-// Opens the clicked menu and closes the other one. Clicking the same tab
+// Opens the clicked menu and closes the others. Clicking the same tab
 // again closes it.
+const MEGA_MENUS = ["brands", "categories", "asus"];
+
 function toggleMegaMenu(which) {
   const panel = document.getElementById("mega-" + which);
   const tab = document.getElementById("tab-" + which);
-  const other = which === "brands" ? "categories" : "brands";
+  if (!panel || !tab) return;
+  if (panel.classList.contains("open") &&
+      Date.now() - Number(panel.dataset.hoverOpenedAt || 0) < 600) return;
 
-  document.getElementById("mega-" + other).classList.remove("open");
-  document.getElementById("tab-" + other).classList.remove("active");
+  MEGA_MENUS.filter((m) => m !== which).forEach((other) => {
+    document.getElementById("mega-" + other)?.classList.remove("open");
+    const otherTab = document.getElementById("tab-" + other);
+    if (otherTab) {
+      otherTab.classList.remove("active");
+      otherTab.setAttribute("aria-expanded", "false");
+    }
+  });
 
-  document.getElementById("tab-" + other).setAttribute("aria-expanded", "false");
   panel.classList.toggle("open");
   tab.classList.toggle("active");
   tab.setAttribute("aria-expanded", String(panel.classList.contains("open")));
 }
+
+// The keyboard: Escape closes whichever menu is open and puts focus back
+// on its tab; the down arrow on an open tab moves into its first item,
+// and up/down then walk the items.
+document.addEventListener("keydown", (e) => {
+  const open = document.querySelector(".mega-menu.open");
+  if (!open) return;
+  const tab = document.getElementById(open.id.replace("mega-", "tab-"));
+  const items = [...open.querySelectorAll("a.mega-item")];
+
+  if (e.key === "Escape") {
+    closeMegaMenus();
+    tab?.focus();
+    return;
+  }
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  const at = items.indexOf(document.activeElement);
+  if (document.activeElement !== tab && at === -1) return;
+  e.preventDefault();
+  const next = e.key === "ArrowDown"
+    ? items[Math.min(at + 1, items.length - 1)]
+    : at <= 0 ? tab : items[at - 1];
+  next?.focus();
+});
 
 function closeMegaMenus() {
   document.querySelectorAll(".mega-menu.open").forEach((m) => m.classList.remove("open"));
@@ -351,6 +444,10 @@ function injectFooter() {
           <a href="info.html">Information</a>
           <a href="service.html">Service</a>
           <a href="contact.html">Contact</a>
+          ${typeof whatsappShopLink === "function"
+            ? `<a href="${whatsappShopLink("Hi, I have a question about a product on eTech.")}"
+                  target="_blank" rel="noopener">WhatsApp us</a>`
+            : ""}
           <a href="privacy.html">Privacy</a>
         </nav>
         <p class="site-foot-note">&copy; 2026 eTech Computer Accessories. Prices in RM.</p>
@@ -427,9 +524,12 @@ function injectPrivacyNotice() {
   window.addEventListener("resize", measureBar);
 }
 
-// The two corners of every page: eTech AI, the build consultant, bottom
-// left; Contact us on WhatsApp, bottom right. The number lives in
-// js/whatsapp.js, which the staff console shares.
+// eTech AI, the build consultant, in the bottom-right corner of every
+// page. Until 27 Oct that corner held a green "Contact us" WhatsApp
+// button and eTech AI sat bottom left; the ASUS supplier's review asked
+// for the green block to go and the consultant to move right. WhatsApp
+// is still one tap away: the footer, the builder's "Ask us on WhatsApp"
+// and the checkout all carry the link (js/whatsapp.js).
 function injectChatbot() {
   const wrapper = document.createElement("div");
   wrapper.className = "chatbot-wrapper";
@@ -453,17 +553,6 @@ function injectChatbot() {
     </div>
   `;
   document.body.appendChild(wrapper);
-
-  if (typeof whatsappShopLink === "function") {
-    const contact = document.createElement("a");
-    contact.className = "whatsapp-btn";
-    contact.href = whatsappShopLink("Hi, I have a question about a product on eTech.");
-    contact.target = "_blank";
-    contact.rel = "noopener";
-    contact.setAttribute("aria-label", "Contact us on WhatsApp");
-    contact.innerHTML = `${uiIcon("chat")}<span>Contact us</span>`;
-    document.body.appendChild(contact);
-  }
 }
 
 // Opens or closes the consultant; with no argument, flips it.

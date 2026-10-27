@@ -23,10 +23,10 @@
         <input type="email" id="email" name="email" autocomplete="username" required />
 
         <label for="password">Password</label>
-        <input type="password" id="password" name="new-password" autocomplete="new-password" required minlength="6" />
+        <input type="password" id="password" name="new-password" autocomplete="new-password" required minlength="8" />
 
         <label for="confirm">Confirm Password</label>
-        <input type="password" id="confirm" name="confirm-password" autocomplete="new-password" required minlength="6" />
+        <input type="password" id="confirm" name="confirm-password" autocomplete="new-password" required minlength="8" />
 
         <!-- What the home page's "Picked for you" leans on before this
              account has any history. Changeable later on the profile page. -->
@@ -38,7 +38,8 @@
           <option value="enterprise">Enterprise: office PCs, printers and networking</option>
         </select>
 
-        <div class="form-error" id="register-error"></div>
+        <div class="form-error" id="register-error" role="alert"></div>
+        <div class="form-ok" id="register-ok" role="status" hidden></div>
 
         <button type="submit">Create account</button>
       </form>
@@ -77,15 +78,22 @@
       const confirm = document.getElementById("confirm").value;
       const role = document.getElementById("role").value;
       const errorEl = document.getElementById("register-error");
+      const okEl = document.getElementById("register-ok");
+      const button = e.target.querySelector("button[type=submit]");
+      errorEl.textContent = "";
+      okEl.hidden = true;
 
       if (password !== confirm) {
         errorEl.textContent = "Passwords do not match.";
         return;
       }
 
+      // Disabled while the request is out, so a double click cannot send
+      // two sign-ups (and two emails against the hourly allowance).
+      button.disabled = true;
       registerUser(name, email, password, role).then((result) => {
+        button.disabled = false;
         if (!result.ok) {
-          errorEl.style.color = "";
           errorEl.textContent = result.message;
           return;
         }
@@ -94,10 +102,12 @@
         // session. Staying on this page and saying so is the whole point
         // -- redirecting to the home page signed out would look like the
         // sign-up had quietly failed.
+        // Only reached when Supabase accepted the sign-up, so the green
+        // box never appears for a refused one.
         if (result.message) {
           e.target.reset();
-          errorEl.style.color = "#1e8e3e";
-          errorEl.textContent = result.message;
+          okEl.textContent = result.message;
+          okEl.hidden = false;
           return;
         }
 
