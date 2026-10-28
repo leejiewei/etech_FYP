@@ -20,9 +20,15 @@
 // receipts are the whole shop, the orders are the website alone.
 // ============================================================
 
-// Revenue counts every order not cancelled, the same rule admin_dashboard
-// uses for its revenue figure.
-const COUNTS_AS_SALE = (o) => o.status !== "Cancelled";
+// Revenue is money the shop has: an order not cancelled whose payment has
+// been approved (or that predates online payment, payment_method NULL).
+// Until 28 Oct it counted every order not cancelled, as admin_dashboard
+// still does, so receipts nobody had checked were already "revenue" --
+// RM 8,151 on the card when RM 1,666 had been confirmed. The unchecked
+// part is shown under the figure rather than in it.
+const COUNTS_AS_SALE = (o) => o.status !== "Cancelled" &&
+  (!o.payment_method || o.payment_status === "APPROVED");
+const AWAITING_PAYMENT = (o) => o.status !== "Cancelled" && !COUNTS_AS_SALE(o);
 
 // The ring's colours are the Orders page's own status badges.
 const STATUS_COLOUR = {
@@ -105,7 +111,7 @@ adminPage("Dashboard", "dashboard", async (content) => {
 
   const summary = select(sb.from("admin_dashboard").select("*").single());
   const orders = select(sb.from("admin_orders")
-    .select("order_id,order_date,status,total,customer_name")
+    .select("order_id,order_date,status,total,customer_name,payment_method,payment_status")
     .order("order_date", { ascending: false }));
 
   Promise.all([summary, orders, select(sb.from("customers").select("created_at"))])
@@ -179,11 +185,20 @@ function drawCards(s, orders, customers) {
     </div>`;
 
   document.getElementById("dash-cards").innerHTML =
-    card("money", "Total Revenue", e(money(s.revenue)), change(revenueNow, revenueThen, "sales")) +
+    card("money", "Total Revenue", e(money(sum(sales))),
+      change(revenueNow, revenueThen, "sales") + awaitingLine(orders.filter(AWAITING_PAYMENT), sum)) +
     card("cart", "Total Orders", count(s.order_count), change(ordersNow, ordersThen, "orders")) +
     card("users", "Total Customers", count(s.customer_count), change(joinedNow, joinedThen, "sign-ups")) +
     card("package", "Total Products", count(s.product_count),
       `${count(s.low_stock)} low · ${count(s.out_of_stock)} out of stock`);
+}
+
+// Orders whose money has not been confirmed yet, said under the revenue
+// figure so the two are never added together by eye.
+function awaitingLine(rows, sum) {
+  if (rows.length === 0) return "";
+  return `<br />${e(money(sum(rows)))} more on ${rows.length} order${rows.length === 1 ? "" : "s"}
+    <a href="orders.html?pay=PENDING" style="color:inherit;">awaiting payment check</a>`;
 }
 
 // The last 30 days against the 30 before. A percentage of nothing is not
@@ -348,17 +363,20 @@ async function loadForecast() {
 
   // This month if the model covers it, otherwise the next one it does.
   const thisMonth = today().slice(0, 7);
+  const nextMonth = addDays(`${thisMonth}-28`, 7).slice(0, 7);
   const at = Math.max(0, coming.findIndex((m) => m.month >= thisMonth));
   const shown = coming.slice(at, at + 2);
   document.getElementById("prediction-body").innerHTML = shown.length === 0
     ? `<p class="empty-state">No months ahead in the forecast file.</p>`
     : shown.map((m, i) => `
         <div style="${i ? "border-top:1px solid var(--line); padding-top:14px; margin-top:14px;" : ""}">
-          <div class="label" style="font-size:13px; color:var(--ink-3);">${e(m.label)}${m.month === thisMonth ? " (this month)" : ""}</div>
+          <div class="label" style="font-size:13px; color:var(--ink-3);">${e(m.label)}${
+            m.month === thisMonth ? " (this month)" : m.month === nextMonth ? " (next month)" : ""}</div>
           <div class="forecast-figure">${e(money(m.revenue))}</div>
           <div style="font-size:13px; color:var(--ink-3);">likely ${e(money(m.low))} to ${e(money(m.high))}</div>
         </div>`).join("") + `
-      <p class="hint" style="margin:14px 0 0;">Model fitted on receipts up to ${e(shown[0].fittedTo)}.</p>`;
+      <p class="hint" style="margin:14px 0 0;">Model fitted on receipts up to ${e(shown[0].fittedTo)}, so its
+        first month is ${e(coming[0].label)}; these are the calendar months around today.</p>`;
 }
 
 // ------------------------------------------------------------

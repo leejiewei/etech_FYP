@@ -45,8 +45,36 @@ const FORECAST_DATA = "data/ml_forecast.json";
 // single big number lifted into a slide with none of those attached is
 // exactly how a forecast stops being honest.
 // ------------------------------------------------------------
+//
+// Two different "next months" (28 Oct). The model's first month is the
+// one after its data ends -- September 2026, as the receipts stop in
+// August -- which is not the next month on the calendar once time has
+// moved on. Every month on the card now says both: how far it is past
+// the data, and where it sits against today. "Next calendar month" jumps
+// straight to the month after this one. No prediction is changed.
+function thisCalendarMonth() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kuala_Lumpur" }).slice(0, 7);
+}
+
+function nextCalendarMonth() {
+  const [y, m] = thisCalendarMonth().split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
+// "Month 3 after the data · this calendar month"
+function monthPlace(months, i) {
+  const n = months[i];
+  const now = thisCalendarMonth();
+  const when = n.month < now ? "already past, so it can be checked against the receipts"
+    : n.month === now ? "this calendar month"
+    : n.month === nextCalendarMonth() ? "next calendar month"
+    : "a later month";
+  return `Month ${i + 1} after the data (which ends ${n.fittedTo}) · ${when}`;
+}
+
 function predictionCard(months, shown) {
   if (months.length === 0) return "";
+  const calendarNext = months.findIndex((m) => m.month === nextCalendarMonth());
 
   const header = `
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -57,7 +85,11 @@ function predictionCard(months, shown) {
         ${shown > 0 ? `<button type="button" class="btn small grey" id="predict-prev">&#9664; Previous month</button>` : ""}
         ${shown < months.length - 1
           ? `<button type="button" class="btn small" id="predict-next">
-               ${shown < 0 ? "Predict next month" : "Predict the month after &#9654;"}</button>`
+               ${shown < 0 ? `Predict ${e(months[0].label)} (first month after the data)` : "Predict the month after &#9654;"}</button>`
+          : ""}
+        ${calendarNext >= 0 && calendarNext !== shown
+          ? `<button type="button" class="btn small grey" id="predict-calendar" data-at="${calendarNext}">
+               Next calendar month: ${e(months[calendarNext].label)}</button>`
           : ""}
       </div>
     </div>`;
@@ -67,8 +99,10 @@ function predictionCard(months, shown) {
       <div class="card" style="border-left:4px solid ${COLOUR_FORECAST};">
         ${header}
         <p class="hint" style="margin:10px 0 0;">
-          The sales receipts run to ${e(months[0].fittedTo)}. Press the button to predict
-          ${e(months[0].label)}, then keep pressing to look up to ${months.length} months ahead.
+          The sales receipts run to ${e(months[0].fittedTo)}, so the model's first month is
+          ${e(months[0].label)}, the first month after the data. That is not the next month on the
+          calendar: today it is ${e(monthLabel(thisCalendarMonth(), true))}. Step through up to
+          ${months.length} months, or jump to the next calendar month.
         </p>
       </div>`;
   }
@@ -99,6 +133,7 @@ function predictionCard(months, shown) {
         &nbsp;·&nbsp; ${e(money(n.perWeek))} a week across ${e(n.weeks)} weeks
       </div>
       ${change}
+      <div style="font-size:13px; color:var(--ink-3); margin-top:6px;">${e(monthPlace(months, shown))}</div>
       <div class="hint" style="margin:12px 0 0;">
         Month ${shown + 1} of ${months.length} ahead. The range is this model's own monthly
         error on months it had never seen (WAPE ${e(pct(n.bandPct))}), not a confidence
@@ -116,6 +151,8 @@ function showPrediction(slot, months, shown) {
   slot.innerHTML = predictionCard(months, shown);
   slot.querySelector("#predict-next")?.addEventListener("click", () => showPrediction(slot, months, shown + 1));
   slot.querySelector("#predict-prev")?.addEventListener("click", () => showPrediction(slot, months, shown - 1));
+  const jump = slot.querySelector("#predict-calendar");
+  jump?.addEventListener("click", () => showPrediction(slot, months, Number(jump.dataset.at)));
 }
 
 

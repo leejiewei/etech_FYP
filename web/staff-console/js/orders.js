@@ -48,6 +48,27 @@ const STAGES = ["Pending", "Processing", "Ready", "Collected", "Cancelled"];
 // The next step along for each stage.
 const NEXT = { Pending: "Processing", Processing: "Ready", Ready: "Collected" };
 
+// Where an order may go from each stage. The same rule is enforced by
+// the trigger orders_enforce_workflow() in the database -- this copy only
+// decides what the page offers, so nobody is handed a choice the database
+// will refuse. Ready -> Processing is there for "marked ready by
+// mistake"; Collected and Cancelled are final.
+const ALLOWED = {
+  Pending:    ["Processing", "Cancelled"],
+  Processing: ["Ready", "Cancelled"],
+  Ready:      ["Collected", "Processing", "Cancelled"],
+  Collected:  [],
+  Cancelled:  [],
+};
+
+// Preparing, sending and handing over all wait for a checked payment.
+// The old card-sandbox orders have no payment to check.
+const NEEDS_PAYMENT = ["Processing", "Ready", "Collected"];
+
+function isPaid(o) {
+  return !o.payment_method || o.payment_status === "APPROVED";
+}
+
 // What the button says, as an instruction rather than a noun. "Move to
 // Ready" is ambiguous about who does what; the phrasing below is the
 // thing the member of staff is actually asserting, and for Ready it is
@@ -77,6 +98,16 @@ const PAYMENT_LABELS = {
   APPROVED: "Payment approved",
   REJECTED: "Payment rejected",
 };
+
+// PENDING covers two different mornings: nothing has come in yet, or a
+// receipt is sitting there waiting to be looked at. Only the second
+// needs anybody to do something.
+function paymentLabel(o) {
+  if (o.payment_status === "PENDING") {
+    return o.receipt_image_path ? "Receipt sent: check it" : "Waiting for the customer's receipt";
+  }
+  return PAYMENT_LABELS[o.payment_status] || o.payment_status;
+}
 
 const PAYMENT_METHOD_LABELS = {
   QR_CODE:       "DuitNow QR",
@@ -240,21 +271,41 @@ function orderCard(o, items, history) {
         <input type="text" data-field="note" placeholder="Note (optional)"
                style="flex:1; min-width:160px; padding:8px 10px; border:1px solid #ccd1d7; border-radius:6px;" />
 
-        ${NEXT[o.status] ? `
-          <button type="button" data-act="advance" data-to="${e(NEXT[o.status])}" class="btn small">
-            ${e(stageAction(NEXT[o.status], o.fulfilment_method))}
-          </button>` : ""}
-
-        <select data-field="status" style="padding:7px 10px; border:1px solid #ccd1d7; border-radius:6px;">
-          ${STAGES.map((s) =>
-            `<option value="${e(s)}" ${o.status === s ? "selected" : ""}>${
-              e(stageLabel(s, o.fulfilment_method))}</option>`).join("")}
-        </select>
-        <button type="button" data-act="set" class="btn small grey">Set</button>
+        ${stageControls(o)}
       </div>
 
       ${paymentBlock(o)}
     </div>`;
+}
+
+// The buttons that move the goods. Only the moves the database allows
+// are offered, and a move that is waiting on the payment says so rather
+// than disappearing.
+function stageControls(o) {
+  const allowed = ALLOWED[o.status] || [];
+  if (allowed.length === 0) {
+    return `<span class="hint" style="margin:0;">${
+      o.status === "Cancelled" ? "Cancelled orders stay cancelled." : "This order is complete."}</span>`;
+  }
+
+  const next = NEXT[o.status];
+  const blocked = next && NEEDS_PAYMENT.includes(next) && !isPaid(o);
+  const others = allowed.filter((s) => s !== next);
+
+  return `
+    ${next ? (blocked
+      ? `<button type="button" class="btn small" disabled
+                 title="Approve the payment first">${e(stageAction(next, o.fulfilment_method))}</button>
+         <small style="color:var(--warn);">Approve the payment first.</small>`
+      : `<button type="button" data-act="advance" data-to="${e(next)}" class="btn small">
+           ${e(stageAction(next, o.fulfilment_method))}
+         </button>`) : ""}
+    ${others.length ? `
+      <select data-field="status" style="padding:7px 10px; border:1px solid #ccd1d7; border-radius:6px;">
+        ${others.map((s) => `<option value="${e(s)}">${
+          s === "Cancelled" ? "Cancel order" : "Back to " + e(stageLabel(s, o.fulfilment_method))}</option>`).join("")}
+      </select>
+      <button type="button" data-act="set" class="btn small grey">Set</button>` : ""}`;
 }
 
 // The money half of the card: how they said they would pay, whether it
@@ -274,6 +325,10 @@ function paymentBlock(o) {
 
   const state = o.payment_status;
   const badge = state === "APPROVED" ? "in" : state === "REJECTED" ? "out" : "low";
+  // A verdict needs a receipt to judge, and a payment cannot be rejected
+  // once the goods have gone (the database refuses both).
+  const canJudge = o.receipt_image_path && o.status !== "Cancelled";
+  const canReject = canJudge && state !== "REJECTED" && !["Ready", "Collected"].includes(o.status);
 
   // Built from the order's current payment status, so the message says
   // whatever is true at the moment somebody looks at the card. Empty when
@@ -285,7 +340,7 @@ function paymentBlock(o) {
   return `
     <div style="margin-top:14px; border-top:1px solid #eef0f3; padding-top:12px;">
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="badge ${badge}">${e(PAYMENT_LABELS[state] || state)}</span>
+        <span class="badge ${badge}">${e(paymentLabel(o))}</span>
         <span style="font-size:13px; color:#777;">
           ${e(PAYMENT_METHOD_LABELS[o.payment_method] || o.payment_method)}
         </span>
@@ -304,9 +359,9 @@ function paymentBlock(o) {
             WhatsApp customer
           </a>` : ""}
 
-        ${state !== "APPROVED" && o.receipt_image_path ? `
+        ${state !== "APPROVED" && canJudge ? `
           <button type="button" data-pay="APPROVED" class="btn small">Approve payment</button>` : ""}
-        ${state !== "REJECTED" && o.receipt_image_path ? `
+        ${canReject ? `
           <button type="button" data-pay="REJECTED" class="btn small danger">Reject payment</button>` : ""}
       </div>
       <div class="receipt-view" style="margin-top:10px;"></div>
@@ -391,6 +446,10 @@ function wireOrderActions() {
         : card.querySelector('[data-field="status"]').value;
 
       if (!STAGES.includes(status)) return;
+      if (status === "Cancelled" &&
+          !confirm(`Cancel order #${orderId}? This cannot be undone.`)) {
+        return;
+      }
       button.disabled = true;
 
       const { error } = await sb.rpc("admin_set_order_status", {
@@ -404,7 +463,7 @@ function wireOrderActions() {
         alert("Could not update that order: " + error.message);
         return;
       }
-      reloadWith(`Order #${orderId} moved to ${status}.`);
+      reloadWith(status === "Cancelled" ? `Order #${orderId} cancelled.` : `Order #${orderId} moved on.`);
     };
   });
 }

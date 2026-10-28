@@ -358,6 +358,12 @@ function syncFilterUrl() {
   selected.brand.forEach((v) => params.append("brand", v));
   selected.subcategory.forEach((v) => params.append("subcategory", v));
   selected.stock.forEach((v) => params.append("stock", v === "in" ? "in_stock" : "out_of_stock"));
+  // Technical filters too, as ?spec.socket=AM5 (28 Oct). Left out before,
+  // so a reload or a shared link for CPU + AMD + AM5 came back as all 16
+  // AMD CPUs with nothing saying the socket had been dropped.
+  Object.keys(currentAttrFilters).forEach((key) => {
+    currentAttrFilters[key].forEach((v) => params.append("spec." + key, v));
+  });
   if (currentSearch.trim() !== "") params.set("search", currentSearch.trim());
 
   const query = params.toString();
@@ -407,6 +413,12 @@ onAppReady(() => {
   params.getAll("stock").forEach((v) => {
     if (v === "in_stock") selected.stock.add("in");
     if (v === "out_of_stock") selected.stock.add("out");
+  });
+
+  params.forEach((v, k) => {
+    if (k.indexOf("spec.") !== 0) return;
+    const key = k.slice(5);
+    (currentAttrFilters[key] || (currentAttrFilters[key] = new Set())).add(v);
   });
 
   if (params.get("search")) {

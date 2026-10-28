@@ -129,8 +129,19 @@ function paymentSection(order) {
 
   const state = order.payment_status;
   const badgeClass = state.toLowerCase();
-  const label = PAYMENT_STATUS_LABELS[state] || state;
+  // PENDING with nothing uploaded is waiting on the customer, not on us;
+  // "Checking your payment" there said we had something to check.
+  const label = state === "PENDING" && !order.receipt_image_path
+    ? "Waiting for your receipt"
+    : PAYMENT_STATUS_LABELS[state] || state;
   const method = PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method;
+
+  if (order.status === "Cancelled") {
+    return `
+      <p style="margin-top:10px;">
+        <span class="product-category">Order cancelled · no payment needed.</span>
+      </p>`;
+  }
 
   // Approved is the end of it: there is nothing for the customer to do
   // and nothing they are allowed to change.

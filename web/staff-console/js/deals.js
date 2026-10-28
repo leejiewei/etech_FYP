@@ -174,15 +174,14 @@ function wirePriceHint(productList) {
     if (!product) return;
 
     // Who this deal would message, so the number is known before the
-    // button is pressed, not only after.
-    const { data: rows } = await sb.from("admin_customer_activity")
-      .select("views,cart_adds,purchases,in_wishlist")
-      .eq("product_id", product.product_id);
-    if (!rows || select.value !== String(product.product_id)) return;
-    const told = rows.filter((r) => watchReason(r) !== null).length;
-    hint.textContent += told === 0
-      ? " Nobody is waiting on it yet."
-      : ` ${told} customer${told === 1 ? "" : "s"} will be messaged.`;
+    // button is pressed, not only after. admin_deal_audience() is the
+    // same rule admin_create_deal() sends to (28 Oct): the old count read
+    // admin_customer_activity, which misses a customer who saved the
+    // product without a tracked view, and so said "Nobody is waiting"
+    // about somebody who was (Chapter 4, Figure 4.36).
+    const audience = await dealAudience(product.product_id);
+    if (!audience || select.value !== String(product.product_id)) return;
+    hint.textContent += " " + audienceSentence(audience);
   };
 
   // Arriving from the Dashboard's "Put on offer" with the product chosen.
@@ -191,6 +190,39 @@ function wirePriceHint(productList) {
     select.value = wanted;
     select.onchange();
   }
+}
+
+// Each customer the deal would message, with why and whether they have
+// a phone registered for push. Falls back to the older count where the
+// database has not been given admin_deal_audience() yet.
+async function dealAudience(productId) {
+  const { data, error } = await sb.rpc("admin_deal_audience", { p_product_id: productId });
+  if (!error) return data;
+
+  const { data: rows } = await sb.from("admin_customer_activity")
+    .select("customer_id,views,cart_adds,purchases,in_wishlist")
+    .eq("product_id", productId);
+  if (!rows) return null;
+  return rows.map((r) => ({ customer_id: r.customer_id, reason: watchReason(r), has_push: null }))
+    .filter((r) => r.reason !== null);
+}
+
+const REASON_WORDS = {
+  saved:   "saved it",
+  in_cart: "have it in their cart",
+  carted:  "carted it before",
+  viewed:  "keep coming back to it",
+};
+
+function audienceSentence(audience) {
+  if (audience.length === 0) return "Nobody has saved, carted or kept viewing it, so nobody will be messaged.";
+  const byReason = {};
+  audience.forEach((a) => { byReason[a.reason] = (byReason[a.reason] || 0) + 1; });
+  const why = Object.entries(byReason)
+    .map(([reason, n]) => `${n} ${REASON_WORDS[reason] || reason}`).join(", ");
+  const phones = audience.filter((a) => a.has_push).length;
+  return `${audience.length} customer${audience.length === 1 ? "" : "s"} will be messaged (${why})` +
+    (audience.some((a) => a.has_push !== null) ? `; ${phones} also get a phone push.` : ".");
 }
 
 async function createDeal(productList) {
@@ -246,10 +278,16 @@ async function createDeal(productList) {
     return;
   }
 
-  const told = Number(alerted || 0);
-  reloadWith(told === 0
-    ? "Deal created. Nobody was watching this product yet."
-    : `Deal created. ${told} customer${told === 1 ? "" : "s"} alerted.`);
+  // { in_app, push_queued } since 28 Oct; a bare number before that.
+  // in_app messages are in the customers' bells already. A push is only
+  // queued here -- Firebase delivers it after this call -- so it is
+  // reported as queued, not as delivered.
+  const inApp = typeof alerted === "number" ? alerted : Number(alerted?.in_app || 0);
+  const pushed = typeof alerted === "number" ? null : Number(alerted?.push_queued || 0);
+  reloadWith(inApp === 0
+    ? "Deal created. Nobody had saved, carted or kept viewing this product, so no messages were sent."
+    : `Deal created. ${inApp} customer${inApp === 1 ? "" : "s"} notified in the shop` +
+      (pushed === null ? "." : `; ${pushed} phone push${pushed === 1 ? "" : "es"} queued.`));
 }
 
 function wireDealActions() {

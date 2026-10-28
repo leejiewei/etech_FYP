@@ -251,6 +251,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
             style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
       );
     }
+    if (order.status == 'Cancelled') {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text('Order cancelled · no payment needed.',
+            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+      );
+    }
 
     final settled = order.paymentSettled;
     final rejected = order.paymentStatus == 'REJECTED';
@@ -276,7 +283,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
               color: colour.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
-            child: Text(paymentStatusLabel(order.paymentStatus),
+            // PENDING with nothing uploaded is waiting on the customer,
+            // not on the shop -- same wording as web/js/orders.js.
+            child: Text(
+                order.paymentStatus == 'PENDING' && order.receiptPath == null
+                    ? 'Waiting for your receipt'
+                    : paymentStatusLabel(order.paymentStatus),
                 style: TextStyle(
                     fontSize: 12, fontWeight: FontWeight.w600, color: colour)),
           ),
