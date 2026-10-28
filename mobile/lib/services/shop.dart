@@ -445,6 +445,33 @@ class Shop extends ChangeNotifier {
     }
   }
 
+  /// Why a typed coupon would not come off this basket, or null if it
+  /// would. place_order() charges the full price for a code it cannot use
+  /// without saying so, so the checkout asks this first (28 Oct audit).
+  /// Same rule as couponProblem() in web/js/checkout.js and place_order:
+  /// the code must be live, and something in the basket must be in its
+  /// category or a type under it. The database still decides the price.
+  Future<String?> couponProblem(String code) async {
+    if (code.isEmpty) return null;
+    if (deals.isEmpty) await loadDeals();
+    final matches = deals.where((d) => d.code.toUpperCase() == code.toUpperCase());
+    if (matches.isEmpty) {
+      return 'Coupon $code is not valid or has expired. '
+          'Remove it to order at the full price.';
+    }
+    final coupon = matches.first;
+    if (coupon.category == null) return null;
+    final fits = cart.any((item) {
+      final p = byId(item.id);
+      return p != null &&
+          (p.category == coupon.category || p.subcategory == coupon.category);
+    });
+    return fits
+        ? null
+        : 'Coupon ${coupon.code} is for ${coupon.category} only, and nothing '
+            'in your cart is. Remove it to order at the full price.';
+  }
+
   // ------------------------------------------------------------
   // Account
   //

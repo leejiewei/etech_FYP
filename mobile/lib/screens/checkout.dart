@@ -99,6 +99,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     setState(() => _busy = true);
+    final couponProblem = await widget.shop.couponProblem(_coupon.text.trim());
+    if (!mounted) return;
+    if (couponProblem != null) {
+      setState(() {
+        _busy = false;
+        _error = couponProblem;
+      });
+      return;
+    }
     final result = await widget.shop.placeOrder(
       _name.text.trim(),
       _phone.text.trim(),

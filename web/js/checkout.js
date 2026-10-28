@@ -99,12 +99,49 @@ function showFulfilment(method) {
     : "We message this number when your order is ready to collect.";
 }
 
+// A typed coupon checked before the order goes in. place_order() ignores
+// a code it cannot use and charges the full price, which is right for the
+// money but said nothing to the shopper -- they would transfer the full
+// amount believing a discount had come off (found in the 28 Oct audit).
+// The live coupons are public (the "live promotions are public" policy),
+// so the same two questions place_order asks are asked here first: is
+// the code running, and is anything in the basket in its category or a
+// type under it. The database still decides the price.
+function couponProblem(code) {
+  if (code === "") return Promise.resolve("");
+  const ready = deals.length ? Promise.resolve() : loadDeals();
+  return ready.then(() => {
+    const coupon = deals.find((d) => d.code.toUpperCase() === code.toUpperCase());
+    if (!coupon) {
+      return `Coupon ${code} is not valid or has expired. Remove it to order at the full price.`;
+    }
+    if (coupon.category === null) return "";
+    const fits = getCart().some((item) => {
+      const product = getProductById(item.id);
+      return product && (product.category === coupon.category || product.subcategory === coupon.category);
+    });
+    return fits ? "" : `Coupon ${coupon.code} is for ${coupon.category} only, and nothing in your cart is. ` +
+                       "Remove it to order at the full price.";
+  });
+}
+
 function placeOrder(event) {
   event.preventDefault();
   const errorEl = document.getElementById("checkout-error");
   errorEl.textContent = "";
 
   const couponField = document.getElementById("checkout-coupon");
+  couponProblem(couponField ? couponField.value.trim() : "").then((problem) => {
+    if (problem) {
+      errorEl.textContent = problem;
+      couponField.focus();
+      return;
+    }
+    submitOrder(errorEl, couponField);
+  });
+}
+
+function submitOrder(errorEl, couponField) {
   const method = chosenPaymentMethod();
   const fulfilment = chosenFulfilment();
 
