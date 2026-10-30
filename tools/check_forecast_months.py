@@ -32,9 +32,9 @@ RECEIPTS = ROOT / "docs" / "data" / "etech_sales_data.xlsx"
 OUT = ROOT / "web" / "staff-console" / "data" / "forecast_checks.json"
 
 # One entry per month the boss has sent: forecast month -> workbook.
-MONTHS = {
-    "2026-09": ROOT / "docs" / "data" / "ETECH_September_2026_Sales.xlsx",
-}
+# Add each month once the boss sends its receipts, e.g.
+# "2026-09": ROOT / "docs" / "data" / "<file>.xlsx",
+MONTHS = {}
 
 
 def month_actual(path):
