@@ -165,7 +165,7 @@ function buildProductCard(product) {
   // Add to cart. The whole card opens the product; only the heart and
   // the button do something else.
   card.innerHTML = `
-    <button type="button" class="wishlist-btn ${heartFilled ? "active" : ""}"
+    <button type="button" class="wishlist-btn ${heartFilled ? "active" : ""}" data-wish="${product.id}"
       onclick="toggleWishlist(${product.id})"
       aria-pressed="${heartFilled}" aria-label="${heartFilled ? "Remove from" : "Save to"} wishlist">
       ${heartIcon()}
@@ -323,7 +323,7 @@ function productModalContent(product) {
           <button class="add-btn product-modal-add" ${outOfStock ? "disabled" : ""}>
             ${outOfStock ? "Out of stock" : "Add to cart"}
           </button>
-          <button type="button" class="product-modal-wish wishlist-btn ${saved ? "active" : ""}"
+          <button type="button" class="product-modal-wish wishlist-btn ${saved ? "active" : ""}" data-wish="${product.id}"
             aria-pressed="${saved}" aria-label="${saved ? "Remove from" : "Save to"} wishlist">
             ${heartIcon()}
           </button>
@@ -367,18 +367,9 @@ function wireProductModalActions(product) {
     });
   }
 
-  root.querySelector(".product-modal-wish").addEventListener("click", (event) => {
-    const heart = event.currentTarget;
-    // toggleWishlist redraws the grid behind the modal but not the modal
-    // itself, so this heart is updated by hand — and only once the write
-    // has come back, since until then isInWishlist still holds the old
-    // answer.
-    Promise.resolve(toggleWishlist(product.id)).then(() => {
-      const on = typeof isInWishlist === "function" && isInWishlist(product.id);
-      heart.classList.toggle("active", on);
-      heart.setAttribute("aria-pressed", String(on));
-      heart.setAttribute("aria-label", (on ? "Remove from" : "Save to") + " wishlist");
-    });
+  // toggleWishlist repaints every heart carrying data-wish, this one too.
+  root.querySelector(".product-modal-wish").addEventListener("click", () => {
+    toggleWishlist(product.id);
   });
 }
 

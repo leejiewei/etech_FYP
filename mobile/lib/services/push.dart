@@ -37,6 +37,14 @@ class Push {
   static bool _started = false;
   static String? _token;
 
+  /// Taps on a message in the tray, as the data block push-notify sent
+  /// (kind, product_id, order_id). [pendingTap] holds the one that
+  /// started the app from cold, which arrives before anyone is listening.
+  static final StreamController<Map<String, dynamic>> _taps =
+      StreamController<Map<String, dynamic>>.broadcast();
+  static Stream<Map<String, dynamic>> get taps => _taps.stream;
+  static Map<String, dynamic>? pendingTap;
+
   /// Whether Firebase has been configured for this build at all.
   static bool get ready => DefaultFirebaseOptions.isConfigured;
 
@@ -61,6 +69,13 @@ class Push {
       // moment the first message arrives — by then it is too late, the
       // message is already dropped.
       await FirebaseMessaging.instance.requestPermission();
+
+      // A tap on a deal alert should land on that product, not the home
+      // screen. One tap while the app is in the background, one that
+      // launched it.
+      FirebaseMessaging.onMessageOpenedApp.listen((m) => _taps.add(m.data));
+      final first = await FirebaseMessaging.instance.getInitialMessage();
+      if (first != null) pendingTap = first.data;
 
       // A token identifies this *installation*, not this person. It is
       // registered against whoever is signed in at the time, and moves to

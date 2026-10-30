@@ -260,10 +260,11 @@ async function createDeal(productList) {
   // converted to a real instant here, so a deal set to end at 23:59 ends
   // at 23:59 where the shop is, not where the reader's browser is.
   // Through the function rather than straight into the table, because
-  // creating a deal also messages everyone who was watching the product
-  // -- saved it, carted it, or came back to it three times. Both happen in one
-  // transaction, so a deal never goes live with the news half sent, and
-  // the count comes back so staff can see it did something.
+  // a deal also messages everyone who was watching the product -- saved
+  // it, carted it, or came back to it three times. Since 30 Oct that
+  // happens when the deal starts: now, in the same transaction, for a
+  // deal that is already live; on the minute it starts for one set for
+  // later (send_due_deal_alerts() on pg_cron).
   const { data: alerted, error } = await sb.rpc("admin_create_deal", {
     p_product_id: productId,
     p_discount_price: dealPrice,
@@ -284,7 +285,9 @@ async function createDeal(productList) {
   // reported as queued, not as delivered.
   const inApp = typeof alerted === "number" ? alerted : Number(alerted?.in_app || 0);
   const pushed = typeof alerted === "number" ? null : Number(alerted?.push_queued || 0);
-  reloadWith(inApp === 0
+  reloadWith(alerted?.scheduled
+    ? "Deal scheduled. Customers who saved, carted or kept viewing this product will be messaged the minute it starts."
+    : inApp === 0
     ? "Deal created. Nobody had saved, carted or kept viewing this product, so no messages were sent."
     : `Deal created. ${inApp} customer${inApp === 1 ? "" : "s"} notified in the shop` +
       (pushed === null ? "." : `; ${pushed} phone push${pushed === 1 ? "" : "es"} queued.`));

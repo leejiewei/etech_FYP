@@ -8,10 +8,10 @@
 // version of events where the order moved and the customer was not told.
 // See supabase/migrations/20260911090000_order_notifications.sql.
 //
-// Putting a product on offer works the same way and for the same reason:
-// admin_create_deal() writes the deal and messages everyone who had
-// saved that product or kept coming back to it, in one transaction. See
-// 20260915120100_telling_the_people_who_were_watching.sql.
+// Putting a product on offer works the same way: when the deal starts,
+// send_deal_alerts() messages everyone who had saved it, has it in their
+// cart or kept coming back to it -- once per customer per deal. See
+// 20261030120000_deal_alerts_when_the_deal_starts.sql.
 //
 // This file shows those rows in two ways:
 //

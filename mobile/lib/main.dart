@@ -12,6 +12,7 @@ import 'screens/builder.dart';
 import 'screens/cart.dart';
 import 'screens/orders.dart';
 import 'screens/prebuilt.dart';
+import 'screens/product_detail.dart';
 import 'widgets/motion.dart';
 
 void main() async {
@@ -42,18 +43,27 @@ final GlobalKey<ScaffoldMessengerState> _messenger =
 class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
   final Shop shop = Shop();
   StreamSubscription<ShopNotification>? _arrivals;
+  StreamSubscription<Map<String, dynamic>>? _taps;
+  late final Future<void> _started;
 
   @override
   void initState() {
     super.initState();
-    shop.start();
+    _started = shop.start();
     _arrivals = shop.notificationArrivals.listen(_showNotification);
+    _taps = Push.taps.listen(_openFromPush);
+    final first = Push.pendingTap;
+    if (first != null) {
+      Push.pendingTap = null;
+      _openFromPush(first);
+    }
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     _arrivals?.cancel();
+    _taps?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -66,6 +76,21 @@ class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed && shop.loggedIn) {
       shop.loadNotifications();
     }
+  }
+
+  /// Where a tapped push leads: a price drop opens its product, anything
+  /// else My Orders. Waits for the catalogue, since a tap that launched
+  /// the app arrives before it has loaded; a product since delisted falls
+  /// back to My Orders, as the bell does.
+  Future<void> _openFromPush(Map<String, dynamic> data) async {
+    await _started;
+    final id = int.tryParse('${data['product_id'] ?? ''}');
+    final product = id == null ? null : shop.byId(id);
+    _navigator.currentState?.push(MaterialPageRoute(
+      builder: (_) => product != null
+          ? ProductDetailScreen(product: product, shop: shop)
+          : OrdersScreen(shop: shop),
+    ));
   }
 
   void _showNotification(ShopNotification n) {
@@ -87,9 +112,7 @@ class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
         action: SnackBarAction(
           label: 'VIEW',
           textColor: Colors.white,
-          onPressed: () => _navigator.currentState?.push(
-            MaterialPageRoute(builder: (_) => OrdersScreen(shop: shop)),
-          ),
+          onPressed: () => _openFromPush({'product_id': n.productId}),
         ),
       ));
   }
