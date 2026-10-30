@@ -34,18 +34,6 @@ function uiIcon(name, extraClass) {
     aria-hidden="true">${UI_ICONS[name] || ""}</svg>`;
 }
 
-// The aisles shown in the header strip. "All categories" opens the full
-// menu for the rest.
-const HEADER_AISLES = [
-  { label: "Components", href: "shop.html?category=Components" },
-  { label: "Laptops", href: "shop.html?category=Laptops" },
-  { label: "Gaming Gear", href: "shop.html?category=Gaming%20Gear" },
-  { label: "Monitors", href: "shop.html?category=Monitors" },
-  { label: "Printers", href: "shop.html?category=Printers" },
-  { label: "Networking", href: "shop.html?category=Networking" },
-  { label: "Accessories", href: "shop.html?category=Accessories" },
-];
-
 function injectHeader() {
   const header = document.getElementById("site-header");
   if (!header) return;
@@ -123,9 +111,9 @@ function injectHeader() {
                   onclick="toggleMegaMenu('asus')">Powered by ASUS ${uiIcon("chevron")}</button>
           <a class="aisle aisle-tool aisle-deals" href="deals.html"${current("deals.html")}>${uiIcon("tag")}Deals</a>
           <span class="aisle-rule" aria-hidden="true"></span>
-          ${HEADER_AISLES.map((a) => `
-            <a class="aisle" href="${a.href}"
-               data-mega-kind="category" data-mega-value="${escapeHtml(a.label)}">${escapeHtml(a.label)}</a>`).join("")}
+          <!-- Single departments (Components, Laptops ...) were taken off
+               the strip on 30 Oct to keep it short; every category is
+               still one click away under All categories. -->
           <button class="mega-tab" id="tab-categories" type="button" aria-expanded="false"
                   onclick="toggleMegaMenu('categories')">All categories ${uiIcon("chevron")}</button>
           <button class="mega-tab" id="tab-brands" type="button" aria-expanded="false"
@@ -241,7 +229,7 @@ function wireMegaHover(root) {
 // "we are already where this link points" -- and there the click filters
 // the grid in place and scrolls to it.
 function wireMegaItems(root) {
-  root.querySelectorAll(".mega-item[data-mega-kind], .aisle[data-mega-kind]").forEach((item) => {
+  root.querySelectorAll(".mega-item[data-mega-kind]").forEach((item) => {
     item.addEventListener("click", (e) => {
       if (typeof applyMegaFilter !== "function") return;
       // Leave the modified clicks alone -- ctrl/cmd-click and middle-click

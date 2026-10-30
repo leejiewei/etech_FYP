@@ -499,7 +499,31 @@ html {
 }
 @media (max-width: 760px) {
   #mega-asus .mega-grid-asus { grid-template-columns: 1fr; }
-  .aisles .mega-tab.aisle-tool { order: 2; }
+  /* Six items do not fit one phone-wide row, and a scrolling strip hid
+     All categories and Brands off the right edge. Two rows of three:
+     the shop's own pages above, the two catalogue menus below. */
+  .aisles {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    justify-content: space-evenly;
+    overflow-x: visible;
+  }
+  .aisles .aisle-rule { display: none; }
+  .aisles .aisle,
+  .aisles .mega-tab {
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1);
+    font-size: var(--text-sm);
+  }
+}
+@media (max-width: 359px) {
+  .mega-bar .aisles { padding: 0 var(--space-1); }
+  .aisles .aisle,
+  .aisles .mega-tab {
+    padding: var(--space-2) var(--space-0);
+    font-size: var(--text-xs);
+  }
 }
 
 /* The full menus drop over the page from under the strip. */
@@ -5761,13 +5785,6 @@ body.has-till-bar { padding-bottom: 72px; }
   font-family: var(--font-data);
   font-weight: 400;
   font-size: var(--text-2xs);
-}
-
-/* ---------- Aisles on a phone: the coloured departments come first ---------- */
-@media (max-width: 760px) {
-  .aisles .aisle-rule { order: 1; }
-  .aisles .aisle-tool { order: 2; }
-  .aisles .mega-tab { order: 3; }
 }
 
 /* The till sticks only beside the products: the aside fills its grid
