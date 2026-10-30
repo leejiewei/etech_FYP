@@ -42,6 +42,26 @@ segmentation); `ml/01_sales_preprocessing.ipynb` reads it.
 - **Nobody is named.** There is no customer column, so segmentation is
   of products, not customers.
 
+## September 2026: `ETECH_September_2026_Sales_RM484431_43.xlsx`
+
+The shop's September 2026 receipts, supplied 30 Oct 2026: 208 receipts,
+RM 484,431.43. Kept exactly as supplied. It is a different layout from
+the history above: one sheet, **Receipts**, with `Invoice_No`, `Product`,
+`Complete_PC_Rig_Components` (the build's parts in one cell, rigs only),
+`Price_MYR` and `Quantity`.
+
+- **No date column.** The whole file is the calendar month 1–30 Sep, so
+  it can be checked against the forecast as a month total only, not week
+  by week, and it cannot be appended to the weekly training series.
+- **No category column.** A service is a product whose name contains
+  "Service": 16 receipts, RM 15,845.23, removed as in the history.
+  Products: RM 468,586.20.
+- It is used by `tools/check_forecast_months.py` to check the frozen
+  September forecast (FC-05); the model is not retrained on it.
+
+`ETECH_September_2026_Sales.xlsx` (24 Oct) is **not** the shop's: its own
+summary sheet calls it a synthetic dataset. Do not use it.
+
 ## Confidentiality
 
 Under the data agreement signed with the shop owner, nothing published

@@ -32,39 +32,46 @@ RECEIPTS = ROOT / "docs" / "data" / "etech_sales_data.xlsx"
 OUT = ROOT / "web" / "staff-console" / "data" / "forecast_checks.json"
 
 # One entry per month the boss has sent: forecast month -> workbook.
-# Add each month once the boss sends its receipts, e.g.
-# "2026-09": ROOT / "docs" / "data" / "<file>.xlsx",
-MONTHS = {}
+# Add each month once the boss sends its receipts.
+MONTHS = {
+    "2026-09": ROOT / "docs" / "data" / "ETECH_September_2026_Sales_RM484431_43.xlsx",
+}
 
 
-def month_actual(path):
-    """Product sales for the month, services removed as step 3 of the cleaning notebook does."""
+def month_actual(path, month):
+    """Product sales for the month, services removed as step 3 of the cleaning notebook does.
+
+    The September 2026 file (30 Oct) has one sheet, Receipts, with
+    Invoice_No, Product, Complete_PC_Rig_Components, Price_MYR and Quantity,
+    and no date: the whole file is the calendar month. It has no Category
+    column either, so a service is a product whose name says "Service" --
+    every service in it is named that way, and no product is."""
     lines = pd.read_excel(path, sheet_name=0)
-    lines["Date"] = pd.to_datetime(lines["Date"])
-    service = lines["Category"].eq("Service")
+    lines["Line"] = lines["Price_MYR"] * lines["Quantity"]
+    service = lines["Product"].str.contains("service", case=False)
+    first = pd.Period(month, "M")
     return {
-        "days": int(lines["Date"].dt.days_in_month.iloc[0]),
-        "firstDay": lines["Date"].min().strftime("%Y-%m-%d"),
-        "lastDay": lines["Date"].max().strftime("%Y-%m-%d"),
-        "receipts": int(lines.loc[~service, "Invoice No"].nunique()),
-        "serviceRemoved": round(float(lines.loc[service, "Line Total (RM)"].sum()), 2),
-        "calendarTotal": round(float(lines.loc[~service, "Line Total (RM)"].sum()), 0),
+        "days": int(first.days_in_month),
+        "firstDay": first.start_time.strftime("%Y-%m-%d"),
+        "lastDay": first.end_time.strftime("%Y-%m-%d"),
+        "receipts": int(lines.loc[~service, "Invoice_No"].nunique()),
+        "serviceRemoved": round(float(lines.loc[service, "Line"].sum()), 2),
+        "calendarTotal": round(float(lines.loc[~service, "Line"].sum()), 0),
+        "reportedTotal": round(float(lines["Line"].sum()), 2),
         **file_basis(path),
     }
 
 
 def file_basis(path):
-    """What the workbook says about itself: the shop's own monthly total, and
-    whether its receipt lines are real or generated to add up to that total.
+    """Whether the workbook says its receipt lines were generated.
 
-    The September file's summary sheet calls itself a synthetic dataset whose
-    lines were generated to match a supplied total. Only that total is the
-    shop's figure, so the services split above is an estimate and the page
-    has to say so."""
+    An earlier September file (docs/data/ETECH_September_2026_Sales.xlsx,
+    not the shop's) had a summary sheet calling itself a synthetic dataset.
+    A file like that is flagged, and the page says so."""
     sheets = pd.read_excel(path, sheet_name=None, header=None)
     summary = sheets.get("Monthly Summary")
     if summary is None:
-        return {"reportedTotal": None, "linesGenerated": False}
+        return {"linesGenerated": False}
     text = " ".join(summary.astype(str).values.ravel()).lower()
     target = summary[summary[0].astype(str).str.strip().eq("Target Sales")]
     return {
@@ -93,7 +100,7 @@ def main():
         if not path.exists():
             continue
         predicted = coming[month]
-        actual = month_actual(path)
+        actual = month_actual(path, month)
         days = predicted["weeks"] * 7
         same_days = round(actual["calendarTotal"] / actual["days"] * days, 0)
         checks.append({

@@ -1,5 +1,25 @@
 {
-  "checks": [],
+  "checks": [
+    {
+      "month": "2026-09",
+      "source": "docs/data/ETECH_September_2026_Sales_RM484431_43.xlsx",
+      "days": 30,
+      "firstDay": "2026-09-01",
+      "lastDay": "2026-09-30",
+      "receipts": 192,
+      "serviceRemoved": 15845.23,
+      "calendarTotal": 468586.0,
+      "reportedTotal": 484431.43,
+      "linesGenerated": false,
+      "forecastDays": 28,
+      "actual": 437347.0,
+      "forecast": 384653.0,
+      "low": 337341.0,
+      "high": 431966.0,
+      "errorPct": -12.0,
+      "inRange": false
+    }
+  ],
   "calendarMonths": {
     "2022-01": 738084.0,
     "2022-02": 707618.0,
