@@ -32,16 +32,16 @@
   <main class="home">
     <div class="home-main">
 
-      <!-- The last products this browser opened, newest first
-           (from the view events tracking.js keeps; js/home.js). -->
+      <!-- The last products opened, newest first: the account's list when
+           signed in, this browser's when not (tracking.js; js/home.js). -->
       <section class="section recent-section" id="recent-section" hidden>
         <h2>Recently viewed</h2>
         <div class="product-grid" id="recent-grid"></div>
       </section>
 
-      <!-- Personalised recommendations for signed-in customers
-           (recommend_for_me(), js/home.js); everyone else sees the
-           shop's featured row in the same place. -->
+      <!-- Personalised recommendations: recommend_for_me() when signed in,
+           this browser's Recently viewed for a guest (js/home.js). A guest
+           who has viewed nothing sees the featured row instead. -->
       <section class="section picks-section" id="picks-section" hidden>
         <h2>Picked for you</h2>
         <p class="section-sub" id="picks-sub"></p>

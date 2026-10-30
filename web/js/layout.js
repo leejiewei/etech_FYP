@@ -153,6 +153,26 @@ function injectHeader() {
 
   wireMegaItems(header);
   wireMegaHover(header);
+  wireAccountMenu(header);
+}
+
+// The account menu opens on hover or keyboard focus (style.css). A tap
+// on a phone is neither -- iPhone Safari does not focus a button it
+// taps -- so a tap toggles it too, and a tap anywhere else shuts it.
+function wireAccountMenu(root) {
+  const menu = root.querySelector(".account-menu");
+  if (!menu) return;
+  const button = menu.querySelector(".shell-action");
+  button.setAttribute("aria-expanded", "false");
+  button.addEventListener("click", () => {
+    const open = menu.classList.toggle("open");
+    button.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", (e) => {
+    if (menu.contains(e.target) || !menu.classList.contains("open")) return;
+    menu.classList.remove("open");
+    button.setAttribute("aria-expanded", "false");
+  });
 }
 
 // The two ASUS pages, which replaced "Workshop rigs" in the strip on

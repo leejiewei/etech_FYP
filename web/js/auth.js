@@ -214,7 +214,9 @@ function registerUser(name, email, password, role) {
 // ------------------------------------------------------------
 function claimEarlierActivity(user) {
   if (!user || typeof claimAnonActivity !== "function") return Promise.resolve(user);
-  return claimAnonActivity().then(() => user, () => user);
+  // The guest's Recently viewed list goes to the account too.
+  const merge = typeof mergeGuestRecent === "function" ? mergeGuestRecent() : Promise.resolve();
+  return Promise.all([claimAnonActivity(), merge]).then(() => user, () => user);
 }
 
 // ------------------------------------------------------------

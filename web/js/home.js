@@ -14,8 +14,10 @@
 //
 // See supabase/migrations/…_picked_for_you.sql for the weights.
 //
-// Signed-in customers only. Nobody else has a history the database can
-// put a name to, so the row stays hidden rather than pretending.
+// A guest has no history the database can put a name to, so their row
+// is worked out here instead, from what this browser has viewed -- see
+// guestPicks(). A guest who has viewed nothing gets no row, and
+// "Featured products" below stands in.
 
 function renderFeaturedProducts() {
   const grid = document.getElementById("featured-grid");
@@ -69,7 +71,7 @@ function renderPicks() {
   if (!section || !grid) return;
 
   const user = getCurrentUser();
-  if (!user) { section.hidden = true; return; }
+  if (!user) { renderGuestPicks(section, grid, sub); return; }
 
   section.hidden = false;
   renderRolePicker(user);
@@ -98,6 +100,67 @@ function renderPicks() {
     const featured = document.getElementById("featured-section");
     if (featured) featured.hidden = true;
   });
+}
+
+// ------------------------------------------------------------
+// Picks for a guest, from this browser's Recently viewed list.
+//
+// Every product the shop has in stock is scored against each viewed
+// one. Only the same department counts at all (4); on top of that, the
+// same type (sub-category) 3, the same maker 1.5 and a price within half
+// to double 1. Without that rule an ASUS laptop would pull in ASUS
+// graphics cards. A view counts less the further back it is (1, 1/2,
+// 1/3 ...), so the row follows what they are looking at now. Products
+// already viewed and anything out of stock are left out. One department
+// fills at most 5 of the 8, so a guest who looked at a graphics card and
+// then a laptop still sees some of each.
+// ------------------------------------------------------------
+const GUEST_PICKS_SHOWN = 8;
+const GUEST_PICKS_PER_DEPARTMENT = 5;
+
+function guestPicks(viewedIds) {
+  const viewed = viewedIds.map(getProductById).filter(Boolean);
+  if (viewed.length === 0) return [];
+  const seen = new Set(viewed.map((p) => p.id));
+
+  return products
+    .filter((p) => !seen.has(p.id) && p.price > 0 && stockOf(p) !== "out")
+    .map((p) => {
+      let score = 0;
+      viewed.forEach((v, i) => {
+        if (p.category !== v.category) return;
+        let match = 4;
+        if (v.subcategory && p.subcategory === v.subcategory) match += 3;
+        if (v.brand && p.brand === v.brand) match += 1.5;
+        if (v.price > 0 && p.price >= v.price / 2 && p.price <= v.price * 2) match += 1;
+        score += match / (i + 1);
+      });
+      return { p, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score
+      || (stockOf(a.p) === "in" ? 0 : 1) - (stockOf(b.p) === "in" ? 0 : 1)
+      || a.p.id - b.p.id)
+    .reduce((picked, r, i, ranked) => {
+      const same = picked.filter((p) => p.category === r.p.category).length;
+      const othersLeft = ranked.slice(i + 1).some((o) => o.p.category !== r.p.category);
+      if (picked.length < GUEST_PICKS_SHOWN && (same < GUEST_PICKS_PER_DEPARTMENT || !othersLeft)) picked.push(r.p);
+      return picked;
+    }, []);
+}
+
+function renderGuestPicks(section, grid, sub) {
+  const picker = document.getElementById("role-picker");
+  if (picker) picker.hidden = true;
+  if (sub) sub.textContent = "";
+  const ids = typeof getGuestRecent === "function" ? getGuestRecent().map((r) => r.id) : [];
+  const picks = guestPicks(ids);
+  const featured = document.getElementById("featured-section");
+
+  section.hidden = picks.length === 0;
+  if (featured) featured.hidden = picks.length > 0;
+  grid.innerHTML = "";
+  picks.forEach((product) => grid.appendChild(buildProductCard(product)));
 }
 
 // ------------------------------------------------------------
@@ -229,32 +292,24 @@ document.addEventListener("click", (e) => {
 });
 
 // ------------------------------------------------------------
-// Recently viewed: the last products this browser opened, newest
-// first, one of each. Read from the view events tracking.js keeps in
-// localStorage, so it works signed out too. Hidden until there is one.
+// Recently viewed, newest first, one of each. A signed-in customer
+// sees their account's list, a guest this browser's -- see
+// loadRecentViews() in tracking.js. Hidden until there is one.
 // ------------------------------------------------------------
 const RECENT_SHOWN = 4;
 
 function renderRecentlyViewed() {
   const section = document.getElementById("recent-section");
   const grid = document.getElementById("recent-grid");
-  if (!section || !grid || typeof getEvents !== "function") return;
+  if (!section || !grid || typeof loadRecentViews !== "function") return Promise.resolve([]);
 
-  let events = [];
-  try { events = getEvents(); } catch (e) { events = []; }
-  const seen = new Set();
-  const recent = [];
-  for (let i = events.length - 1; i >= 0 && recent.length < RECENT_SHOWN; i--) {
-    const e = events[i];
-    if (e.type !== "view_click" || seen.has(e.productId)) continue;
-    seen.add(e.productId);
-    const product = getProductById(e.productId);
-    if (product) recent.push(product);
-  }
-
-  section.hidden = recent.length === 0;
-  grid.innerHTML = "";
-  recent.forEach((product) => grid.appendChild(buildProductCard(product)));
+  return loadRecentViews().then((ids) => {
+    const recent = ids.map(getProductById).filter(Boolean);
+    section.hidden = recent.length === 0;
+    grid.innerHTML = "";
+    recent.slice(0, RECENT_SHOWN).forEach((product) => grid.appendChild(buildProductCard(product)));
+    return recent;
+  });
 }
 
 // ------------------------------------------------------------
@@ -365,6 +420,13 @@ function countUpStats() {
   }, { threshold: 0.6 });
   nums.forEach((el) => { show(el, 0); io.observe(el); });
 }
+
+// A product opened from this page changes both rows. A signed-in
+// customer's picks come from the database and are left as they are.
+document.addEventListener("recentviewschange", () => {
+  renderRecentlyViewed();
+  if (!getCurrentUser()) renderPicks();
+});
 
 onAppReady(() => {
   renderRecentlyViewed();

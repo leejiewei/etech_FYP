@@ -167,6 +167,92 @@ function getTopCategory() {
 // Called when a shopper clicks a product card.
 function trackProductClick(productId) {
   logEvent("view_click", productId);
+  recordRecentView(productId);
+}
+
+// ------------------------------------------------------------
+// Recently viewed.
+//
+// Two lists, never mixed:
+//
+//   * Signed in: the account's list, in the recently_viewed table
+//     (supabase/migrations/…_recently_viewed.sql). record_recent_view()
+//     files the view under whoever the session says is signed in, so it
+//     follows the customer to any browser or phone, and nobody else on
+//     this browser can read it.
+//   * Signed out: this browser's list, in localStorage under
+//     RECENT_GUEST_KEY. It stays on this device and is never sent
+//     anywhere until its owner signs in, when mergeGuestRecent() hands
+//     it to their account and clears it here.
+//
+// Either way a product appears once, newest first, at most 20.
+// ------------------------------------------------------------
+const RECENT_GUEST_KEY = "etech_recent_guest";
+const RECENT_LIMIT = 20;
+
+function getGuestRecent() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_GUEST_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((r) => r && Number.isInteger(r.id)) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveGuestRecent(list) {
+  try {
+    if (list.length === 0) localStorage.removeItem(RECENT_GUEST_KEY);
+    else localStorage.setItem(RECENT_GUEST_KEY, JSON.stringify(list.slice(0, RECENT_LIMIT)));
+  } catch (e) {
+    // Storage blocked: a guest simply has no list.
+  }
+}
+
+function recordRecentView(productId) {
+  if (!Number.isInteger(productId)) return;
+  if (getCurrentUser()) {
+    sb.rpc("record_recent_view", { p_product_id: productId }).then(({ error }) => {
+      if (error) console.error("Recording a recent view:", error);
+      else announceRecentViews();
+    });
+    return;
+  }
+  const list = getGuestRecent().filter((r) => r.id !== productId);
+  list.unshift({ id: productId, t: Date.now() });
+  saveGuestRecent(list);
+  announceRecentViews();
+}
+
+// The home page redraws its rows when this fires.
+function announceRecentViews() {
+  document.dispatchEvent(new CustomEvent("recentviewschange"));
+}
+
+// The product ids to show, newest first.
+function loadRecentViews() {
+  if (!getCurrentUser()) return Promise.resolve(getGuestRecent().map((r) => r.id));
+  return mergeGuestRecent().then(() => sb.from("recently_viewed")
+    .select("product_id")
+    .order("viewed_at", { ascending: false })
+    .limit(RECENT_LIMIT)
+    .then(({ data, error }) => {
+      if (error) { console.error("Loading recently viewed:", error); return []; }
+      return (data || []).map((row) => row.product_id);
+    }));
+}
+
+// What a guest looked at before signing in, added to their account.
+// Cleared here only once the database has it, so a failed request
+// leaves the list to try again on the next page.
+function mergeGuestRecent() {
+  const list = getGuestRecent();
+  if (!getCurrentUser() || list.length === 0) return Promise.resolve(0);
+  const items = list.map((r) => ({ product_id: r.id, viewed_at: new Date(r.t || Date.now()).toISOString() }));
+  return sb.rpc("merge_recent_views", { p_items: items }).then(({ data, error }) => {
+    if (error) { console.error("Merging recently viewed:", error); return 0; }
+    saveGuestRecent([]);
+    return data || 0;
+  });
 }
 
 // ------------------------------------------------------------
