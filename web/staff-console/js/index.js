@@ -351,7 +351,7 @@ async function loadForecast() {
 
   const coming = data.nextMonths || (data.nextMonth ? [data.nextMonth] : []);
   // The last year of the backtest, then the months ahead.
-  const rows = monthlyRows(data.monthly || [], checks, coming, calendar).slice(-18);
+  const rows = monthlyRows(data.monthly || [], checks, coming, calendar, data.forecast || []).slice(-18);
 
   document.getElementById("forecast-chart").innerHTML = rows.length === 0
     ? `<p class="empty-state">The forecast file has no months in it.</p>`

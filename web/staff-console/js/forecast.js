@@ -207,7 +207,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
     // No checked months yet; the chart simply stops at the backtest.
   }
 
-  const monthRows = monthlyRows(monthly, checks, coming, calendar);
+  const monthRows = monthlyRows(monthly, checks, coming, calendar, weekly);
   const weekRows = weekly.map((w, i) => ({
     // A label at each new month, but not on a lone first week that would
     // print on top of the next month's.
@@ -252,7 +252,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
           ${e(monthLabel(monthly[0].month, true))} to ${e(monthLabel(monthly[monthly.length - 1].month, true))}
           are months the model had never seen; the shaded part is the six months it predicts
           ahead, with its usual error as the band; hollow dots are forecasts, with no sales to check them
-          against yet. August 2026 is left out because its last week runs into September. A percentage
+          against yet. August 2026 counts its four whole weeks, 3 to 30 Aug, as the sales file ends on the 31st. A percentage
           under a month is how far the prediction was off; positive means it said more than the shop took.
           Point at a month to see its actual sales, the prediction, the difference and the shop's
           calendar-month total.

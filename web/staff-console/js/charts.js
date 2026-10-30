@@ -13,16 +13,30 @@ const COLOUR_ACTUAL = "#16181d";
 const COLOUR_FORECAST = "#bc2000";
 
 // One row per calendar month from the first backtest month to the last
-// month predicted ahead. A month with nothing (August 2026) keeps its place
-// on the axis, so the lines break there instead of joining across it.
+// month predicted ahead. A month with nothing keeps its place on the axis,
+// so the lines break there instead of joining across it.
 //
 // calendar is the shop's product sales per calendar month, from
 // forecast_checks.json. It is only ever shown in the hover note, never
 // drawn: the lines compare the model's week-based months like for like.
-function monthlyRows(monthly, checks, coming, calendar = {}) {
+//
+// weeks is the weekly backtest. The export leaves out the last month
+// (August 2026) because its last week, from 31 Aug, has one day of sales;
+// the weeks before it are summed here so that month is still drawn.
+function monthlyRows(monthly, checks, coming, calendar = {}, weeks = []) {
   const byMonth = {};
   const row = (month) => (byMonth[month] ||= { month });
   monthly.forEach((m) => Object.assign(row(m.month), { actual: m.actual, forecast: m.forecast, errorPct: m.errorPct }));
+  const lastMonth = monthly.length ? monthly[monthly.length - 1].month : "";
+  weeks.filter((w) => w.week.slice(0, 7) > lastMonth).forEach((w) => {
+    const r = row(w.week.slice(0, 7));
+    r.actual = (r.actual || 0) + w.actual;
+    r.forecast = (r.forecast || 0) + w.forecast;
+    (r.partWeeks ||= []).push(w.week);
+  });
+  Object.values(byMonth).filter((r) => r.partWeeks).forEach((r) => {
+    r.errorPct = Math.round((r.forecast - r.actual) / r.actual * 1000) / 10;
+  });
   coming.forEach((m) => Object.assign(row(m.month), { forecast: m.revenue, low: m.low, high: m.high, ahead: true }));
   checks.forEach((c) => Object.assign(row(c.month), { actual: c.actual, errorPct: c.errorPct, check: c }));
 
@@ -43,12 +57,13 @@ function monthlyRows(monthly, checks, coming, calendar = {}) {
 // The model's month is the weeks whose Monday falls in it, so September
 // 2026 is 7 Sep to 4 Oct. Worked out from the calendar, the same way the
 // export script groups the weeks.
-function modelWeeks(month) {
+function modelWeeks(month, weekStarts) {
   const [y, m] = month.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1));
   first.setUTCDate(1 + ((8 - first.getUTCDay()) % 7));
-  const mondays = [];
+  let mondays = [];
   for (const d = first; d.getUTCMonth() === m - 1; d.setUTCDate(d.getUTCDate() + 7)) mondays.push(new Date(d));
+  if (weekStarts) mondays = weekStarts.map((w) => new Date(`${w}T00:00:00Z`));
   const end = new Date(mondays[mondays.length - 1]);
   end.setUTCDate(end.getUTCDate() + 6);
   const day = (d) => `${d.getUTCDate()} ${monthLabel(d.toISOString().slice(0, 7))}`;
@@ -71,7 +86,8 @@ function monthNote(r) {
   if (!has(r.forecast) && !has(r.actual)) {
     lines.push(["Model month", "None: its last week runs into the next month, so the backtest leaves it out"]);
   } else {
-    lines.push(["Model month", modelWeeks(r.month)]);
+    lines.push(["Model month", modelWeeks(r.month, r.partWeeks)
+      + (r.partWeeks ? "; the next week is left out, as the sales file ends on its first day" : "")]);
     if (has(r.actual)) {
       lines.push(["Actual sales", money(r.actual) + (r.check ? ` (calendar month scaled to these ${r.check.forecastDays} days)` : "")]);
     }
