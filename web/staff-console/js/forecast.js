@@ -199,14 +199,15 @@ adminPage("Sales Forecast", "forecast", async (content) => {
   const monthName = (month) => (coming.find((m) => m.month === month) || {}).label || monthLabel(month, true);
 
   let checks = [];
+  let calendar = {};
   try {
     const response = await fetch(FORECAST_CHECKS, { cache: "no-store" });
-    if (response.ok) checks = (await response.json()).checks || [];
+    if (response.ok) ({ checks = [], calendarMonths: calendar = {} } = await response.json());
   } catch (error) {
     // No checked months yet; the chart simply stops at the backtest.
   }
 
-  const monthRows = monthlyRows(monthly, checks, coming);
+  const monthRows = monthlyRows(monthly, checks, coming, calendar);
   const weekRows = weekly.map((w, i) => ({
     // A label at each new month, but not on a lone first week that would
     // print on top of the next month's.
@@ -250,9 +251,11 @@ adminPage("Sales Forecast", "forecast", async (content) => {
         <p class="hint" style="margin:12px 0 0;">
           ${e(monthLabel(monthly[0].month, true))} to ${e(monthLabel(monthly[monthly.length - 1].month, true))}
           are months the model had never seen; the shaded part is the six months it predicts
-          ahead, with its usual error as the band. August 2026 is left out because its last week
-          runs into September. A percentage under a month is how far the prediction was off; positive
-          means it said more than the shop took.
+          ahead, with its usual error as the band; hollow dots are forecasts, with no sales to check them
+          against yet. August 2026 is left out because its last week runs into September. A percentage
+          under a month is how far the prediction was off; positive means it said more than the shop took.
+          Point at a month to see its actual sales, the prediction, the difference and the shop's
+          calendar-month total.
         </p>
         ${checks.map((c) => checkNote({ ...c, label: monthName(c.month) })).join("")}`}
     </div>
@@ -348,6 +351,10 @@ function checkNote(c) {
         ${c.errorPct >= 0 ? "+" : ""}${e(c.errorPct)}%, ${c.inRange ? "inside" : "outside"} its range
       </strong>
       of ${e(money(c.low))} to ${e(money(c.high))}.
+      ${c.linesGenerated ? `
+      <br />Only the month's total is the shop's own figure${c.reportedTotal != null ? ` (${e(money(c.reportedTotal))}, services included)` : ""}:
+      the receipt lines in ${e(c.source)} were generated to add up to it, so the services taken out and
+      the day-by-day split are estimates. The prediction itself was not changed.` : ""}
     </div>`;
 }
 

@@ -369,3 +369,31 @@ rollback;
 -- 21 Oct: PASS. Raw text -> all 546 products; cleaned the way
 -- web/staff-console/js/products.js:71 does it -> 0 products.
 -- ------------------------------------------------------------
+
+
+-- ------------------------------------------------------------
+-- SQL-08  SQL typed into the checkout fields (name and address).
+-- 29 Oct 2026: PASS. Run as customer 44 with one mouse in the cart.
+-- place_order() returned an order (RM 22.00, Pending) with the name and
+-- the address stored exactly as typed; the orders table still existed and
+-- customers still had 18 rows. Nothing is kept: the block ends in ROLLBACK
+-- (the order number is used up, because sequences do not roll back).
+-- Screenshot: Supabase SQL Editor -> paste this block -> Run -> the result grid.
+-- ------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims', json_build_object('sub',
+  (select auth_user_id from public.customers where customer_id = 44), 'role', 'authenticated')::text, true);
+set local role authenticated;
+delete from public.cart_items where customer_id = 44;   -- known starting state
+select public.cart_add(4501);
+create temp table sql08 as
+  select public.place_order('''); DROP TABLE orders; --', '0123456789',
+         ''' OR 1=1; DELETE FROM customers; --', null, 'BANK_TRANSFER', 'DELIVERY')::text as returned;
+reset role;
+select s.returned,
+       o.order_id, o.shipping_name, o.shipping_address, o.total, o.status,
+       to_regclass('public.orders') is not null as orders_table_still_exists,
+       (select count(*) from public.customers) as customers_rows
+from sql08 s
+left join public.orders o on o.order_id = (select max(order_id) from public.orders);
+rollback;

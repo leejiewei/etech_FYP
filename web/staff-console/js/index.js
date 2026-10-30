@@ -341,16 +341,17 @@ async function loadForecast() {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = await response.json();
   let checks = [];
+  let calendar = {};
   try {
     const checked = await fetch("data/forecast_checks.json", { cache: "no-store" });
-    if (checked.ok) checks = (await checked.json()).checks || [];
+    if (checked.ok) ({ checks = [], calendarMonths: calendar = {} } = await checked.json());
   } catch (error) {
     // Optional, as on the Sales Forecast page.
   }
 
   const coming = data.nextMonths || (data.nextMonth ? [data.nextMonth] : []);
   // The last year of the backtest, then the months ahead.
-  const rows = monthlyRows(data.monthly || [], checks, coming).slice(-18);
+  const rows = monthlyRows(data.monthly || [], checks, coming, calendar).slice(-18);
 
   document.getElementById("forecast-chart").innerHTML = rows.length === 0
     ? `<p class="empty-state">The forecast file has no months in it.</p>`
