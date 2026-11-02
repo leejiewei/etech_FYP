@@ -72,7 +72,7 @@ function monthPlace(months, i) {
   return `Month ${i + 1} after the data (which ends ${n.fittedTo}) · ${when}`;
 }
 
-function predictionCard(months, shown) {
+function predictionCard(months, shown, calendar = {}) {
   if (months.length === 0) return "";
   const calendarNext = months.findIndex((m) => m.month === nextCalendarMonth());
 
@@ -111,14 +111,16 @@ function predictionCard(months, shown) {
   // The same month a year earlier, spelled the way monthLabel expects.
   const lastYear = (Number(n.month.slice(0, 4)) - 1) + n.month.slice(4);
 
-  // Down is not automatically bad news and up is not automatically good,
-  // so the arrow is coloured by direction and left to speak for itself.
-  const change = n.changePct === null || n.changePct === undefined
+  // The page works in months only (3 Nov). The same month a year earlier is
+  // shown as the shop's own calendar-month product sales, for context. No
+  // percentage is worked out against it: the model's month and the
+  // calendar month do not cover exactly the same days, so a % would mislead.
+  const lastYearSales = calendar[lastYear];
+  const change = lastYearSales === null || lastYearSales === undefined
     ? ""
-    : `<div style="font-size:13px; color:${n.changePct < 0 ? "#c0392b" : "#1e8e3e"}; margin-top:6px;">
-         ${n.changePct < 0 ? "▼" : "▲"} ${e(Math.abs(n.changePct))}% ${e(n.changeBasis || "per week")}
-         against ${e(monthLabel(lastYear, true))}
-         (${e(money(n.priorYearPerWeek))} a week, over ${e(n.priorYearWeeks)} weeks)
+    : `<div style="font-size:13px; color:#555; margin-top:6px;">
+         Same month last year: the shop sold ${e(money(lastYearSales))} in products in
+         ${e(monthLabel(lastYear, true))} (${e(calendarSpan(lastYear))})
        </div>`;
 
   return `
@@ -130,16 +132,14 @@ function predictionCard(months, shown) {
       <div style="font-size:13px; color:#555;">
         somewhere between <strong>${e(money(n.low))}</strong> and
         <strong>${e(money(n.high))}</strong>
-        &nbsp;·&nbsp; ${e(money(n.perWeek))} a week across ${e(n.weeks)} weeks
       </div>
       ${change}
       <div style="font-size:13px; color:var(--ink-3); margin-top:6px;">${e(monthPlace(months, shown))}</div>
       <div class="hint" style="margin:12px 0 0;">
         Month ${shown + 1} of ${months.length} ahead. The range is this model's own monthly
         error on months it had never seen (WAPE ${e(pct(n.bandPct))}), not a confidence
-        interval. Fitted on all ${e(n.fittedWeeks)} weeks up to ${e(n.fittedTo)}; a week counts
-        towards the month its Monday falls in, which is why ${e(n.label)} is
-        ${e(n.weeks)} weeks and not four-and-a-bit.
+        interval. Fitted on the shop's sales up to ${e(n.fittedTo)}. The model's
+        ${e(n.label)} runs ${e(modelSpan(n.month, n.weekStarts))}.
       </div>
     </div>`;
 }
@@ -147,12 +147,12 @@ function predictionCard(months, shown) {
 // Draws the card into its slot and wires whichever buttons it has. Called
 // again on every press, so the listeners always belong to the buttons on
 // screen.
-function showPrediction(slot, months, shown) {
-  slot.innerHTML = predictionCard(months, shown);
-  slot.querySelector("#predict-next")?.addEventListener("click", () => showPrediction(slot, months, shown + 1));
-  slot.querySelector("#predict-prev")?.addEventListener("click", () => showPrediction(slot, months, shown - 1));
+function showPrediction(slot, months, shown, calendar = {}) {
+  slot.innerHTML = predictionCard(months, shown, calendar);
+  slot.querySelector("#predict-next")?.addEventListener("click", () => showPrediction(slot, months, shown + 1, calendar));
+  slot.querySelector("#predict-prev")?.addEventListener("click", () => showPrediction(slot, months, shown - 1, calendar));
   const jump = slot.querySelector("#predict-calendar");
-  jump?.addEventListener("click", () => showPrediction(slot, months, Number(jump.dataset.at)));
+  jump?.addEventListener("click", () => showPrediction(slot, months, Number(jump.dataset.at), calendar));
 }
 
 
@@ -207,18 +207,19 @@ adminPage("Sales Forecast", "forecast", async (content) => {
     // No checked months yet; the chart simply stops at the backtest.
   }
 
+  // weekly is still read: the model's August 2026 is summed from its weeks
+  // inside monthlyRows. It is no longer drawn -- the page works in months only.
   const monthRows = monthlyRows(monthly, checks, coming, calendar, weekly);
-  const weekRows = weekly.map((w, i) => ({
-    // A label at each new month, but not on a lone first week that would
-    // print on top of the next month's.
-    label: (i === 0 ? weekly[3] && weekly[3].week.slice(5, 7) === w.week.slice(5, 7)
-                    : w.week.slice(5, 7) !== weekly[i - 1].week.slice(5, 7))
-      ? monthLabel(w.week.slice(0, 7), true) : "",
-    tip: `week of ${w.week}`,
-    actual: w.actual,
-    forecast: w.forecast,
-  }));
   const segMax = Math.max(0, ...groups.map((s) => s.revenue));
+
+  // Monthly figures for the tiles, worked out from the rows on the chart:
+  // the average miss over the months the model had never seen, and the
+  // latest month checked against the shop's own figure.
+  const tested = monthRows.filter((r) => !r.ahead && r.actual != null && r.forecast != null);
+  const avgMonthMiss = tested.length
+    ? tested.reduce((sum, r) => sum + Math.abs(r.forecast - r.actual), 0) / tested.length : null;
+  const latestCheck = checks.length ? checks[checks.length - 1] : null;
+  const signed = (v) => `${v >= 0 ? "+" : ""}${v}%`;
 
   content.innerHTML = `
     <div id="prediction"></div>
@@ -230,14 +231,17 @@ adminPage("Sales Forecast", "forecast", async (content) => {
         <div class="sub">WAPE ${e(pct(metrics.monthlyWAPE))} &middot; R&sup2; ${e(metrics.monthlyR2)}</div>
       </div>
       <div class="tile">
-        <div class="label">Forecast accuracy (weekly)</div>
-        <div class="value">${e(pct(metrics.weeklyAccuracy))}</div>
-        <div class="sub">WAPE ${e(pct(metrics.weeklyWAPE))} &middot; R&sup2; ${e(metrics.r2)}</div>
+        <div class="label">Average error a month</div>
+        <div class="value">${avgMonthMiss === null ? "--" : e(money(Math.round(avgMonthMiss)))}</div>
+        <div class="sub">over the ${e(tested.length)} months the model had never seen</div>
       </div>
       <div class="tile">
-        <div class="label">Average error a week</div>
-        <div class="value">${e(money(metrics.mae))}</div>
-        <div class="sub">RMSE ${e(money(metrics.rmse))}</div>
+        <div class="label">Latest month checked</div>
+        <div class="value">${latestCheck ? e(signed(latestCheck.errorPct)) : "--"}</div>
+        <div class="sub">${latestCheck
+          ? `${e(monthName(latestCheck.month))}, ${latestCheck.inRange ? "inside" : "outside"} its range`
+            + checks.slice(0, -1).map((c) => ` &middot; ${e(monthName(c.month))} ${e(signed(c.errorPct))}`).join("")
+          : "No month sent since the forecast"}</div>
       </div>
     </div>
 
@@ -252,26 +256,12 @@ adminPage("Sales Forecast", "forecast", async (content) => {
           ${e(monthLabel(monthly[0].month, true))} to ${e(monthLabel(monthly[monthly.length - 1].month, true))}
           are months the model had never seen; the shaded part is the six months it predicts
           ahead, with its usual error as the band; hollow dots are forecasts, with no sales to check them
-          against yet. August 2026 counts its four whole weeks, 3 to 30 Aug, as the sales file ends on the 31st. A percentage
+          against yet. August 2026 runs 3 to 30 Aug, as the sales file ends on the 31st. A percentage
           under a month is how far the prediction was off; positive means it said more than the shop took.
           Point at a month to see its actual sales, the prediction, the difference and the shop's
           calendar-month total.
         </p>
         ${checks.map((c) => checkNote({ ...c, label: monthName(c.month) })).join("")}`}
-    </div>
-
-    <h2>The same forecast, week by week</h2>
-    <div class="card">
-      ${weekly.length === 0
-        ? `<p style="color:#888;">No weekly rows in the forecast file.</p>`
-        : `
-        ${lineChart(weekRows, { height: 220, dots: false })}
-        ${legend(false)}
-        <p class="hint" style="margin:12px 0 0;">
-          ${weekly.length} weeks, ${e(meta.testFrom)} to ${e(meta.testTo)}. Weekly takings for a shop
-          this size swing hard &mdash; one build moves a week by a fifth &mdash; which is why the
-          monthly view above is the fairer read of the same forecast.
-        </p>`}
     </div>
 
     <h2>Customer groups</h2>
@@ -331,7 +321,7 @@ adminPage("Sales Forecast", "forecast", async (content) => {
       they were first sold. Worth checking before they are reordered.
     </p>`}`;
 
-  showPrediction(content.querySelector("#prediction"), coming, -1);
+  showPrediction(content.querySelector("#prediction"), coming, -1, calendar);
 });
 
 

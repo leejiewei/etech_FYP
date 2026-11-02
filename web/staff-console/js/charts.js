@@ -67,8 +67,10 @@ function modelWeeks(month, weekStarts) {
   const end = new Date(mondays[mondays.length - 1]);
   end.setUTCDate(end.getUTCDate() + 6);
   const day = (d) => `${d.getUTCDate()} ${monthLabel(d.toISOString().slice(0, 7))}`;
-  return `${mondays.length} weeks, ${day(mondays[0])} to ${day(end)}`;
+  // Dates only: the page reports months, not weeks (3 Nov 2026).
+  return `${day(mondays[0])} to ${day(end)}`;
 }
+const modelSpan = modelWeeks;
 
 function calendarSpan(month) {
   const [y, m] = month.split("-").map(Number);
@@ -84,10 +86,10 @@ function monthNote(r) {
   const has = (v) => v !== null && v !== undefined;
 
   if (!has(r.forecast) && !has(r.actual)) {
-    lines.push(["Model month", "None: its last week runs into the next month, so the backtest leaves it out"]);
+    lines.push(["Model month", "None: it runs into the next month, so the backtest leaves it out"]);
   } else {
     lines.push(["Model month", modelWeeks(r.month, r.partWeeks)
-      + (r.partWeeks ? "; the next week is left out, as the sales file ends on its first day" : "")]);
+      + (r.partWeeks ? "; 31 Aug is left out, as the sales file ends that day" : "")]);
     if (has(r.actual)) {
       lines.push(["Actual sales", money(r.actual) + (r.check ? ` (calendar month scaled to these ${r.check.forecastDays} days)` : "")]);
     }
