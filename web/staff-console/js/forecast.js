@@ -10,7 +10,7 @@
 // What it reads instead is web/staff-console/data/ml_forecast.json,
 // written by tools/export_ml_to_web.py from the models in ml/. Those are
 // fitted on the shop's own sales receipts from January 2022 to August
-// 2026 (docs/data/etech_sales_data.xlsx), which reach back far further
+// 2026 (docs/data/etech sales data jan2022-aug2026.xlsx), which reach back far further
 // than the online orders do.
 //
 // Nothing here writes. The page cannot change an order, a price or a

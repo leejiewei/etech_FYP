@@ -2,15 +2,17 @@
   "checks": [
     {
       "month": "2026-09",
-      "source": "docs/data/ETECH_September_2026_Sales_RM484431_43.xlsx",
+      "source": "docs/data/etech sales data september.xlsx",
       "days": 30,
       "firstDay": "2026-09-01",
       "lastDay": "2026-09-30",
-      "receipts": 192,
+      "receipts": 208,
+      "productReceipts": 192,
+      "lines": 621,
       "serviceRemoved": 15845.23,
       "calendarTotal": 468586.0,
       "reportedTotal": 484431.43,
-      "linesGenerated": false,
+      "linesGenerated": true,
       "forecastDays": 28,
       "actual": 437347.0,
       "forecast": 384653.0,
@@ -18,6 +20,27 @@
       "high": 431966.0,
       "errorPct": -12.0,
       "inRange": false
+    },
+    {
+      "month": "2026-10",
+      "source": "docs/data/eTech_October_2026_Cash_Sales.xlsx",
+      "days": 31,
+      "firstDay": "2026-10-01",
+      "lastDay": "2026-10-31",
+      "receipts": 208,
+      "productReceipts": 198,
+      "lines": 716,
+      "serviceRemoved": 1593.39,
+      "calendarTotal": 530714.0,
+      "reportedTotal": 532307.39,
+      "linesGenerated": true,
+      "forecastDays": 28,
+      "actual": 479355.0,
+      "forecast": 482214.0,
+      "low": 422902.0,
+      "high": 541527.0,
+      "errorPct": 0.6,
+      "inRange": true
     }
   ],
   "calendarMonths": {

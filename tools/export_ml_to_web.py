@@ -3,7 +3,9 @@ Exports the Objective 2 model results into a JSON file the staff console reads.
 
 The admin pages otherwise talk to Supabase, which holds the online shop: a few
 dozen orders over a handful of months. The models in ml/ are fitted on the
-shop's own sales receipts, Jan 2022 - Aug 2026 (docs/data/etech_sales_data.xlsx),
+shop's own sales receipts, Jan 2022 - Aug 2026 (etech_sales_data.xlsx, archived on 2 Nov 2026 to
+D:/eTech_FYP_archive_2Nov2026/sales_data; docs/data keeps the same receipts
+in cash-sales layout as "etech sales data jan2022-aug2026.xlsx"),
 which reach back far further than the online orders do. A trend over the online
 orders alone would be a number with nothing behind it, so the forecast page
 reads this file instead.
@@ -274,7 +276,7 @@ def main():
     payload = {
         "meta": {
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-            "source": "docs/data/etech_sales_data.xlsx",
+            "source": "etech_sales_data.xlsx (archived 2 Nov 2026; same receipts as docs/data/etech sales data jan2022-aug2026.xlsx)",
             "model": "Ridge regression (trend + month seasonality)",
             "trainWeeks": int(len(train)),
             "testWeeks": int(len(test)),

@@ -1,7 +1,7 @@
 {
   "meta": {
     "generated": "2026-10-18",
-    "source": "docs/data/etech_sales_data.xlsx",
+    "source": "etech_sales_data.xlsx (archived 2 Nov 2026; same receipts as docs/data/etech sales data jan2022-aug2026.xlsx)",
     "model": "Ridge regression (trend + month seasonality)",
     "trainWeeks": 194,
     "testWeeks": 49,
