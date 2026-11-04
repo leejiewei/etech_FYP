@@ -7231,3 +7231,59 @@ body.privacy-notice-open { --float-lift: var(--privacy-notice-h, 96px); }
   .footer-links { gap: 0 var(--space-5); }
   .deal-link, .bp-tool, .shop-more { display: inline-flex; }
 }
+
+/* ============================================================
+   Layout fixes, 4 Nov 2026.
+   ============================================================ */
+
+/* Builder slots. The photo spans the card's rows in column 1. A slot
+   with a "Required / Optional" note has four items in column 2, not
+   three, and the fourth (price + Change) was auto-placed into the free
+   56px photo column, so the price wrapped and Change sat on top of it.
+   Every text item now names column 2, and the price row always takes
+   the last, stretching row, so all eight cards line up the same way. */
+.bp-slot-main { grid-template-rows: auto auto 1fr; }
+.bp-slot-main:has(.bp-slot-need) { grid-template-rows: auto auto auto 1fr; }
+.bp-slot-icon { grid-column: 1; grid-row: 1 / -1; }
+.bp-slot-title,
+.bp-slot-need,
+.bp-slot-choice,
+.bp-slot-foot { grid-column: 2; }
+.bp-slot-need { justify-self: start; }
+
+.bp-slot-foot {
+  align-self: end;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.bp-slot-price { white-space: nowrap; }
+.bp-slot-action { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  /* Home: the prebuilt PCs and the Google reviews stop being sideways
+     rails on a phone. Each card is a whole rectangle, one under the
+     other; a wide phone or small tablet fits two side by side. */
+  .builds-section .builds-grid,
+  .review-track {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: var(--space-4);
+    overflow: visible;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+  .builds-section .build-card,
+  .review-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .review-card blockquote { overflow-wrap: anywhere; }
+
+  /* The eTech AI and Contact us buttons float over the foot of the page;
+     leave room under the footer so the last links are never under them. */
+  .site-foot { padding-bottom: calc(var(--space-12) + var(--space-6)); }
+}
