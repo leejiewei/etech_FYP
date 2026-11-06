@@ -1,5 +1,5 @@
 -- Answers from the user's in-shop check on Sat 3 Oct 2026
--- (Today_Claude_Parts_A_to_I_and_Desktop_Cases.docx): confirmed model names,
+-- (the Saturday shop checklist): confirmed model names,
 -- colours and links. Photos for the changed models come in a separate migration.
 
 -- Part A: monitors
