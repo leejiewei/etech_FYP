@@ -57,7 +57,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(height: 12),
                     Text('Nothing yet. We will let you know here when your order moves.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                        style: TextStyle(fontSize: 14, color: AppTheme.ink3)),
                   ],
                 ),
               ),
@@ -111,7 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             : n.isRecommendation
             ? const Color(0xFF1F6FB2)
             : n.kind == 'order_ready'
-                ? const Color(0xFF6A3FB5)
+                ? AppTheme.ready
                 : AppTheme.green;
     final icon = n.needsAction
         ? Icons.error_outline
@@ -124,7 +124,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 : Icons.check_circle_outline;
 
     return Material(
-      color: fresh ? const Color(0xFFFDF2F3) : Colors.white,
+      color: fresh ? AppTheme.brandTint : AppTheme.card,
       borderRadius: BorderRadius.circular(AppTheme.radius),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppTheme.radius),

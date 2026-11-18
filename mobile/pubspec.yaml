@@ -58,6 +58,10 @@ dependencies:
   url_launcher: ^6.3.2
 
   cupertino_icons: ^1.0.8
+  # Background music (asked for by the shop, Nov 2026). One looping track
+  # from assets/audio/bgm.mp3, switched on and off on the Account tab.
+  # See services/settings.dart.
+  audioplayers: ^6.7.1
 
 dev_dependencies:
   flutter_test:
@@ -73,4 +77,5 @@ flutter:
   # removes that dependency entirely.
   assets:
     - assets/images/
+    - assets/audio/
 

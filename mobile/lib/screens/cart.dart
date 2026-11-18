@@ -25,7 +25,7 @@ class CartScreen extends StatelessWidget {
                     final item = shop.cart[i];
                     return Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.card,
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       padding: const EdgeInsets.all(12),
@@ -55,7 +55,7 @@ class CartScreen extends StatelessWidget {
                                           : 'Colour: ${item.colour}',
                                       style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600)),
+                                          color: AppTheme.ink3)),
                                 const SizedBox(height: 4),
                                 // The line's own price, struck through
                                 // when a deal took it down -- the basket
@@ -71,7 +71,7 @@ class CartScreen extends StatelessWidget {
                                         )),
                                     const SizedBox(width: 6),
                                     Text(money(item.price),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: AppTheme.red)),
@@ -79,7 +79,7 @@ class CartScreen extends StatelessWidget {
                                 else
                                   Text(money(item.price),
                                       style: TextStyle(
-                                          fontSize: 12, color: Colors.grey.shade600)),
+                                          fontSize: 12, color: AppTheme.ink3)),
                                 // Upgrades chosen on the prebuilt card.
                                 // Listed on the line they belong to,
                                 // priced, and removable here -- this is
@@ -93,7 +93,7 @@ class CartScreen extends StatelessWidget {
                                       padding: const EdgeInsets.only(bottom: 2),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.add,
+                                          Icon(Icons.add,
                                               size: 12, color: AppTheme.redDark),
                                           const SizedBox(width: 4),
                                           Expanded(
@@ -101,7 +101,7 @@ class CartScreen extends StatelessWidget {
                                               '${u.label}  +${money(u.priceDelta)}',
                                               style: TextStyle(
                                                   fontSize: 11.5,
-                                                  color: Colors.grey.shade800),
+                                                  color: AppTheme.ink3),
                                             ),
                                           ),
                                           InkWell(
@@ -138,7 +138,7 @@ class CartScreen extends StatelessWidget {
                                         () => shop.setQty(item.id, item.qty + 1)),
                                     const Spacer(),
                                     Text(money(item.lineTotal),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.redDark)),
@@ -148,7 +148,7 @@ class CartScreen extends StatelessWidget {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline,
+                            icon: Icon(Icons.delete_outline,
                                 color: AppTheme.red, size: 20),
                             onPressed: () => shop.removeFromCart(item.id),
                           ),
@@ -161,8 +161,8 @@ class CartScreen extends StatelessWidget {
           ? null
           : Container(
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppTheme.card,
                 border: Border(top: BorderSide(color: AppTheme.line)),
               ),
               child: SafeArea(
@@ -177,7 +177,7 @@ class CartScreen extends StatelessWidget {
                             style: TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w600)),
                         Text(money(shop.cartTotal),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 21,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.redDark)),
@@ -208,7 +208,7 @@ class CartScreen extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: enabled ? const Color(0xFFEEF0F3) : const Color(0xFFF7F8FA),
+            color: enabled ? AppTheme.surface2 : AppTheme.surface2,
             borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Icon(icon,
@@ -223,7 +223,7 @@ class CartScreen extends StatelessWidget {
             Icon(Icons.shopping_cart_outlined, size: 54, color: Colors.grey.shade400),
             const SizedBox(height: 14),
             Text('Your cart is empty',
-                style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 15, color: AppTheme.ink3)),
           ],
         ),
       );
@@ -243,7 +243,7 @@ class CartScreen extends StatelessWidget {
                 'Your basket is kept with your account, so it follows you '
                 'between your phone and the website.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 13, color: AppTheme.ink3),
               ),
               const SizedBox(height: 20),
               ElevatedButton(

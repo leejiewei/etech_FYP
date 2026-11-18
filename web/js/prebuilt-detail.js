@@ -225,7 +225,7 @@ onAppReady(() => {
 
   if (!product || !prebuiltGroup(product)) {
     root.innerHTML = `
-      <p style="text-align:center; color:#666;">
+      <p style="text-align:center; color:var(--ink-3);">
         That PC could not be found. <a href="prebuilt.html">See all prebuilt PCs</a>.
       </p>`;
     return;

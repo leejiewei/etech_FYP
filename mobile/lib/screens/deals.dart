@@ -80,7 +80,7 @@ class DealsScreen extends StatelessWidget {
                     fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(sub,
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 12.5, color: AppTheme.ink3)),
           ],
         ),
       );
@@ -91,7 +91,7 @@ class DealsScreen extends StatelessWidget {
           children: [
             Icon(icon, size: 44, color: Colors.grey.shade400),
             const SizedBox(height: 10),
-            Text(message, style: TextStyle(color: Colors.grey.shade600)),
+            Text(message, style: TextStyle(color: AppTheme.ink3)),
           ],
         ),
       );
@@ -99,7 +99,7 @@ class DealsScreen extends StatelessWidget {
   Widget _couponCard(BuildContext context, Deal deal) => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: AppTheme.line),
         ),
@@ -109,12 +109,12 @@ class DealsScreen extends StatelessWidget {
             Row(
               children: [
                 Text('${deal.discountPercent.round()}%',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.red)),
                 const SizedBox(width: 8),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(top: 10),
                   child: Text('OFF',
                       style: TextStyle(
@@ -127,7 +127,7 @@ class DealsScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF0F3),
+                    color: AppTheme.surface2,
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Text(deal.category ?? 'Everything',
@@ -158,19 +158,19 @@ class DealsScreen extends StatelessWidget {
                       width: 1.4,
                       style: BorderStyle.solid),
                   borderRadius: BorderRadius.circular(AppTheme.radius),
-                  color: const Color(0xFFFDF2F3),
+                  color: AppTheme.brandTint,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(deal.code,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                             color: AppTheme.redDark)),
                     const SizedBox(width: 10),
-                    const Icon(Icons.copy, size: 16, color: AppTheme.redDark),
+                    Icon(Icons.copy, size: 16, color: AppTheme.redDark),
                   ],
                 ),
               ),

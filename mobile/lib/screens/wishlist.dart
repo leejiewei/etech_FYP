@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../services/shop.dart';
 import '../widgets/product_card.dart';
 
@@ -29,7 +30,7 @@ class WishlistScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text('Nothing saved yet',
                           style:
-                              TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                              TextStyle(fontSize: 15, color: AppTheme.ink3)),
                       const SizedBox(height: 4),
                       Text('Tap the heart on any product to save it here.',
                           style:

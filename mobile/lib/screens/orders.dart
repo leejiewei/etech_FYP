@@ -62,7 +62,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   Icon(Icons.receipt_long_outlined, size: 50, color: Colors.grey.shade400),
                   const SizedBox(height: 12),
                   Text('No orders yet',
-                      style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                      style: TextStyle(fontSize: 15, color: AppTheme.ink3)),
                 ],
               ),
             );
@@ -92,7 +92,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
@@ -120,7 +120,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const SizedBox(height: 4),
           Text(
             '${order.date.day}/${order.date.month}/${order.date.year}',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: AppTheme.ink3),
           ),
 
           // Progress through the stages
@@ -143,7 +143,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: reached ? AppTheme.green : Colors.white,
+                    color: reached ? AppTheme.green : AppTheme.card,
                     border: Border.all(
                         color: reached ? AppTheme.green : AppTheme.line, width: 2),
                     shape: BoxShape.circle,
@@ -174,7 +174,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 child: Row(
                   children: [
                     Text('${line.quantity} ×  ',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                        style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
                     Expanded(
                         child: Text(line.name,
                             style: const TextStyle(fontSize: 12.5),
@@ -188,7 +188,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text('Coupon ${order.couponCode}: −${money(order.discount)}',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.green)),
+                  style: TextStyle(fontSize: 12, color: AppTheme.green)),
             ),
           const SizedBox(height: 10),
           Row(
@@ -196,7 +196,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             children: [
               const Text('Total', style: TextStyle(fontWeight: FontWeight.w600)),
               Text(money(order.total),
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.redDark)),
@@ -230,7 +230,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(text,
-          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+          style: TextStyle(fontSize: 11.5, color: AppTheme.ink3)),
     );
   }
 
@@ -294,7 +294,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
           const SizedBox(width: 8),
           Text(paymentMethodLabel(order.paymentMethod),
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
         ]),
 
         // Approved is the end of it. There is nothing for the customer to
@@ -310,7 +310,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     : 'We have not received a receipt for this order yet.',
             style: TextStyle(
                 fontSize: 12,
-                color: rejected ? AppTheme.red : Colors.grey.shade600),
+                color: rejected ? AppTheme.red : AppTheme.ink3),
           ),
           const SizedBox(height: 10),
           PaymentPanel(method: method),

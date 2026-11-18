@@ -48,10 +48,10 @@ class ProductCard extends StatelessWidget {
   Widget _card(BuildContext context, String stock, bool saved, bool out, bool hasOptions,
       bool switches) {
     return Material(
-      color: Colors.white,
+      color: AppTheme.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        side: const BorderSide(color: AppTheme.line),
+        side: BorderSide(color: AppTheme.line),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -84,7 +84,7 @@ class ProductCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.card,
                           borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(color: AppTheme.line),
                         ),
@@ -102,7 +102,7 @@ class ProductCard extends StatelessWidget {
               Text(product.categoryPath,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                  style: TextStyle(fontSize: 11, color: AppTheme.ink3)),
               const SizedBox(height: 2),
               Text(
                 product.name,
@@ -112,7 +112,7 @@ class ProductCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text('Item ${product.id}',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                  style: TextStyle(fontSize: 11, color: AppTheme.ink3)),
               const SizedBox(height: 4),
               StockPill(stock: stock, label: shop.stockLabelOf(product)),
               const Spacer(),

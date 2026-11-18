@@ -13,24 +13,42 @@ import 'widgets/motion.dart';
 /// The old names (red, redDark, redDarker, roll) are kept so every screen
 /// follows the palette without being edited.
 class AppTheme {
-  static const Color brand = Color(0xFFBC2000);
-  static const Color brandDeep = Color(0xFF9A1A00);
-  static const Color brandInk = Color(0xFF6E1300);
-  static const Color brandTint = Color(0xFFFDEBE6);
-  static const Color danger = Color(0xFFB3261E);
+  /// Dark mode, set by the switch on the Account tab (or, until the
+  /// customer uses it, the phone's own setting). Every colour below reads
+  /// it, so the screens follow without being told. The dark values are
+  /// the website's `:root[data-theme="dark"]` tokens in web/css/style.css.
+  static bool dark = false;
 
-  static const Color red = brand;
-  static const Color redDark = brandDeep;
-  static const Color redDarker = brandInk;
-  static const Color roll = brand; // a deal price
-  static const Color ink = Color(0xFF16181D);
-  static const Color ink3 = Color(0xFF5C636E);
-  static const Color line = Color(0xFFE2E5E9);
-  static const Color line2 = Color(0xFFC8CDD3);
-  static const Color pageBg = Color(0xFFF3F4F6);
+  static Color _pick(int light, int night) => Color(dark ? night : light);
 
-  static const Color green = Color(0xFF1D6B3A);
-  static const Color amber = Color(0xFF855600);
+  static Color get brand => _pick(0xFFBC2000, 0xFFE04A2A);
+  static Color get brandDeep => _pick(0xFF9A1A00, 0xFFC23A1D);
+  static Color get brandInk => _pick(0xFF6E1300, 0xFFFFB4A3);
+  static Color get brandTint => _pick(0xFFFDEBE6, 0xFF3A1A12);
+  static Color get danger => _pick(0xFFB3261E, 0xFFFF7A6E);
+
+  static Color get red => brand;
+  static Color get redDark => brandDeep;
+  static Color get redDarker => brandInk;
+  static Color get roll => brand; // a deal price
+  static Color get ink => _pick(0xFF16181D, 0xFFE6E8EB);
+  static Color get ink3 => _pick(0xFF5C636E, 0xFF9AA1AB);
+  static Color get line => _pick(0xFFE2E5E9, 0xFF2C3038);
+  static Color get line2 => _pick(0xFFC8CDD3, 0xFF3D434D);
+  static Color get pageBg => _pick(0xFFF3F4F6, 0xFF111317);
+  static Color get card => _pick(0xFFFFFFFF, 0xFF1B1E24);
+  static Color get surface2 => _pick(0xFFF7F7F9, 0xFF22262D);
+
+  /// Near-black bands (the hero panels). Dark in both themes.
+  static Color get night => _pick(0xFF16181D, 0xFF0A0B0E);
+
+  static Color get green => _pick(0xFF1D6B3A, 0xFF5CC98A);
+  static Color get amber => _pick(0xFF855600, 0xFFE5AD4F);
+  static Color get okTint => _pick(0xFFE3F1E8, 0xFF15301F);
+  static Color get warnTint => _pick(0xFFFBF0D9, 0xFF33280F);
+  static Color get dangerTint => _pick(0xFFFBE6E4, 0xFF3A1815);
+  static Color get info => _pick(0xFF2C5D8F, 0xFF7FB0E6);
+  static Color get ready => _pick(0xFF6A3FB5, 0xFFB69CF0);
 
   static const double radius = 4;
 
@@ -45,16 +63,16 @@ class AppTheme {
 
   /// A pressed red button darkens to brandDeep, the website's hover and
   /// press colour, on top of the ripple.
-  static final WidgetStateProperty<Color?> _pressedDeep =
+  static WidgetStateProperty<Color?> get _pressedDeep =>
       WidgetStateProperty.resolveWith((states) =>
           states.contains(WidgetState.pressed) ? brandDeep : null);
 
   /// A price: bold, with even-width figures so a column of them lines up.
-  static TextStyle price(double size, {Color color = ink, FontWeight weight = FontWeight.w700}) =>
+  static TextStyle price(double size, {Color? color, FontWeight weight = FontWeight.w700}) =>
       TextStyle(
         fontSize: size,
         fontWeight: weight,
-        color: color,
+        color: color ?? ink,
         letterSpacing: -0.2,
         fontFeatures: const [FontFeature.tabularFigures()],
       );
@@ -62,17 +80,19 @@ class AppTheme {
   static ThemeData get theme {
     final scheme = ColorScheme.fromSeed(
       seedColor: brand,
+      brightness: dark ? Brightness.dark : Brightness.light,
       primary: brand,
       onPrimary: Colors.white,
       secondary: brandDeep,
       tertiary: brand,
       error: danger,
-      surface: Colors.white,
+      surface: card,
       onSurface: ink,
     );
     final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
     return ThemeData(
       useMaterial3: true,
+      brightness: dark ? Brightness.dark : Brightness.light,
       colorScheme: scheme,
       scaffoldBackgroundColor: pageBg,
       // iOS keeps its own swipe-back slide.
@@ -84,8 +104,8 @@ class AppTheme {
         TargetPlatform.linux: RisePageTransitionsBuilder(),
         TargetPlatform.fuchsia: RisePageTransitionsBuilder(),
       }),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+      appBarTheme: AppBarTheme(
+        backgroundColor: card,
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -94,7 +114,7 @@ class AppTheme {
         titleTextStyle: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: ink),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: card,
         indicatorColor: brandTint,
         surfaceTintColor: Colors.transparent,
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
@@ -107,16 +127,16 @@ class AppTheme {
             )),
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: card,
         elevation: 0,
         margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
-          side: const BorderSide(color: line),
+          side: BorderSide(color: line),
         ),
       ),
-      dividerTheme: const DividerThemeData(color: line, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(color: line, thickness: 1, space: 1),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: brand,
@@ -140,7 +160,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: brand,
-          side: const BorderSide(color: line2),
+          side: BorderSide(color: line2),
           shape: rounded,
         ),
       ),
@@ -149,32 +169,32 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: card,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: line2),
+          borderSide: BorderSide(color: line2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: line2),
+          borderSide: BorderSide(color: line2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: brand, width: 2),
+          borderSide: BorderSide(color: brand, width: 2),
         ),
       ),
-      chipTheme: const ChipThemeData(
-        backgroundColor: Colors.white,
+      chipTheme: ChipThemeData(
+        backgroundColor: card,
         selectedColor: brandTint,
         side: BorderSide(color: line),
       ),
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: ink,
-        contentTextStyle: TextStyle(color: Colors.white),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: night,
+        contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
       ),
-      textSelectionTheme: const TextSelectionThemeData(
+      textSelectionTheme: TextSelectionThemeData(
         cursorColor: brand,
         selectionColor: brandTint,
         selectionHandleColor: brand,
@@ -197,11 +217,11 @@ class AppTheme {
   static Color stockBg(String stock) {
     switch (stock) {
       case 'in':
-        return const Color(0xFFE3F1E8);
+        return okTint;
       case 'low':
-        return const Color(0xFFFBF0D9);
+        return warnTint;
       default:
-        return const Color(0xFFFBE6E4);
+        return dangerTint;
     }
   }
 
@@ -210,9 +230,9 @@ class AppTheme {
       case 'Collected':
         return green;
       case 'Ready':
-        return const Color(0xFF6A3FB5);
+        return ready;
       case 'Processing':
-        return const Color(0xFF2C5D8F);
+        return info;
       case 'Cancelled':
         return danger;
       default:

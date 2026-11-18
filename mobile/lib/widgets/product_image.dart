@@ -31,7 +31,7 @@ class ProductImage extends StatelessWidget {
     final placeholder = Container(
       height: height,
       alignment: Alignment.center,
-      child: const Icon(Icons.inventory_2_outlined, color: AppTheme.line, size: 34),
+      child: Icon(Icons.inventory_2_outlined, color: AppTheme.line, size: 34),
     );
 
     if (isSvg) {

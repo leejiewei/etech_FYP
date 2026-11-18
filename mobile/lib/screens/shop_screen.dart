@@ -247,7 +247,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         'Nothing matches those filters.',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(color: AppTheme.ink3),
                       ),
                     ),
                   ),
@@ -288,7 +288,7 @@ class _ShopScreenState extends State<ShopScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              color: AppTheme.ink,
+              color: AppTheme.night,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +397,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _chip(String label, VoidCallback onClear) => Chip(
     label: Text(label, style: const TextStyle(fontSize: 12)),
-    backgroundColor: const Color(0xFFFDE7E9),
+    backgroundColor: AppTheme.brandTint,
     side: BorderSide.none,
     visualDensity: VisualDensity.compact,
     deleteIcon: const Icon(Icons.close, size: 15),
@@ -533,7 +533,7 @@ class _ShopScreenState extends State<ShopScreen> {
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
             child: Text(
               'Tick a type above to filter by technical details.',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12.5, color: AppTheme.ink3),
             ),
           ),
         );
@@ -659,7 +659,7 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
               secondary: Text(
                 '${counts[v]}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: AppTheme.ink3),
               ),
             ),
           if (hidden > 0)
@@ -712,7 +712,7 @@ class _ShopScreenState extends State<ShopScreen> {
               (e) => ListTile(
                 title: Text(e.value),
                 trailing: e.key == _sort
-                    ? const Icon(Icons.check, color: AppTheme.red)
+                    ? Icon(Icons.check, color: AppTheme.red)
                     : null,
                 onTap: () {
                   setState(() => _sort = e.key);

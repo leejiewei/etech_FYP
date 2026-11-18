@@ -186,7 +186,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
           widget.shop.loadingProducts
               ? 'Loading machines…'
               : 'No prebuilt PCs to show',
-          style: TextStyle(color: Colors.grey.shade600),
+          style: TextStyle(color: AppTheme.ink3),
         ),
       ],
     ),
@@ -204,7 +204,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.line),
         
@@ -221,8 +221,8 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
               width: double.infinity,
               height: 150,
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFBFC),
-                border: Border.all(color: const Color(0xFFE8EAED)),
+                color: AppTheme.surface2,
+                border: Border.all(color: AppTheme.line),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               padding: const EdgeInsets.all(8),
@@ -233,12 +233,12 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFFFDE7E9),
+              color: AppTheme.brandTint,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               _groupOf(p) ?? '',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.redDark,
@@ -261,7 +261,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
             const SizedBox(height: 6),
             Text(
               'Waiting on: $blockedBy',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 11, color: AppTheme.ink3),
             ),
           ],
           if (specs.isNotEmpty) ...[
@@ -276,7 +276,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
                         text: '${ProductDetailScreen.specLabel(s.key)}: ',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade700,
+                          color: AppTheme.ink3,
                         ),
                       ),
                       TextSpan(
@@ -301,7 +301,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Text(
                 '$optionCount upgrade option${optionCount == 1 ? '' : 's'} available',
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11.5, color: AppTheme.ink3),
               ),
             ),
           const SizedBox(height: 12),
@@ -312,7 +312,7 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
                   onPressed: () => _open(p),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.redDark,
-                    side: const BorderSide(color: AppTheme.redDark),
+                    side: BorderSide(color: AppTheme.redDark),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radius),

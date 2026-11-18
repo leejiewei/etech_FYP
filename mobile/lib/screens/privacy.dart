@@ -26,14 +26,14 @@ class PrivacyScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
         children: [
-          const Text(
+          Text(
             'Privacy Policy',
             style: TextStyle(
                 fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink),
           ),
           const SizedBox(height: 4),
           Text('Last updated $lastUpdated',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
           const SizedBox(height: 18),
 
           _callout(
@@ -255,7 +255,7 @@ class PrivacyScreen extends StatelessWidget {
   Widget _h(String text) => Padding(
         padding: const EdgeInsets.only(top: 22, bottom: 8),
         child: Text(text,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.redDark)),
@@ -264,7 +264,7 @@ class PrivacyScreen extends StatelessWidget {
   Widget _sub(String text) => Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 6),
         child: Text(text,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.ink)),
@@ -273,7 +273,7 @@ class PrivacyScreen extends StatelessWidget {
   Widget _p(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(text,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 13.5, height: 1.55, color: AppTheme.ink)),
       );
 
@@ -281,7 +281,7 @@ class PrivacyScreen extends StatelessWidget {
   Widget _rows(List<(String, String)> rows) => Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: AppTheme.line),
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
@@ -293,19 +293,19 @@ class PrivacyScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: i == 0
                       ? null
-                      : Border(top: BorderSide(color: Colors.grey.shade300)),
+                      : Border(top: BorderSide(color: AppTheme.line)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(rows[i].$1,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.ink)),
                     const SizedBox(height: 3),
                     Text(rows[i].$2,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13, height: 1.5, color: AppTheme.ink)),
                   ],
                 ),
@@ -325,13 +325,13 @@ class PrivacyScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 6, right: 9),
                       child: Icon(Icons.circle, size: 5, color: AppTheme.red),
                     ),
                     Expanded(
                       child: Text(item,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13.5,
                               height: 1.5,
                               color: AppTheme.ink)),
@@ -346,11 +346,11 @@ class PrivacyScreen extends StatelessWidget {
   Widget _callout(String text) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFFDE7E9),
+          color: AppTheme.brandTint,
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text(text,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 13, height: 1.5, color: AppTheme.ink)),
       );
 }

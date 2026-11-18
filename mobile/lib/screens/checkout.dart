@@ -148,7 +148,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         children: [
                           Text(
                             '${item.qty} ×  ',
-                            style: TextStyle(color: Colors.grey.shade600),
+                            style: TextStyle(color: AppTheme.ink3),
                           ),
                           Expanded(
                             child: Text(
@@ -178,7 +178,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       Text(
                         money(widget.shop.cartTotal),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.redDark,
@@ -208,7 +208,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     fontSize: 14, fontWeight: FontWeight.w600)),
                             subtitle: Text(f.hint,
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600)),
+                                    fontSize: 12, color: AppTheme.ink3)),
                           ))
                       .toList(),
                 ),
@@ -239,7 +239,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           : 'We message this number when your order is ready '
                               'to collect.',
                       style: TextStyle(
-                          fontSize: 12.5, color: Colors.grey.shade600),
+                          fontSize: 12.5, color: AppTheme.ink3),
                     ),
                   ),
                   // Only for a delivery. Absent rather than disabled for a
@@ -277,7 +277,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       'We check every payment by hand before we start on your '
                       'order.',
                       style:
-                          TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                          TextStyle(fontSize: 12.5, color: AppTheme.ink3),
                     ),
                   ),
                   // RadioGroup rather than a groupValue on each tile:
@@ -312,7 +312,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       fontSize: 12,
                                       fontStyle:
                                           off ? FontStyle.italic : FontStyle.normal,
-                                      color: Colors.grey.shade600)),
+                                      color: AppTheme.ink3)),
                             );
                           })
                           .toList(),
@@ -328,12 +328,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDE8E8),
+                  color: AppTheme.dangerTint,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: AppTheme.red, fontSize: 13),
+                  style: TextStyle(color: AppTheme.red, fontSize: 13),
                 ),
               ),
             ],
@@ -372,7 +372,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Icon(Icons.check_circle, size: 60, color: AppTheme.green),
+        Icon(Icons.check_circle, size: 60, color: AppTheme.green),
         const SizedBox(height: 14),
         Center(
           child: Text(
@@ -386,7 +386,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: Text(
               'Coupon ${_done!['coupon']} saved you '
               '${money(_done!['discount'] as num)}',
-              style: const TextStyle(color: AppTheme.green, fontSize: 13),
+              style: TextStyle(color: AppTheme.green, fontSize: 13),
             ),
           ),
         Center(
@@ -419,7 +419,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'A photo or screenshot of the transfer confirmation. We compare it '
           'against the amount above, then move your order on. Nothing is '
           'prepared until a member of staff has checked it.',
-          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 12.5, color: AppTheme.ink3),
         ),
         const SizedBox(height: 12),
         ReceiptUploader(
@@ -431,7 +431,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Text(
           'You can also send it later from your order history.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 12.5, color: AppTheme.ink3),
         ),
         const SizedBox(height: 16),
         ElevatedButton(
@@ -451,27 +451,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _pickupNotice() => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(12),
-    decoration: const BoxDecoration(
-      color: Color(0xFFF4F7FB),
+    decoration: BoxDecoration(
+      color: AppTheme.surface2,
       borderRadius: BorderRadius.all(Radius.circular(8)),
-      border: Border(left: BorderSide(color: Color(0xFF2C5D8F), width: 4)),
+      border: Border(left: BorderSide(color: AppTheme.info, width: 4)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Collection at the shop',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2C5D8F),
+            color: AppTheme.info,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           PickupDetails.notice,
           style: TextStyle(
-              fontSize: 12.5, height: 1.45, color: Colors.grey.shade800),
+              fontSize: 12.5, height: 1.45, color: AppTheme.ink3),
         ),
       ],
     ),
@@ -484,20 +484,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _deliveryNotice() => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(12),
-    decoration: const BoxDecoration(
-      color: Color(0xFFF4F7FB),
+    decoration: BoxDecoration(
+      color: AppTheme.surface2,
       borderRadius: BorderRadius.all(Radius.circular(8)),
-      border: Border(left: BorderSide(color: Color(0xFF2C5D8F), width: 4)),
+      border: Border(left: BorderSide(color: AppTheme.info, width: 4)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Delivery',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2C5D8F),
+            color: AppTheme.info,
           ),
         ),
         const SizedBox(height: 6),
@@ -505,7 +505,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'We will send this to the address you gave us once your payment '
           'has been checked, and message you when it is on its way.',
           style: TextStyle(
-              fontSize: 12.5, height: 1.45, color: Colors.grey.shade800),
+              fontSize: 12.5, height: 1.45, color: AppTheme.ink3),
         ),
       ],
     ),
@@ -515,7 +515,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppTheme.card,
       borderRadius: BorderRadius.circular(AppTheme.radius),
       border: Border.all(color: AppTheme.line),
     ),

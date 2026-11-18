@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'models/notification.dart';
 import 'services/api.dart';
 import 'services/push.dart';
+import 'services/settings.dart';
 import 'services/shop.dart';
 import 'theme.dart';
 import 'screens/home.dart';
@@ -24,6 +25,9 @@ void main() async {
   // at all if it does not, which is the state the app ships in until
   // someone runs `flutterfire configure` -- see services/push.dart.
   await Push.init();
+  // Light or dark, and music on or off, from the last time. Read before
+  // the first frame so a dark-mode customer never sees a white flash.
+  await AppSettings.instance.load();
   runApp(const EtechApp());
 }
 
@@ -58,10 +62,31 @@ class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
       _openFromPush(first);
     }
     WidgetsBinding.instance.addObserver(this);
+    AppSettings.instance.addListener(_settingsChanged);
+    BackgroundMusic.play();
+  }
+
+  /// Dark mode was switched. The screens read AppTheme's colours directly
+  /// rather than through Theme.of, so a new ThemeData alone would only
+  /// repaint half of them: every widget is marked to build again, which
+  /// keeps the tab, the scroll position and the open page where they are.
+  void _settingsChanged() {
+    setState(() {});
+    void rebuild(Element e) {
+      e.markNeedsBuild();
+      e.visitChildren(rebuild);
+    }
+    (context as Element).visitChildren(rebuild);
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    AppSettings.instance.platformBrightnessChanged();
   }
 
   @override
   void dispose() {
+    AppSettings.instance.removeListener(_settingsChanged);
     _arrivals?.cancel();
     _taps?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -75,6 +100,12 @@ class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && shop.loggedIn) {
       shop.loadNotifications();
+    }
+    // The music plays only while the app is on screen.
+    if (state == AppLifecycleState.resumed) {
+      BackgroundMusic.play();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      BackgroundMusic.pause();
     }
   }
 
@@ -97,7 +128,7 @@ class _EtechAppState extends State<EtechApp> with WidgetsBindingObserver {
     _messenger.currentState
       ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        backgroundColor: n.needsAction ? AppTheme.red : AppTheme.ink,
+        backgroundColor: n.needsAction ? AppTheme.red : AppTheme.night,
         duration: const Duration(seconds: 6),
         behavior: SnackBarBehavior.floating,
         content: Column(
@@ -167,18 +198,18 @@ class _MainShellState extends State<MainShell> {
           bottomNavigationBar: NavigationBar(
             selectedIndex: _tab,
             onDestinationSelected: (i) => setState(() => _tab = i),
-            backgroundColor: Colors.white,
-            indicatorColor: const Color(0xFFFDE7E9),
+            backgroundColor: AppTheme.card,
+            indicatorColor: AppTheme.brandTint,
             destinations: [
-              const NavigationDestination(
+              NavigationDestination(
                   icon: Icon(Icons.home_outlined),
                   selectedIcon: Icon(Icons.home, color: AppTheme.red),
                   label: 'Home'),
-              const NavigationDestination(
+              NavigationDestination(
                   icon: Icon(Icons.grid_view_outlined),
                   selectedIcon: Icon(Icons.grid_view, color: AppTheme.red),
                   label: 'Shop'),
-              const NavigationDestination(
+              NavigationDestination(
                   icon: Icon(Icons.build_outlined),
                   selectedIcon: Icon(Icons.build, color: AppTheme.red),
                   label: 'Build PC'),
@@ -188,10 +219,10 @@ class _MainShellState extends State<MainShell> {
                   label: Text('${widget.shop.cartCount}'),
                   child: const Icon(Icons.shopping_cart_outlined),
                 ),
-                selectedIcon: const Icon(Icons.shopping_cart, color: AppTheme.red),
+                selectedIcon: Icon(Icons.shopping_cart, color: AppTheme.red),
                 label: 'Cart',
               ),
-              const NavigationDestination(
+              NavigationDestination(
                   icon: Icon(Icons.desktop_windows_outlined),
                   selectedIcon: Icon(Icons.desktop_windows, color: AppTheme.red),
                   label: 'Prebuilt'),

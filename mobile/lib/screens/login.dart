@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(22),
           children: [
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Text.rich(
                 TextSpan(
                   children: [
@@ -220,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: AppTheme.okTint,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
@@ -234,12 +234,12 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDE8E8),
+                  color: AppTheme.dangerTint,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: AppTheme.red, fontSize: 13),
+                  style: TextStyle(color: AppTheme.red, fontSize: 13),
                 ),
               ),
             ],
@@ -289,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'This is a student project — please do not use a password you '
                   'use anywhere else.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: AppTheme.ink3),
                 ),
               ),
           ],

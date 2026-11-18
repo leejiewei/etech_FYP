@@ -129,7 +129,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
                     'Waiting on: $waiting',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: AppTheme.ink3),
                   ),
                 ),
               if (options.isNotEmpty) ...[
@@ -142,7 +142,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
                 Text(
                   'Everything is optional. Pick one in a step to swap it in; '
                   'pick it again to go back to standard.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 13, color: AppTheme.ink3),
                 ),
               ],
               for (var i = 0; i < groups.length; i++)
@@ -170,7 +170,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        color: AppTheme.ink,
+        color: AppTheme.night,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +202,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
               ),
               child: Text(
                 'Save ${money(saving)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.redDark,
@@ -249,7 +249,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
             height: 200,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F7F9),
+              color: AppTheme.surface2,
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: ProductImage(url: p.imageUrl, isSvg: p.isSvg, height: 176),
@@ -263,7 +263,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
             const SizedBox(height: 8),
             for (var i = 0; i < specs.length; i++)
               Container(
-                color: i.isEven ? const Color(0xFFF7F7F9) : null,
+                color: i.isEven ? AppTheme.surface2 : null,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +315,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
                 width: 32,
                 height: 32,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppTheme.redDark,
                   shape: BoxShape.circle,
                 ),
@@ -354,11 +354,11 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
       child: Opacity(
         opacity: outOfStock ? 0.45 : 1,
         child: Material(
-          color: on ? const Color(0xFFFDF0F1) : Colors.white,
+          color: on ? AppTheme.brandTint : AppTheme.card,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radius),
             side: BorderSide(
-              color: on ? AppTheme.red : const Color(0xFFE2E2E2),
+              color: on ? AppTheme.red : AppTheme.line,
               width: on ? 1.5 : 1,
             ),
           ),
@@ -386,7 +386,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
                   const SizedBox(width: 8),
                   Text(
                     '+${money(u.priceDelta)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.redDark,
@@ -409,7 +409,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF4DD),
+          color: AppTheme.warnTint,
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
@@ -424,7 +424,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
             const SizedBox(height: 4),
             Text(
               'Ask us in store or on WhatsApp to add one.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3),
             ),
           ],
         ),
@@ -453,7 +453,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.line),
         
@@ -479,13 +479,13 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
           else
             for (final u in chosen)
               line('+ ${u.label}', money(u.priceDelta),
-                  colour: const Color(0xFF555555)),
+                  colour: AppTheme.ink3),
           const SizedBox(height: 6),
           const _DashedLine(),
           const SizedBox(height: 10),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Total',
                   style: TextStyle(
@@ -497,7 +497,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
               ),
               Text(
                 money(base + _extra),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.redDark,
@@ -525,10 +525,10 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
             const SizedBox(height: 8),
             Text(
               p.description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 height: 1.6,
-                color: Color(0xFF555555),
+                color: AppTheme.ink3,
               ),
             ),
           ],
@@ -544,8 +544,8 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.card,
           border: Border(top: BorderSide(color: AppTheme.line)),
           boxShadow: [
             BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, -2)),
@@ -568,7 +568,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
                     count == 0
                         ? 'Standard build'
                         : '$count ${count == 1 ? 'upgrade' : 'upgrades'} chosen',
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11.5, color: AppTheme.ink3),
                   ),
                 ],
               ),
@@ -588,7 +588,7 @@ class _PrebuiltDetailScreenState extends State<PrebuiltDetailScreen> {
         width: double.infinity,
         padding: padding,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: AppTheme.line),
         ),

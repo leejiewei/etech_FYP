@@ -141,7 +141,7 @@ function renderPrebuilts() {
     : all.filter((p) => prebuiltGroup(p) === currentUseCaseFilter);
 
   if (!list.length) {
-    grid.innerHTML = `<p style="text-align:center; color:#666;">No prebuilt PCs to show.</p>`;
+    grid.innerHTML = `<p style="text-align:center; color:var(--ink-3);">No prebuilt PCs to show.</p>`;
     return;
   }
 

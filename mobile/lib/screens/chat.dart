@@ -271,8 +271,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: AppTheme.card,
               border: Border(top: BorderSide(color: AppTheme.line)),
             ),
             child: SafeArea(
@@ -328,7 +328,7 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.only(bottom: 10, right: 26),
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: m.recommendation != null
@@ -373,7 +373,7 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.only(top: 8),
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE3E5E8)),
+          border: Border.all(color: AppTheme.line),
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
@@ -430,7 +430,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 SizedBox(
                   width: 72,
                   child: Text(slot,
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                      style: TextStyle(fontSize: 11.5, color: AppTheme.ink3)),
                 ),
                 Expanded(
                   child: Text(p.name,
@@ -449,7 +449,7 @@ class _ChatScreenState extends State<ChatScreen> {
             const Text('Total',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
             Text(money(result.total),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.redDark)),
@@ -459,13 +459,13 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 4),
           Text('That leaves ${money(m.request!.budget! - result.total)} '
               'of your budget.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
         ],
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
-            color: problems == 0 ? const Color(0xFFE3F8E8) : const Color(0xFFFDE8E8),
+            color: problems == 0 ? AppTheme.okTint : AppTheme.dangerTint,
             borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(

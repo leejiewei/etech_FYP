@@ -298,7 +298,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -360,7 +360,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        color: AppTheme.ink,
+        color: AppTheme.night,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +443,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: part == null ? Colors.white : const Color(0xFFFDF0F1),
+        color: part == null ? AppTheme.card : AppTheme.brandTint,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -462,12 +462,12 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 CircleAvatar(
                   radius: 12,
                   backgroundColor: part == null
-                      ? const Color(0xFFEDEEF1)
+                      ? AppTheme.surface2
                       : AppTheme.red,
                   child: part == null
                       ? Text(
                           '${index + 1}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.ink,
@@ -480,7 +480,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.card,
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(color: AppTheme.line),
                   ),
@@ -501,7 +501,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                           Flexible(
                             child: Text(
                               info.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.redDark,
@@ -517,7 +517,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                             fontSize: 10,
                             color: need == 'required' && part == null
                                 ? AppTheme.redDark
-                                : Colors.grey.shade600,
+                                : AppTheme.ink3,
                           ),
                         ),
                       const SizedBox(height: 2),
@@ -550,7 +550,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                           const Spacer(),
                           Text(
                             part == null ? 'Choose' : 'Change',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.red,
@@ -606,7 +606,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.line),
       ),
@@ -621,7 +621,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
           if (_pickedCount == 0)
             Text(
               'No parts chosen yet.',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 13, color: AppTheme.ink3),
             )
           else
             for (final slot in Compatibility.slots)
@@ -639,7 +639,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                                 text: '${_info(slot).title}\n',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey.shade600,
+                                  color: AppTheme.ink3,
                                 ),
                               ),
                               TextSpan(
@@ -671,7 +671,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               ),
               Text(
                 money(_total),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.redDark,
@@ -685,7 +685,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
             Text(
               'Start picking parts and every compatibility check will '
               'appear here.',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12.5, color: AppTheme.ink3),
             )
           else
             ..._checks(checks),
@@ -734,7 +734,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F9),
+        color: AppTheme.surface2,
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
@@ -780,7 +780,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               child: LinearProgressIndicator(
                 value: share.toDouble(),
                 minHeight: 8,
-                backgroundColor: const Color(0xFFE2E4E8),
+                backgroundColor: AppTheme.line,
                 color: over
                     ? AppTheme.red
                     : tight
@@ -796,12 +796,12 @@ class _BuilderScreenState extends State<BuilderScreen> {
                       ? '${(share * 100).round()}% of your ${capacity.round()}W supply — '
                           'below the ${needed}W we recommend.'
                       : '${(share * 100).round()}% of your ${capacity.round()}W supply.',
-              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 11.5, color: AppTheme.ink3),
             ),
           ] else
             Text(
               'Choose a power supply of at least ${needed}W.',
-              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 11.5, color: AppTheme.ink3),
             ),
         ],
       ),
@@ -817,7 +817,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         _group(
           'Critical — needs changing',
           criticals,
-          const Color(0xFFFDE8E8),
+          AppTheme.dangerTint,
           AppTheme.red,
           Icons.close,
         ),
@@ -825,7 +825,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         _group(
           'Checks passed',
           passes,
-          const Color(0xFFE3F8E8),
+          AppTheme.okTint,
           AppTheme.green,
           Icons.check,
         ),
@@ -838,8 +838,8 @@ class _BuilderScreenState extends State<BuilderScreen> {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.card,
           border: Border(top: BorderSide(color: AppTheme.line)),
           boxShadow: [
             BoxShadow(
@@ -858,7 +858,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 children: [
                   Text(
                     money(_total),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.redDark,
@@ -870,7 +870,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                         : '$_pickedCount of ${Compatibility.counted(_build).length} parts selected',
                     style: TextStyle(
                       fontSize: 11.5,
-                      color: Colors.grey.shade600,
+                      color: AppTheme.ink3,
                     ),
                   ),
                 ],
@@ -894,7 +894,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
 
   /// The eTech AI review section, under the rule checks.
   List<Widget> _aiReview() {
-    const note = TextStyle(fontSize: 12.5, color: AppTheme.ink3, height: 1.4);
+    final note = TextStyle(fontSize: 12.5, color: AppTheme.ink3, height: 1.4);
     const heading = Padding(
       padding: EdgeInsets.only(top: 18, bottom: 8),
       child: Text(
@@ -904,7 +904,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     );
 
     if (_reviewKey.isEmpty) {
-      return const [
+      return [
         heading,
         Text(
           'Pick every part and eTech AI will review the whole build: how '
@@ -916,7 +916,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     if (_reviewFailed) {
       return [
         heading,
-        const Text(
+        Text(
           "eTech AI couldn't review this build just now. The checks above "
           'still apply.',
           style: note,
@@ -933,7 +933,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     }
     final review = _review;
     if (review == null) {
-      return const [
+      return [
         heading,
         Row(
           children: [
@@ -976,9 +976,9 @@ class _BuilderScreenState extends State<BuilderScreen> {
     };
     // The same tints as the rule checks' summary header.
     final (bg, fg) = switch (verdict.$2) {
-      Level.critical => (const Color(0xFFFDE8E8), AppTheme.red),
-      Level.warning => (const Color(0xFFFFF4DD), AppTheme.amber),
-      Level.pass => (const Color(0xFFE3F8E8), AppTheme.green),
+      Level.critical => (AppTheme.dangerTint, AppTheme.red),
+      Level.warning => (AppTheme.warnTint, AppTheme.amber),
+      Level.pass => (AppTheme.okTint, AppTheme.green),
     };
     final summary = '${review['summary'] ?? ''}';
 
@@ -1005,7 +1005,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         _group(
           "Critical — eTech AI says this won't work",
           criticals,
-          const Color(0xFFFDE8E8),
+          AppTheme.dangerTint,
           AppTheme.red,
           Icons.close,
         ),
@@ -1013,7 +1013,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         _group(
           'Worth knowing',
           warnings,
-          const Color(0xFFFFF4DD),
+          AppTheme.warnTint,
           AppTheme.amber,
           Icons.warning_amber_rounded,
         ),
@@ -1026,7 +1026,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               fontSize: 10.5,
               letterSpacing: 1,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: AppTheme.ink3,
             ),
           ),
         ),
@@ -1038,7 +1038,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
           '${criticals.isNotEmpty ? "eTech AI can be wrong. If you're unsure, ask us before you order. " : ""}'
           'Reviewed by eTech AI from our catalogue. Prices are ours; the '
           'checks above decide what can be ordered.',
-          style: const TextStyle(fontSize: 11, color: AppTheme.ink3, height: 1.35),
+          style: TextStyle(fontSize: 11, color: AppTheme.ink3, height: 1.35),
         ),
       ),
     ];
@@ -1049,7 +1049,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     final now = _build[slot];
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppTheme.line)),
       ),
       child: Row(
@@ -1060,12 +1060,12 @@ class _BuilderScreenState extends State<BuilderScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_info(slot).title,
-                    style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                    style: TextStyle(fontSize: 11, color: AppTheme.ink3)),
                 Text(part.name,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 if (now != null)
                   Text('instead of ${now.name}',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.ink3)),
+                      style: TextStyle(fontSize: 11, color: AppTheme.ink3)),
                 const SizedBox(height: 2),
                 Text('${swap['reason'] ?? ''}',
                     style: const TextStyle(fontSize: 12.5, height: 1.3)),
@@ -1104,11 +1104,11 @@ class _BuilderScreenState extends State<BuilderScreen> {
           '$criticals critical problem${criticals > 1 ? "s" : ""} — '
           'this build will not work until you change '
           '${criticals > 1 ? "them" : "it"}.';
-      bg = const Color(0xFFFDE8E8);
+      bg = AppTheme.dangerTint;
       fg = AppTheme.red;
     } else {
       text = 'All $passes compatibility checks passed.';
-      bg = const Color(0xFFE3F8E8);
+      bg = AppTheme.okTint;
       fg = AppTheme.green;
     }
 
@@ -1144,7 +1144,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
             fontSize: 10.5,
             letterSpacing: 1,
             fontWeight: FontWeight.bold,
-            color: Colors.grey.shade600,
+            color: AppTheme.ink3,
           ),
         ),
       ),
@@ -1363,7 +1363,7 @@ class _PartPickerState extends State<_PartPicker> {
                                 'Try changing the processor or motherboard first.'
                           : 'Nothing matches that search.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: AppTheme.ink3),
                     ),
                   ),
                 for (final g in groups.entries) ...[
@@ -1375,7 +1375,7 @@ class _PartPickerState extends State<_PartPicker> {
                         fontSize: 10.5,
                         letterSpacing: 1,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.ink3,
                       ),
                     ),
                   ),
@@ -1390,7 +1390,7 @@ class _PartPickerState extends State<_PartPicker> {
                       "you've already picked.",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.ink3,
                       ),
                     ),
                   ),
@@ -1409,7 +1409,7 @@ class _PartPickerState extends State<_PartPicker> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: chosen ? const Color(0xFFFDF0F1) : Colors.white,
+        color: chosen ? AppTheme.brandTint : AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1453,7 +1453,7 @@ class _PartPickerState extends State<_PartPicker> {
                           spec,
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.grey.shade600,
+                            color: AppTheme.ink3,
                           ),
                         ),
                       const SizedBox(height: 4),
@@ -1473,7 +1473,7 @@ class _PartPickerState extends State<_PartPicker> {
                         money(p.price),
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: AppTheme.ink3,
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
@@ -1486,7 +1486,7 @@ class _PartPickerState extends State<_PartPicker> {
                       ),
                     ),
                     if (chosen)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 4),
                         child: Icon(
                           Icons.check_circle,

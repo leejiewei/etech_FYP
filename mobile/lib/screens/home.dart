@@ -35,7 +35,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Image.asset('assets/images/etech-logo.png', width: 34, height: 34),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'eTech',
               style: TextStyle(
                 fontSize: 22,
@@ -142,7 +142,7 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off, size: 46, color: AppTheme.red),
+          Icon(Icons.cloud_off, size: 46, color: AppTheme.red),
           const SizedBox(height: 14),
           Text(
             shop.loadError!,
@@ -167,7 +167,7 @@ class HomeScreen extends StatelessWidget {
     height: 300,
     clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
-      color: AppTheme.ink,
+      color: AppTheme.night,
       borderRadius: BorderRadius.circular(AppTheme.radius),
     ),
     child: Stack(
@@ -254,10 +254,10 @@ class HomeScreen extends StatelessWidget {
             children: [
               for (final (name, count) in rows)
                 Material(
-                  color: Colors.white,
+                  color: AppTheme.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radius),
-                    side: const BorderSide(color: AppTheme.line),
+                    side: BorderSide(color: AppTheme.line),
                   ),
                   child: InkWell(
                     onTap: () {
@@ -275,7 +275,7 @@ class HomeScreen extends StatelessWidget {
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           Text('$count',
-                              style: const TextStyle(fontSize: 12, color: AppTheme.ink3)),
+                              style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
                         ],
                       ),
                     ),
@@ -298,7 +298,7 @@ class HomeScreen extends StatelessWidget {
     ),
     child: Row(
       children: [
-        const Icon(Icons.local_offer, color: AppTheme.red),
+        Icon(Icons.local_offer, color: AppTheme.red),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -361,7 +361,7 @@ class HomeScreen extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.line),
       ),

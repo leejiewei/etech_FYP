@@ -89,7 +89,7 @@ class _RigsScreenState extends State<RigsScreen> {
                   'an ASUS, ROG or TUF component in yours and it earns the '
                   'certified badge.',
                   style:
-                      TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                      TextStyle(fontSize: 12.5, color: AppTheme.ink3),
                 ),
                 const SizedBox(height: 12),
                 Row(children: [
@@ -123,7 +123,7 @@ class _RigsScreenState extends State<RigsScreen> {
                           size: 46, color: Colors.grey.shade400),
                       const SizedBox(height: 10),
                       Text('No builds published yet.',
-                          style: TextStyle(color: Colors.grey.shade600)),
+                          style: TextStyle(color: AppTheme.ink3)),
                     ]),
                   )
                 else
@@ -140,7 +140,7 @@ class _RigsScreenState extends State<RigsScreen> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
@@ -182,7 +182,7 @@ class _RigsScreenState extends State<RigsScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF1C1C1E),
                     borderRadius: BorderRadius.circular(4),
-                    border: const Border(
+                    border: Border(
                         left: BorderSide(color: AppTheme.red, width: 3)),
                   ),
                   child: const Text('ASUS CERTIFIED',
@@ -195,7 +195,7 @@ class _RigsScreenState extends State<RigsScreen> {
             ]),
             const SizedBox(height: 3),
             Text('Built by ${rig.builder}',
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 11.5, color: AppTheme.ink3)),
             if (rig.description != null) ...[
               const SizedBox(height: 8),
               Text(rig.description!,
@@ -357,7 +357,7 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
             padding: const EdgeInsets.all(30),
             child: Text('Please sign in to submit a build.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+                style: TextStyle(color: AppTheme.ink3)),
           ),
         ),
       );
@@ -396,7 +396,7 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
             ),
           ]),
           Text('Up to six. ${_photos.length} chosen.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3)),
           if (_photos.isNotEmpty)
             SizedBox(
               height: 90,
@@ -456,10 +456,10 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
               margin: const EdgeInsets.only(top: 8),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F8E8),
+                color: AppTheme.okTint,
                 borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
-              child: const Text(
+              child: Text(
                 'ASUS Certified — one of these is ASUS, ROG or TUF hardware.',
                 style: TextStyle(fontSize: 12.5, color: AppTheme.green),
               ),
@@ -480,13 +480,13 @@ class _RigSubmitScreenState extends State<RigSubmitScreen> {
           Text(
             'Each part you tag becomes a link back to it in the shop. An ASUS, '
             'ROG or TUF part earns the certified badge automatically.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: AppTheme.ink3),
           ),
 
           if (_error != null) ...[
             const SizedBox(height: 14),
             Text(_error!,
-                style: const TextStyle(color: AppTheme.red, fontSize: 13)),
+                style: TextStyle(color: AppTheme.red, fontSize: 13)),
           ],
 
           const SizedBox(height: 22),

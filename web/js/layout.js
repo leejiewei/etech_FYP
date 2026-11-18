@@ -25,6 +25,10 @@ const UI_ICONS = {
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>',
   shieldCheck: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  musicOff: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>',
   tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
 };
 
@@ -91,6 +95,14 @@ function injectHeader() {
         </form>
 
         <ul class="nav-links shell-actions">
+          <!-- Dark mode and music (js/theme.js, js/music.js). Each button
+               shows the icon for what pressing it will do. -->
+          <li><button type="button" class="shell-action shell-toggle" data-theme-toggle
+                      aria-pressed="false" onclick="window.etechTheme && etechTheme.toggle()">
+            ${uiIcon("sun", "ui-icon-on")}${uiIcon("moon", "ui-icon-off")}<span class="shell-action-label">Theme</span></button></li>
+          <li><button type="button" class="shell-action shell-toggle" data-music-toggle
+                      aria-pressed="false" onclick="window.etechMusic && etechMusic.toggle()">
+            ${uiIcon("music", "ui-icon-on")}${uiIcon("musicOff", "ui-icon-off")}<span class="shell-action-label">Music</span></button></li>
           <li><a class="shell-action" href="wishlist.html"${current("wishlist.html")} aria-label="Wishlist">
             ${uiIcon("heart")}<span class="shell-action-label">Wishlist</span>
             <span class="badge" id="wishlist-count">${wishlistCount}</span></a></li>
@@ -142,6 +154,10 @@ function injectHeader() {
   wireMegaItems(header);
   wireMegaHover(header);
   wireAccountMenu(header);
+
+  if (window.etechTheme) etechTheme.sync();
+  if (window.etechMusic) etechMusic.sync();
+  else header.querySelectorAll("[data-music-toggle]").forEach((b) => { b.parentElement.hidden = true; });
 }
 
 // The account menu opens on hover or keyboard focus (style.css). A tap

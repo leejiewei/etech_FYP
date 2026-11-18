@@ -149,7 +149,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Center(child: _photo()),
               ),
               Container(
-                color: Colors.white,
+                color: AppTheme.card,
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +159,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             fontSize: 19, fontWeight: FontWeight.bold, height: 1.3)),
                     const SizedBox(height: 6),
                     Text(product.categoryPath,
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                        style: TextStyle(fontSize: 13, color: AppTheme.ink3)),
                     const SizedBox(height: 12),
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       // The countdown belongs here rather than on the
@@ -183,7 +183,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       InkWell(
                         onTap: () =>
                             ProductDetailScreen.openOfficial(context, product),
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 4),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Text('Full specs on the official site',
@@ -236,8 +236,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           bottomSheet: Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: AppTheme.card,
               border: Border(top: BorderSide(color: AppTheme.line)),
             ),
             child: SafeArea(
@@ -314,7 +314,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _panel(String title, Widget child) => Container(
         width: double.infinity,
-        color: Colors.white,
+        color: AppTheme.card,
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,7 +343,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               SizedBox(
                 width: 145,
                 child: Text(label,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 13, color: AppTheme.ink3)),
               ),
               Expanded(
                 child: Text(value,

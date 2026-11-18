@@ -121,11 +121,11 @@ class BuiltByEtech extends StatelessWidget {
   Widget _card(BuildContext context, HighendBuild b) => SizedBox(
     width: 220,
     child: Material(
-      color: Colors.white,
+      color: AppTheme.card,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        side: const BorderSide(color: AppTheme.line),
+        side: BorderSide(color: AppTheme.line),
       ),
       child: InkWell(
         onTap: () => _open(context, b.post),
@@ -142,8 +142,8 @@ class BuiltByEtech extends StatelessWidget {
                     fit: BoxFit.cover,
                     loadingBuilder: (_, child, progress) => progress == null
                         ? child
-                        : const ColoredBox(color: AppTheme.pageBg),
-                    errorBuilder: (_, __, ___) => const ColoredBox(
+                        : ColoredBox(color: AppTheme.pageBg),
+                    errorBuilder: (_, __, ___) => ColoredBox(
                       color: AppTheme.pageBg,
                       child: Icon(Icons.computer, size: 48, color: Colors.black26),
                     ),
@@ -184,10 +184,10 @@ class BuiltByEtech extends StatelessWidget {
                         '• $s',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11.5, color: AppTheme.ink),
+                        style: TextStyle(fontSize: 11.5, color: AppTheme.ink),
                       ),
                     const Spacer(),
-                    const Text(
+                    Text(
                       'View on Facebook ↗',
                       style: TextStyle(
                         fontSize: 12,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config.dart';
+import '../services/settings.dart';
 import '../services/shop.dart';
 import '../theme.dart';
 import 'login.dart';
@@ -82,6 +83,11 @@ class AccountScreen extends StatelessWidget {
                 () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => ProfileEditScreen(shop: shop)))),
           ],
+          // Dark mode and background music, for everyone, signed in or not.
+          _switch(Icons.dark_mode_outlined, 'Dark mode', 'Easier on the eyes at night',
+              AppSettings.instance.dark, AppSettings.instance.setDark),
+          _switch(Icons.music_note_outlined, 'Background music', 'Plays while the app is open',
+              AppSettings.instance.musicOn, AppSettings.instance.setMusic),
           // Staff only. It names the service the shop is built on and
           // shows its address, which is nobody's business but ours -- a
           // customer has no use for it and a stranger should not be told
@@ -125,7 +131,7 @@ class AccountScreen extends StatelessWidget {
       Container(
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(AppTheme.radius)),
+            color: AppTheme.card, borderRadius: BorderRadius.circular(AppTheme.radius)),
         child: ListTile(
           leading: Icon(icon, color: danger ? AppTheme.red : AppTheme.redDark),
           title: Text(title,
@@ -137,6 +143,24 @@ class AccountScreen extends StatelessWidget {
               : Text(subtitle, style: const TextStyle(fontSize: 12)),
           trailing: danger ? null : const Icon(Icons.chevron_right, size: 20),
           onTap: onTap,
+        ),
+      );
+
+  Widget _switch(IconData icon, String title, String subtitle, bool value,
+          ValueChanged<bool> onChanged) =>
+      Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        decoration: BoxDecoration(
+            color: AppTheme.card, borderRadius: BorderRadius.circular(AppTheme.radius)),
+        child: SwitchListTile(
+          secondary: Icon(icon, color: AppTheme.redDark),
+          title: Text(title,
+              style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink)),
+          subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+          value: value,
+          activeThumbColor: Colors.white,
+          activeTrackColor: AppTheme.brand,
+          onChanged: onChanged,
         ),
       );
 
@@ -170,7 +194,7 @@ class AccountScreen extends StatelessWidget {
             Text(
               'What you are allowed to see is decided by the database itself, '
               'from the account you are signed in as.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: AppTheme.ink3),
             ),
           ],
         ),

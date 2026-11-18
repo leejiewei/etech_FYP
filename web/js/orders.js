@@ -25,8 +25,8 @@
 
 // Colour the status so the current stage stands out.
 const ORDER_STATUS_COLOUR = {
-  Pending: "#b8860b", Processing: "#2c5d8f",
-  Ready: "#6a3fb5", Collected: "#1e8e3e", Cancelled: "#c0392b",
+  Pending: "var(--warn)", Processing: "var(--info)",
+  Ready: "var(--ready)", Collected: "var(--ok)", Cancelled: "var(--danger)",
 };
 
 // The colours are the stage's, not the method's: Ready is the same rung
@@ -34,7 +34,7 @@ const ORDER_STATUS_COLOUR = {
 
 function renderOrders() {
   const list = document.getElementById("orders-list");
-  list.innerHTML = "<p style='text-align:center; color:#777;'>Loading your orders...</p>";
+  list.innerHTML = "<p style='text-align:center; color:var(--ink-3);'>Loading your orders...</p>";
 
   // Straight from the database, with each order's lines joined on.
   // There is no "and only mine" filter here and there does not need to
@@ -51,12 +51,12 @@ function renderOrders() {
       if (error) {
         console.error("Loading orders:", error);
         list.innerHTML =
-          `<p style="text-align:center; color:#c0392b;">Could not load your orders.</p>`;
+          `<p style="text-align:center; color:var(--danger);">Could not load your orders.</p>`;
         return;
       }
       if (orders.length === 0) {
         list.innerHTML =
-          `<p style="text-align:center; color:#777;">No orders yet. <a href="shop.html">Start shopping</a></p>`;
+          `<p style="text-align:center; color:var(--ink-3);">No orders yet. <a href="shop.html">Start shopping</a></p>`;
         return;
       }
 
@@ -154,7 +154,7 @@ function paymentSection(order) {
   }
 
   const chased = state === "REJECTED"
-    ? `<p class="form-note" style="color:#c0392b;">
+    ? `<p class="form-note" style="color:var(--danger);">
          We could not match that receipt to this order. Please send another —
          a clear photo showing the amount and the date.
        </p>`
@@ -176,7 +176,7 @@ function paymentSection(order) {
         Accepted: ${escapeHtml(PHOTO_LIMITS_TEXT)}
       </p>
       <div class="form-error receipt-error"></div>
-      <p class="receipt-done" style="display:none; color:#1e8e3e;"></p>
+      <p class="receipt-done" style="display:none; color:var(--ok);"></p>
       <button type="button" class="receipt-send">
         ${order.receipt_image_path ? "Send another receipt" : "Upload receipt"}
       </button>

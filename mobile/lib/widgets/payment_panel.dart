@@ -22,8 +22,8 @@ class PaymentPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFBFBFC),
-        border: Border.all(color: const Color(0xFFE6E8EC)),
+        color: AppTheme.surface2,
+        border: Border.all(color: AppTheme.line),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: method == PaymentMethod.qrCode ? _qr(context) : _bank(context),
@@ -44,7 +44,7 @@ class PaymentPanel extends StatelessWidget {
           Text(
             'Please pay by bank transfer instead, or contact us and we will '
             'send you the details.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            style: TextStyle(fontSize: 12, color: AppTheme.ink3),
           ),
         ],
       );
@@ -63,12 +63,12 @@ class PaymentPanel extends StatelessWidget {
             errorBuilder: (_, __, ___) => Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4E0),
+                color: AppTheme.warnTint,
                 borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Text(
                 'QR image not bundled yet — add ${PaymentDetails.qrAsset}',
-                style: const TextStyle(fontSize: 12, color: AppTheme.amber),
+                style: TextStyle(fontSize: 12, color: AppTheme.amber),
               ),
             ),
           ),
@@ -96,7 +96,7 @@ class PaymentPanel extends StatelessWidget {
 
   Widget _note() => Text(
         'Pay the exact amount shown, then send us the receipt.',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        style: TextStyle(fontSize: 12, color: AppTheme.ink3),
       );
 
   // Tappable, because the alternative is somebody retyping an account
@@ -118,7 +118,7 @@ class PaymentPanel extends StatelessWidget {
                 width: 110,
                 child: Text('$label:',
                     style: TextStyle(
-                        fontSize: 13, color: Colors.grey.shade600)),
+                        fontSize: 13, color: AppTheme.ink3)),
               ),
               Expanded(
                 child: Text(value,
@@ -244,14 +244,14 @@ class _ReceiptUploaderState extends State<ReceiptUploader> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(_error!,
-                style: const TextStyle(color: AppTheme.red, fontSize: 12.5)),
+                style: TextStyle(color: AppTheme.red, fontSize: 12.5)),
           ),
         if (_sent)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Receipt received. We will check it and move your order on.',
-              style: const TextStyle(color: AppTheme.green, fontSize: 12.5),
+              style: TextStyle(color: AppTheme.green, fontSize: 12.5),
             ),
           ),
       ],

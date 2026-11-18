@@ -109,8 +109,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: _ok
-                      ? const Color(0xFFE3F8E8)
-                      : const Color(0xFFFDE8E8),
+                      ? AppTheme.okTint
+                      : AppTheme.dangerTint,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
