@@ -90,10 +90,10 @@
     if (wanted()) play();
   }
   function stopListening() {
-    ["pointerdown", "keydown", "touchstart"].forEach((t) =>
+    ["pointerdown", "pointerup", "click", "keydown", "touchend"].forEach((t) =>
       document.removeEventListener(t, firstGesture, true));
   }
-  ["pointerdown", "keydown", "touchstart"].forEach((t) =>
+  ["pointerdown", "pointerup", "click", "keydown", "touchend"].forEach((t) =>
     document.addEventListener(t, firstGesture, true));
 
   // Try straight away too: a browser that has seen the customer use the
