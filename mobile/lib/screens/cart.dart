@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/settings_buttons.dart';
 import '../widgets/product_image.dart';
 import 'login.dart';
 import 'checkout.dart';
@@ -12,7 +13,9 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Cart')),
+      appBar: AppBar(
+          title: const Text('Your Cart'),
+          actions: const [SettingsButtons()]),
       body: !shop.loggedIn
           ? _signInPrompt(context)
           : shop.cart.isEmpty

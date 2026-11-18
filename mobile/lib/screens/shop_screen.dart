@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/settings_buttons.dart';
 import '../widgets/product_card.dart';
 import 'product_detail.dart';
 
@@ -220,6 +221,7 @@ class _ShopScreenState extends State<ShopScreen> {
           appBar: AppBar(
             title: const Text('Shop'),
             actions: [
+              const SettingsButtons(),
               // The Scaffold's own endDrawer button is replaced by this
               // one, which carries the count of ticked filters.
               Builder(

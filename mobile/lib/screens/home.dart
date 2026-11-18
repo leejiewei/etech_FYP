@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/settings_buttons.dart';
 import '../widgets/built_by_etech.dart';
 import '../widgets/product_card.dart';
 import 'deals.dart';
@@ -47,6 +48,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          const SettingsButtons(),
           // Prebuilt PCs holds a bottom-bar destination now that it is
           // four shop-facing ranges. Account trades places with it: it is
           // opened once in a while, not browsed, so it sits up here

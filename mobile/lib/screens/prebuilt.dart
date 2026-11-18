@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/settings_buttons.dart';
 import '../widgets/deal_price.dart';
 import '../widgets/product_image.dart';
 import 'prebuilt_detail.dart';
@@ -130,7 +131,9 @@ class _PrebuiltScreenState extends State<PrebuiltScreen> {
         final chips = ['All', ...PrebuiltScreen._groups.keys.where(stocked.contains)];
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Prebuilt PCs')),
+          appBar: AppBar(
+              title: const Text('Prebuilt PCs'),
+              actions: const [SettingsButtons()]),
           body: Column(
             children: [
               SizedBox(

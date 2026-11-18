@@ -8,6 +8,7 @@ import '../models/product.dart';
 import '../services/compatibility.dart';
 import '../services/shop.dart';
 import '../theme.dart';
+import '../widgets/settings_buttons.dart';
 import '../widgets/product_image.dart';
 
 /// Build Your Own PC — pick one part per slot, with the same compatibility
@@ -324,6 +325,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
           appBar: AppBar(
             title: const Text('Build Your Own PC'),
             actions: [
+              const SettingsButtons(),
               if (_pickedCount > 0)
                 IconButton(
                   tooltip: 'Start over',
